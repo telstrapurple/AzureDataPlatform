@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-databases.schema.json",
+  "title": "Azure Data Platform Config - Databases",
+  "description": "Databases Configuration for the Azure Data Platform",
+  "type": "object",
+  "properties": {
+    //sqlUsernames.admin          //already handled in deploy-data.schema.json
+    //dataLakeDateMask
+    //webAppAdminUPN
+    //stageDatabase.databaseName  //already handled in deploy-data.schema.json
+    //configDatabase.databaseName //already handled in deploy-data.schema.json
+    "dataLakeDateMask": {
+      "type": "string",
+      "description": "Passed to DbUp to execute database migrations"
+    },
+    "webAppAdminUPN": {
+      "type": "string",
+      "description": "Passed to DbUp to execute database migrations. May be left blank."
+    }
+  },
+  "required": ["dataLakeDateMask", "webAppAdminUPN"]
+}

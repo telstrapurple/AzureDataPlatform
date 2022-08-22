@@ -1,0 +1,38 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    "lawName": {
+      "value": "tp-syd-dev-adp-law-001"
+    },
+    "serviceTier": {
+      "value": "PerGB2018"
+    },
+    "capacityReservationLevel": {
+      "value": 0
+    },
+    "solutionTypes": {
+      "value": ["SQLAssessment", "SecurityInsights"]
+    },
+    "retentionInDays": {
+      "value": 31
+    },
+    "dailyQuotaGb": {
+      "value": 5
+    },
+    "publicIngestion": {
+      "value": true
+    },
+    "publicQuery": {
+      "value": true
+    }
+  }
+}

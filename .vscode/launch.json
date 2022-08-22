@@ -1,0 +1,104 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    /*******************************************
+     * Local solution debugging
+     *******************************************/
+    {
+      "name": "WebApp (build and run/debug locally)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "buildWebApp",
+      "program": "${workspaceFolder}/webapp/ADPConfigurator/Web/bin/Debug/netcoreapp3.1/ADPConfigurator.Web.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/webapp/ADPConfigurator/Web",
+      "stopAtEntry": false,
+      "internalConsoleOptions": "openOnSessionStart",
+      "launchBrowser": {
+        "enabled": true,
+        "args": "${auto-detect-url}",
+        "windows": {
+          "command": "cmd.exe",
+          "args": "/C start ${auto-detect-url}"
+        },
+        "osx": {
+          "command": "open",
+          "args": "${auto-detect-url}"
+        },
+        "linux": {
+          "command": "xdg-open",
+          "args": "${auto-detect-url}"
+        }
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "sourceFileMap": {
+        "/Pages": "${workspaceFolder}/webapp/ADPConfigurator/Web/Pages"
+      },
+      "presentation": {
+        "hidden": false,
+        "group": "Local solution debugging",
+        "order": 4
+      }
+    },
+    {
+      // This currently doesn't work, waiting for response on https://github.com/Azure/azure-functions-powershell-worker/issues/368
+      "name": "Functions (run/debug locally)",
+      "type": "PowerShell",
+      "request": "attach",
+      "customPipeName": "AzureFunctionsPSWorker",
+      "runspaceId": 1,
+      "preLaunchTask": "startFunctionApp",
+      "presentation": {
+        "hidden": false,
+        "group": "Local solution debugging",
+        "order": 4
+      }
+    },
+    {
+      "name": "Database.Migrator (build and run/debug locally)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "buildMigrator",
+      "program": "${workspaceFolder}/Databases/Migrator/bin/Debug/netcoreapp3.1/Migrator.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Databases/Migrator/bin/Debug/netcoreapp3.1",
+      "stopAtEntry": false,
+      "console": "integratedTerminal",
+      "presentation": {
+        "hidden": false,
+        "group": "Local solution debugging",
+        "order": 4
+      }
+    },
+    /*******************************************
+     * Tests
+     *******************************************/
+    {
+      "name": "Infrastructure.Test",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${workspaceFolder}/infrastructure/scripts/Test-Parameters.ps1",
+      "args": ["-Verbose"],
+      "cwd": "${workspaceFolder}",
+      "presentation": {
+        "hidden": false,
+        "group": "Tests",
+        "order": 5
+      }
+    },
+    {
+      "name": "Generate Documentation",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${workspaceFolder}/infrastructure/scripts/Set-Documentation.ps1",
+      "cwd": "${workspaceFolder}",
+      "presentation": {
+        "hidden": false,
+        "group": "Tests",
+        "order": 5
+      }
+    }
+  ]
+}

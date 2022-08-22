@@ -1,0 +1,169 @@
+﻿@page
+
+@model Web.Pages.Systems.Tasks.IndexModel
+
+@{
+    ViewData["Title"] = "Tasks for " + Model.System.SystemName;
+}
+
+<h1>
+    <i class="float-right fas fa-tasks"></i>
+    Tasks for @Html.DisplayFor(modelItem => Model.System.SystemName)
+</h1>
+
+<div class="float-right">
+    <a asp-page="Create" asp-route-id="@Model.System.SystemId" class="btn btn-outline-success">
+        <i class="fas fa-plus-circle"></i>
+        Create New
+    </a>
+</div>
+
+<form asp-page="./Index" method="get" class="form-inline pb-2">
+    <div class="form-actions no-color">
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Search:</span>
+            </div>
+            <input type="text" name="SearchString" class="form-control" value="@ViewData["CurrentFilter"]" />
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Search
+                </button>
+                @Html.Hidden("SystemId", Model.System.SystemId)
+                <a role="button" class="btn btn-secondary" asp-page="./Index" asp-route-systemid="@ViewBag.SystemId">
+                    <i class="fas fa-search-minus"></i>
+                    Clear
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@if (Model.Task.Count > 0)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    Name
+                </th>
+                <th>
+                    Type
+                </th>
+                <th>
+                    Schedule
+                </th>
+                <th>
+                    Source
+                </th>
+                <th>
+                    Target
+                </th>
+                <th>
+                    Order
+                </th>
+                <th>
+                    Enabled
+                </th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Task.Where(t => !t.System.DeletedIndicator))
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.TaskName)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.TaskType.TaskTypeName)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Schedule.ScheduleName)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.SourceConnection.ConnectionName) 
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.TargetConnection.ConnectionName)
+                    </td>
+                    <td>
+                        @(item.TaskOrderId != null ? Html.DisplayFor(modelItem => item.TaskOrderId) : Html.Raw("\u2014"))
+                    </td>
+                    <td>
+                        @(item.Enabled ? "Enabled" : "\u2014")
+                    </td>
+                    <td>
+                        <a asp-page="../TaskInstances/Index" asp-route-taskid="@item.TaskId" asp-route-systemid="@item.SystemId">
+                            <i class="fas fa-cog fa-sm"></i>
+                            Task Instances
+                        </a>
+                    </td>
+                    <td class="text-right">
+                        <div class="btn-group">
+                            <a asp-page="./Edit" asp-route-id="@item.TaskId" class="btn btn-outline-secondary text-nowrap">
+                                <i class="fas fa-edit fa-sm"></i>
+                                Edit
+                            </a>
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="sr-only">Toggle Dropdown</span>
+                            </button>
+                            <div class="dropdown-menu">
+                                <a asp-page="./Create" asp-route-id="@Model.Task[0].System.SystemId" asp-route-clonetaskid="@item.TaskId" class="dropdown-item text-nowrap">
+                                    <i class="fas fa-clone fa-sm"></i>
+                                    Clone
+                                </a>
+                                <a asp-page="./Delete" asp-route-id="@item.TaskId" class="dropdown-item text-nowrap text-danger">
+                                    <i class="fas fa-minus-circle fa-sm"></i>
+                                    Delete
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-warning" role="alert">
+        <i class="fas fa-exclamation-triangle"></i>
+        No tasks were found for @Model.System.SystemName
+    </div>
+}
+
+@{
+    var prevDisabled = !Model.Task.HasPreviousPage ? "disabled" : "";
+    var nextDisabled = !Model.Task.HasNextPage ? "disabled" : "";
+}
+
+<div class="alert alert-secondary">
+    <a asp-page="./Index"
+       asp-route-pageIndex="@(Model.Task.PageIndex - 1)"
+       asp-route-systemId="@Model.System.SystemId"
+       asp-route-currentFilter="@ViewData["CurrentFilter"]"
+       class="btn btn-primary @prevDisabled">
+        <i class="fas fa-chevron-left"></i>
+        Previous
+    </a>
+    <a asp-page="./Index"
+       asp-route-pageIndex="@(Model.Task.PageIndex + 1)"
+       asp-route-systemId="@Model.System.SystemId"
+       asp-route-currentFilter="@ViewData["CurrentFilter"]"
+       class="btn btn-primary @nextDisabled">
+        Next
+        <i class="fas fa-chevron-right"></i>
+    </a>
+</div>
+
+<div>
+    <a asp-page="../Index" class="small">
+        <i class="fas fa-arrow-left"></i>
+        Back to Systems
+    </a>
+</div>

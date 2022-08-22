@@ -1,0 +1,50 @@
+{
+	"name": "Generic_DatalakeGen2_Csv_NoHeader_AzureIR",
+	"properties": {
+		"description": "This is the generic Data Lake Gen 2 data set for csv files using the Azure integration runtime that does not use a header",
+		"linkedServiceName": {
+			"referenceName": "DataLakeGen2_AzureIR",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"dataLakeServiceEndPoint": {
+					"value": "@dataset().dataLakeServiceEndPoint",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"dataLakeServiceEndPoint": {
+				"type": "string"
+			},
+			"dataLakeFilePath": {
+				"type": "string"
+			},
+			"dataLakeFileName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Blob"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().dataLakeFileName",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().dataLakeFilePath",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "",
+			"quoteChar": ""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

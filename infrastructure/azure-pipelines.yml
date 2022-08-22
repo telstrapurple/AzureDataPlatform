@@ -1,0 +1,116 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - infrastructure/*
+
+parameters:
+  - name: deploySHIR
+    displayName: Deploy/Update SHIR and Purview VM(s)
+    type: boolean
+    default: false
+
+  - name: deployPowerBi
+    displayName: Deploy/Update PowerBi Gateway VM(s)
+    type: boolean
+    default: false
+
+pr:
+  autoCancel: false
+  paths:
+    include:
+      - infrastructure/*
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: test
+    displayName: Test
+    jobs:
+      - job: testInfrastructure
+        displayName: Test infrastructure
+        variables:
+          sourceDirectory: infrastructure
+        steps:
+          - task: PowerShell@2
+            displayName: Test configuration files against schema
+            inputs:
+              pwsh: true
+              targetType: inline
+              errorActionPreference: Stop
+              workingDirectory: "$(sourceDirectory)/scripts"
+              script: |
+                Get-ChildItem 'config.*.json' |
+                  Where-Object { $_.Name -notlike '*.schema.*' } |
+                  ForEach-Object {
+                    $Result = ./Test-Schema.ps1 -configFilePath $_ -schemaFilePath './config.schema.json'
+                    if ($True -ne $Result) {
+                      Write-Warning "$_ did not test succesfully"
+                      Exit 1
+                    }
+                  }
+                Exit 0
+
+          - task: AzurePowerShell@5
+            displayName: Test ARM parameters
+            inputs:
+              azureSubscription: Purple - Development - Azure Data Platform
+              pwsh: true
+              azurePowerShellVersion: OtherVersion
+              preferredAzurePowerShellVersion: 6.5.0
+              ScriptType: FilePath
+              ScriptPath: $(sourceDirectory)/scripts/Test-Parameters.ps1
+
+          - task: CopyFiles@2
+            displayName: Copy files to the artifacts directory
+            inputs:
+              TargetFolder: $(Build.ArtifactStagingDirectory)
+              SourceFolder: $(sourceDirectory)
+              Contents: |
+                **/*
+                !.gitignore
+                !azure-pipelines.yml
+                !docs
+                !README.md
+          - task: PublishPipelineArtifact@1
+            displayName: Publish artifacts
+            inputs:
+              artifact: infrastructure
+              targetPath: $(Build.ArtifactStagingDirectory)
+
+  - ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
+      - stage: deployToDev
+        displayName: Deploy to Dev
+        variables:
+          #
+          # Has the following variables:
+          #  - environmentCode
+          #  - environmentName
+          #  - globalAdminGroupId
+          #  - location
+          #  - locationCode
+          #  - subscriptionId
+          #  - tenantId
+          #  - pullSourceAppId
+          #  - pullSourceUrl
+          - group: ads-platform-dev
+        jobs:
+          - template: deployment-jobs.yml
+            parameters:
+              adosServiceConnectionName: Purple - Development - Azure Data Platform
+              jobEnvironment: ads-dev
+              configFile: config.dev.json
+              environmentName: $(environmentName)
+              environmentCode: $(environmentCode)
+              globalAdminGroupId: $(globalAdminGroupId)
+              location: $(location)
+              locationCode: $(locationCode)
+              tenantId: $(tenantId)
+              subscriptionId: $(subscriptionId)
+              deploySHIR: ${{ parameters.deploySHIR }}
+              deployPowerBi: ${{ parameters.deployPowerBi }}
+              pullSourceAppId: $(pullSourceAppId)
+              pullSourceUrl: $(pullSourceUrl)

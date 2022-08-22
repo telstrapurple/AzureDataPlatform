@@ -1,0 +1,23 @@
+{
+  "name": "AzureFunction",
+  "properties": {
+    "description": "This is the generic Azure Function linked service",
+    "annotations": [],
+    "type": "AzureFunction",
+    "typeProperties": {
+      "functionAppUrl": "https://willgetreplaced.azurewebsites.net",
+      "functionKey": {
+        "type": "AzureKeyVaultSecret",
+        "store": {
+          "referenceName": "KeyVault",
+          "type": "LinkedServiceReference"
+        },
+        "secretName": "functionAppPowershellMasterKey"
+      }
+    },
+    "connectVia": {
+      "referenceName": "IR-ADP",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

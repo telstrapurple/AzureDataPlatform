@@ -1,0 +1,60 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Specific params
+    "subscriptionId": {
+      "type": "string"
+    },
+    "notScopes": {
+      "type": "array"
+    },
+    "azureLocation": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "policyAssignments": [
+      {
+        "managedIdentity": "None",
+        "displayName": "Allowed locations",
+        "description": "This policy enables you to restrict the locations your organization can specify when deploying resources.",
+        "policyDefinitionReferenceId": "allowedLocation",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/e765b5de-1225-4ba3-bd56-1ac6695af988",
+        "parameters": {
+          "listOfAllowedLocations": {
+            "value": ["[parameters('azureLocation')]"]
+          }
+        }
+      }
+    ]
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Authorization/policyAssignments",
+      "name": "[concat(variables('policyAssignments')[copyIndex()].policyDefinitionReferenceId)]",
+      "apiVersion": "2018-05-01",
+      "location": "[parameters('azureLocation')]",
+      "copy": {
+        "name": "loopPolicyAssignments",
+        "count": "[length(variables('policyAssignments'))]"
+      },
+      "identity": {
+        "type": "[variables('policyAssignments')[copyIndex()].managedIdentity]"
+      },
+      "properties": {
+        "scope": "[concat('/subscriptions/',parameters('subscriptionId'))]",
+        "notScopes": "[parameters('notScopes')]",
+        "description": "[variables('policyAssignments')[copyIndex()].description]",
+        "parameters": "[variables('policyAssignments')[copyIndex()].parameters]",
+        "displayName": "[variables('policyAssignments')[copyIndex()].displayName]",
+        "policyDefinitionId": "[variables('policyAssignments')[copyIndex()].policyDefinitionId]"
+      }
+    }
+  ],
+  "outputs": {}
+}

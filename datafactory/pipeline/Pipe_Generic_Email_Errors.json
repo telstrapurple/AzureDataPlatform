@@ -1,0 +1,209 @@
+{
+	"name": "Pipe_Generic_Email_Errors",
+	"properties": {
+		"description": "This pipeline will pick up any errors logged for the latest execution of a system and task type",
+		"activities": [
+			{
+				"name": "LKP - Get the error notification text",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[DI].[usp_SystemRunError_Get]",
+						"storedProcedureParameters": {
+							"System": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.System",
+									"type": "Expression"
+								}
+							},
+							"TaskType": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.TaskType",
+									"type": "Expression"
+								}
+							},
+							"ConfigPipelineName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.ConfigPipelineName",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "Generic_AzureSQL",
+						"type": "DatasetReference",
+						"parameters": {
+							"secretName": "sqlDatabaseConnectionStringConfig"
+						}
+					},
+					"firstRowOnly": true
+				}
+			},
+			{
+				"name": "IF - Check if there were errors",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the generic config values",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(length(activity('LKP - Get the error notification text').output.firstRow.Body), 1)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "WH - Send the error notification",
+							"type": "WebHook",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"url": {
+									"value": "@activity('LKP - Get the generic config values').output.firstRow.LogicAppSendEmailURL",
+									"type": "Expression"
+								},
+								"method": "POST",
+								"headers": {
+									"Content-Type": "application/json"
+								},
+								"body": {
+									"To": "@activity('LKP - Get the generic config values').output.firstRow.NotificationEmailAddress",
+									"Cc": "",
+									"Bcc": "",
+									"Subject": "@activity('LKP - Get the error notification text').output.firstRow.Subject",
+									"Body": "@activity('LKP - Get the error notification text').output.firstRow.Body",
+									"Importance": "@activity('LKP - Get the error notification text').output.firstRow.Importance",
+									"Caller": "ADF"
+								},
+								"timeout": "00:01:00"
+							}
+						},
+						{
+							"name": "SP - Update the Data Factory Log",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "WH - Send the error notification",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_SystemRunErrorLog_Update]",
+								"storedProcedureParameters": {
+									"ScheduleInstanceID": {
+										"value": {
+											"value": "@activity('LKP - Get the error notification text').output.firstRow.ScheduleInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int32"
+									},
+									"SystemID": {
+										"value": {
+											"value": "@activity('LKP - Get the error notification text').output.firstRow.SystemID",
+											"type": "Expression"
+										},
+										"type": "Int32"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@activity('LKP - Get the error notification text').output.firstRow.PipelineRunID",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "LKP - Get the generic config values",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the error notification text",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[DI].[usp_GenericConfig_Get]"
+					},
+					"dataset": {
+						"referenceName": "Generic_AzureSQL",
+						"type": "DatasetReference",
+						"parameters": {
+							"secretName": "sqlDatabaseConnectionStringConfig"
+						}
+					},
+					"firstRowOnly": true
+				}
+			}
+		],
+		"parameters": {
+			"System": {
+				"type": "string"
+			},
+			"TaskType": {
+				"type": "string"
+			},
+			"ConfigPipelineName": {
+				"type": "string",
+				"defaultValue": "N/A"
+			}
+		},
+		"folder": {
+			"name": "Maintenance"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

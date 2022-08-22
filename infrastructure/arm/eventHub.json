@@ -1,0 +1,184 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    },
+    // Specific params
+    "ehbName": {
+      "type": "string"
+    },
+    "eventhubSku": {
+      "type": "string",
+      "allowedValues": ["Basic", "Standard"],
+      "defaultValue": "Standard",
+      "metadata": {
+        "description": "The messaging tier for service Bus namespace"
+      }
+    },
+    "skuCapacity": {
+      "type": "int",
+      "allowedValues": [1, 2, 4],
+      "defaultValue": 1,
+      "metadata": {
+        "description": "MessagingUnits for premium namespace"
+      }
+    }
+  },
+  "variables": {
+    "defaultSASKeyName": "RootManageSharedAccessKey",
+    "authRuleResourceId": "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('ehbName'), variables('defaultSASKeyName'))]",
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2017-04-01",
+      "name": "[parameters('ehbName')]",
+      "type": "Microsoft.EventHub/namespaces",
+      "location": "[variables('azureLocation')]",
+      "sku": {
+        "name": "[parameters('eventhubSku')]",
+        "tier": "[parameters('eventhubSku')]",
+        "capacity": "[parameters('skuCapacity')]"
+      },
+      "properties": {
+        "isAutoInflateEnabled": false
+      },
+      "tags": "[parameters('tagObject')]",
+      "resources": [
+        {
+          "apiVersion": "2017-04-01",
+          "name": "[parameters('ehbName')]",
+          "type": "eventhubs",
+          "dependsOn": [
+            "[concat('Microsoft.EventHub/namespaces/', parameters('ehbName'))]"
+          ],
+          "properties": {},
+          "resources": [
+            {
+              "apiVersion": "2017-04-01",
+              "name": "[parameters('ehbName')]",
+              "type": "consumergroups",
+              "dependsOn": [
+                "[concat('Microsoft.EventHub/namespaces/', parameters('ehbName'), '/eventhubs/', parameters('ehbName'))]"
+              ],
+              "properties": {}
+            }
+          ]
+        },
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "Microsoft.EventHub/namespaces/providers/diagnosticSettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "[concat(parameters('ehbName'), '/', '/Microsoft.Insights/', 'diagnostics')]",
+          "dependsOn": ["[parameters('ehbName')]"],
+          "properties": {
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "metrics": [
+              {
+                "category": "AllMetrics",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                },
+                "timeGrain": null
+              }
+            ],
+            "logs": [
+              {
+                "category": "ArchiveLogs",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "OperationalLogs",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "AutoScaleLogs",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "KafkaCoordinatorLogs",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "KafkaUserErrorLogs",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "EventHubVNetConnectionEvent",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "CustomerManagedKeyUserLogs",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "NamespaceConnectionString": {
+      "type": "string",
+      "value": "[listkeys(variables('authRuleResourceId'), '2017-04-01').primaryConnectionString]"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+	"name": "Oracle",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"description": "This is the generic on-prem Oracle connection",
+		"parameters": {
+			"secretName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Oracle",
+		"typeProperties": {
+			"connectionString": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "KeyVault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": {
+					"value": "@linkedService().secretName",
+					"type": "Expression"
+				}
+			}
+		},
+		"connectVia": {
+			"referenceName": "IR-ADP",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

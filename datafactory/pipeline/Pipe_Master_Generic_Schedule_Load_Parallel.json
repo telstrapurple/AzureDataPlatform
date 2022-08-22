@@ -1,0 +1,692 @@
+{
+  "name": "Pipe_Master_Generic_Schedule_Load_Parallel",
+  "properties": {
+    "description": "This is the master pipeline to run all of the systems which are scheduled on a particular schedule",
+    "activities": [
+      {
+        "name": "LKP - Get the systems to run once a day",
+        "type": "Lookup",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "AzureSqlSource",
+            "sqlReaderStoredProcedureName": "[DI].[usp_SystemsToRun_Get]",
+            "storedProcedureParameters": {
+              "Schedule": {
+                "type": "String",
+                "value": {
+                  "value": "@pipeline().parameters.Schedule",
+                  "type": "Expression"
+                }
+              },
+              "Sequential": {
+                "type": "Int16",
+                "value": "0"
+              }
+            },
+            "partitionOption": "None"
+          },
+          "dataset": {
+            "referenceName": "Generic_AzureSQL",
+            "type": "DatasetReference",
+            "parameters": {
+              "secretName": "sqlDatabaseConnectionStringConfig"
+            }
+          },
+          "firstRowOnly": false
+        }
+      },
+      {
+        "name": "FEL - Loop through the systems to run once a day",
+        "type": "ForEach",
+        "dependsOn": [
+          {
+            "activity": "LKP - Get the systems to run once a day",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('LKP - Get the systems to run once a day').output.value",
+            "type": "Expression"
+          },
+          "isSequential": false,
+          "batchCount": 5,
+          "activities": [
+            {
+              "name": "IF - Source is Database",
+              "type": "IfCondition",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "expression": {
+                  "value": "@contains(item().RunType, 'Database to')",
+                  "type": "Expression"
+                },
+                "ifTrueActivities": [
+                  {
+                    "name": "EP - Generic Database Load_Parallel",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_Database_Load_Parallel",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "Schedule": {
+                          "value": "@pipeline().parameters.Schedule",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "EP - Send errors - Database Load",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [
+                      {
+                        "activity": "EP - Generic Database Load_Sequential",
+                        "dependencyConditions": ["Completed"]
+                      }
+                    ],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_Email_Errors",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "ConfigPipelineName": "N/A"
+                      }
+                    }
+                  },
+                  {
+                    "name": "EP - Generic Database Load_Sequential",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [
+                      {
+                        "activity": "EP - Generic Database Load_Parallel",
+                        "dependencyConditions": ["Completed"]
+                      }
+                    ],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_Database_Load_Sequential",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "Schedule": {
+                          "value": "@pipeline().parameters.Schedule",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "IF - Source is File",
+              "type": "IfCondition",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "expression": {
+                  "value": "@contains(item().RunType, 'File to')",
+                  "type": "Expression"
+                },
+                "ifTrueActivities": [
+                  {
+                    "name": "EP - Generic File Load_Parallel",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_File_Load_Parallel",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "Schedule": {
+                          "value": "@pipeline().parameters.Schedule",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "EP - Send errors - File Load",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [
+                      {
+                        "activity": "EP - Generic File Load_Sequential",
+                        "dependencyConditions": ["Completed"]
+                      }
+                    ],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_Email_Errors",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "ConfigPipelineName": "N/A"
+                      }
+                    }
+                  },
+                  {
+                    "name": "EP - Generic File Load_Sequential",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [
+                      {
+                        "activity": "EP - Generic File Load_Parallel",
+                        "dependencyConditions": ["Completed"]
+                      }
+                    ],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_File_Load_Sequential",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "Schedule": {
+                          "value": "@pipeline().parameters.Schedule",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "IF - Source is Script",
+              "type": "IfCondition",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "expression": {
+                  "value": "@contains(item().RunType, 'Script')",
+                  "type": "Expression"
+                },
+                "ifTrueActivities": [
+                  {
+                    "name": "EP - Send errors - Script Run",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [
+                      {
+                        "activity": "EP - Generic Script Run_Sequential",
+                        "dependencyConditions": ["Completed"]
+                      }
+                    ],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_Email_Errors",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "ConfigPipelineName": "N/A"
+                      }
+                    }
+                  },
+                  {
+                    "name": "EP - Generic Script Run_Sequential",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [
+                      {
+                        "activity": "EP - Generic Script Run_Parallel",
+                        "dependencyConditions": ["Completed"]
+                      }
+                    ],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_Script_Sequential",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "Schedule": {
+                          "value": "@pipeline().parameters.Schedule",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "EP - Generic Script Run_Parallel",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_Script_Parallel",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "Schedule": {
+                          "value": "@pipeline().parameters.Schedule",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "IF - Source is CRM",
+              "type": "IfCondition",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "expression": {
+                  "value": "@contains(item().RunType, 'CRM to')",
+                  "type": "Expression"
+                },
+                "ifTrueActivities": [
+                  {
+                    "name": "EP - Generic CRM Load_Parallel",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_CRM_Load_Parallel",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "Schedule": {
+                          "value": "@pipeline().parameters.Schedule",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "EP - Send errors - CRM Load",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [
+                      {
+                        "activity": "EP - Generic CRM Load_Sequential",
+                        "dependencyConditions": ["Completed"]
+                      }
+                    ],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_Email_Errors",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "ConfigPipelineName": "N/A"
+                      }
+                    }
+                  },
+                  {
+                    "name": "EP - Generic CRM Load_Sequential",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [
+                      {
+                        "activity": "EP - Generic CRM Load_Parallel",
+                        "dependencyConditions": ["Completed"]
+                      }
+                    ],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_CRM_Load_Sequential",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "Schedule": {
+                          "value": "@pipeline().parameters.Schedule",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "IF - Source is ODBC",
+              "type": "IfCondition",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "expression": {
+                  "value": "@contains(item().RunType, 'ODBC to')",
+                  "type": "Expression"
+                },
+                "ifTrueActivities": [
+                  {
+                    "name": "EP - Generic ODBC Load_Parallel",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_ODBC_Load_Parallel",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "Schedule": {
+                          "value": "@pipeline().parameters.Schedule",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "EP - Send errors - ODBC Load",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [
+                      {
+                        "activity": "EP - Generic ODBC Load_Sequential",
+                        "dependencyConditions": ["Completed"]
+                      }
+                    ],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_Email_Errors",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "ConfigPipelineName": "N/A"
+                      }
+                    }
+                  },
+                  {
+                    "name": "EP - Generic ODBC Load_Sequential",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [
+                      {
+                        "activity": "EP - Generic ODBC Load_Parallel",
+                        "dependencyConditions": ["Completed"]
+                      }
+                    ],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_ODBC_Load_Sequential",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "Schedule": {
+                          "value": "@pipeline().parameters.Schedule",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "IF - Source is REST",
+              "type": "IfCondition",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "expression": {
+                  "value": "@contains(item().RunType, 'REST to')",
+                  "type": "Expression"
+                },
+                "ifTrueActivities": [
+                  {
+                    "name": "EP - Generic REST Load_Parallel",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_REST_Load_Parallel",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "Schedule": {
+                          "value": "@pipeline().parameters.Schedule",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "EP - Send errors - REST Load",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [
+                      {
+                        "activity": "EP - Generic REST Load_Sequential",
+                        "dependencyConditions": ["Completed"]
+                      }
+                    ],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_Email_Errors",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "ConfigPipelineName": "N/A"
+                      }
+                    }
+                  },
+                  {
+                    "name": "EP - Generic REST Load_Sequential",
+                    "type": "ExecutePipeline",
+                    "dependsOn": [
+                      {
+                        "activity": "EP - Generic REST Load_Parallel",
+                        "dependencyConditions": ["Completed"]
+                      }
+                    ],
+                    "userProperties": [],
+                    "typeProperties": {
+                      "pipeline": {
+                        "referenceName": "Pipe_Generic_REST_Load_Sequential",
+                        "type": "PipelineReference"
+                      },
+                      "waitOnCompletion": true,
+                      "parameters": {
+                        "System": {
+                          "value": "@{item().System}",
+                          "type": "Expression"
+                        },
+                        "TaskType": {
+                          "value": "@{item().TaskType}",
+                          "type": "Expression"
+                        },
+                        "Schedule": {
+                          "value": "@pipeline().parameters.Schedule",
+                          "type": "Expression"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "parameters": {
+      "Schedule": {
+        "type": "string"
+      }
+    },
+    "folder": {
+      "name": "Master Pipelines"
+    },
+    "annotations": []
+  },
+  "type": "Microsoft.DataFactory/factories/pipelines"
+}

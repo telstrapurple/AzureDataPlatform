@@ -1,0 +1,107 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - webapp/*
+
+pr:
+  autoCancel: false
+  paths:
+    include:
+      - webapp/*
+
+stages:
+  - stage: build
+    displayName: Build
+    jobs:
+      - job: build
+        displayName: Build
+        pool:
+          vmImage: ubuntu-latest
+        variables:
+          buildConfiguration: Release
+          sourceDirectory: webapp/ADPConfigurator
+        steps:
+          - pwsh: |
+              # Base version number. Should be changed when the web app is released
+              $BuildNum = '1.0.0'
+              # Append the actual build number (not the generated one from AzDo) to identify individual builds
+              $BuildNum = $BuildNum + '.' + ('$(Build.BuildNumber)'.split('.') | Select -Last 1)
+              Write-Host "Using Build Number $BuildNum"
+              dotnet build --configuration $(buildConfiguration) /p:AssemblyVersion=$BuildNum
+            displayName: Build Web App solution
+            workingDirectory: $(sourceDirectory)
+
+          - script: dotnet publish --output $(Build.ArtifactStagingDirectory)/web/ADPConfigurator.Web --configuration $(buildConfiguration) --no-build
+            displayName: Publish web application project
+            workingDirectory: $(sourceDirectory)/Web
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish web app artifacts
+            inputs:
+              artifact: web
+              targetPath: $(Build.ArtifactStagingDirectory)/web
+
+          - pwsh: |
+              # Base version number. Should be changed when the web app is released
+              $BuildNum = '1.0.0'
+              # Append the actual build number (not the generated one from AzDo) to identify individual builds
+              $BuildNum = $BuildNum + '.' + ('$(Build.BuildNumber)'.split('.') | Select -Last 1)
+              Write-Host "Using Build Number $BuildNum"
+              dotnet build ./ADPConfigurator.Api.csproj --configuration $(buildConfiguration) /p:AssemblyVersion=$BuildNum
+            displayName: Build API solution
+            workingDirectory: $(sourceDirectory)/Api
+
+          - script: dotnet publish ./ADPConfigurator.Api.csproj --output $(Build.ArtifactStagingDirectory)/api/ADPConfigurator.Api --configuration $(buildConfiguration) --no-build
+            displayName: Publish api application project
+            workingDirectory: $(sourceDirectory)/Api
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish api artifacts
+            inputs:
+              artifact: api
+              targetPath: $(Build.ArtifactStagingDirectory)/api
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish infrastructure artifacts
+            inputs:
+              artifact: infrastructure
+              targetPath: infrastructure/scripts
+
+  - ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
+      - stage: deployToDev
+        displayName: Deploy to Dev
+        jobs:
+          - deployment: deployToDev
+            displayName: Deploy to Dev
+            environment: ads-dev
+            pool:
+              vmImage: windows-latest
+            variables:
+              #
+              # Has the following variables:
+              #  - configFile
+              #  - environmentCode
+              #  - environmentName
+              #  - globalAdminGroupId
+              #  - location
+              #  - locationCode
+              #  - subscriptionId
+              #  - tenantId
+              - group: ads-platform-dev
+            strategy:
+              runOnce:
+                deploy:
+                  steps:
+                    - template: deployment-steps.yml
+                      parameters:
+                        adosServiceConnectionName: Purple - Development - Azure Data Platform
+                        environmentCode: $(environmentCode)
+                        location: $(location)
+                        locationCode: "CORP" # TODO: Need to change the Library Variables (no perms yet) $(locationCode)
+                        configFileName: $(configFile)
+                        tenantId: $(tenantId)
+                        subscriptionId: $(subscriptionId)
+                        appSetting.aspnetcoreEnvironment: Development

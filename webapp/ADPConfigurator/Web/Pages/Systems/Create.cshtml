@@ -1,0 +1,157 @@
+﻿@page
+@model Web.Pages.Systems.CreateModel
+@using ADPConfigurator.Web.Services
+@inject PullSourceStateProvider PullSourceStateProvider
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>
+    <i class="float-right fas fa-cogs"></i>
+    Create System
+    @if (PullSourceStateProvider.HasPullSource())
+    {
+        <a href="/Systems/Pull" class="btn btn-primary pull-button">
+            <i class="fas fa-code-branch"></i>
+            Pull
+        </a>
+    }
+</h1>
+
+<!--
+    # Tech debt
+
+    We're enforcing some "Required" rules here manually.
+    The framework won't do it for us because the fields are nullable in the database.
+    This is partly because of incorrect design, and partly because new fields have been added over time, and we chose a "gradual migration" strategy.
+
+    What should happen - identify all the fields that, from a business and process perspective should be required. Make them non-nullable in the database.
+    If there are any that are still going through gradual migration (e.g. LocalAdminGroup) see if you can expedite the migration and make it non-nullable in the db.
+    Once that's done, you can annotate the fields with [Required] on the model and the framework won't chuck a hissy fit on you
+-->
+
+
+<form method="post">
+    <div class="row">
+        <div class="col-md-4 col-sm-12">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="System.SystemId" />
+            @if (Model.SignedInUserProvider.IsGlobalAdmin)
+            {
+                <div class="form-group">
+                    <label asp-for="System.SystemCode" class="control-label">System Code</label>
+                    <input asp-for="System.SystemCode" class="form-control" />
+                    <span asp-validation-for="System.SystemCode" class="text-danger"></span>
+                </div>
+            }
+            else
+            {
+                <select asp-for="System.SystemCode" class="form-control" asp-items="new SelectList(Model.AvailableSystemCodes)"></select>
+                <span asp-validation-for="System.SystemCode" class="text-danger"></span>
+            }
+            <div class="form-group">
+                <label asp-for="System.SystemName" class="control-label">System Name (Globally Unique)</label>
+                <input asp-for="System.SystemName" class="form-control" />
+                <span asp-validation-for="System.SystemName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="System.SystemDescription" class="control-label">System Description</label>
+                <input asp-for="System.SystemDescription" class="form-control" />
+                <span asp-validation-for="System.SystemDescription" class="text-danger"></span>
+            </div>
+            @if (Model.SignedInUserProvider.IsGlobalAdmin)
+            {
+                <div class="form-group">
+                    <label asp-for="System.LocalAdminGroup" class="control-label">Local Admin AAD Group (GUID)</label>
+                    <input asp-for="System.LocalAdminGroup" class="form-control" />
+                    <span asp-validation-for="System.LocalAdminGroup" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="System.MemberGroup" class="control-label">Engineering User AAD Group (GUID)</label>
+                    <input asp-for="System.MemberGroup" class="form-control" />
+                    <span asp-validation-for="System.MemberGroup" class="text-danger"></span>
+                </div>
+            }
+            else
+            {
+                <input type="hidden" asp-for="System.LocalAdminGroup" />
+                <input type="hidden" asp-for="System.MemberGroup" />
+            }
+            <div class="form-group">
+                <label asp-for="System.ReadonlyGroup" class="control-label">Readonly User AAD Group (GUID)</label>
+                <input asp-for="System.ReadonlyGroup" class="form-control" />
+                <span asp-validation-for="System.ReadonlyGroup" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="col-md-6 offset-md-1 col-sm-12 offset-sm-0">
+            <div id="systemDependency">
+                <h2>System Dependencies</h2>
+                <table class="table table" id="tblSystemDependency">
+                    <thead>
+                        <tr>
+                            <th>
+                                System Dependency
+                            </th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+                <div class="form-group">
+                    <button id="btnAddSystemDependency" type="button" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i>
+                        Add new system dependency
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Properties</h2>
+            @for (var i = 0; i < Model.CurrentSystemProperties.Count; i++)
+            {
+                <div class="form-group">
+                    @Html.HiddenFor(modelItem => Model.CurrentSystemProperties[i].SystemPropertyId)
+                    @Html.HiddenFor(modelItem => Model.CurrentSystemProperties[i].DeletedIndicator)
+                    @Html.HiddenFor(modelItem => Model.CurrentSystemProperties[i].SystemPropertyTypeId)
+                    <label>
+                        @Html.DisplayFor(modelItem => Model.CurrentSystemProperties[i].SystemPropertyType.SystemPropertyTypeName)
+                    </label>
+                    @if (Model.CurrentSystemProperties[i].SystemPropertyType.SystemPropertyTypeValidation.SystemPropertyTypeValidationName == "DropDownList")
+                    {
+                        var itemList = new SelectList(Model.SystemPropertyTypeOptions.Where(t => t.SystemPropertyTypeId == Model.CurrentSystemProperties[i].SystemPropertyType.SystemPropertyTypeId), "SystemPropertyTypeOptionName", "SystemPropertyTypeOptionName");
+                        <select asp-for="CurrentSystemProperties[i].SystemPropertyValue" class="form-control" asp-items="itemList"></select>
+                        <span asp-validation-for="CurrentSystemProperties[i].SystemPropertyValue" class="text-danger"></span>
+                    }
+                    else if (Model.CurrentSystemProperties[i].SystemPropertyType.SystemPropertyTypeValidation.SystemPropertyTypeValidationName == "NumberBox")
+                    {
+                        @Html.TextBoxFor(modelItem => Model.CurrentSystemProperties[i].SystemPropertyValue, new { style = "width:100%", @class = "form-control", @type = "number" })
+                    }
+                    else if (Model.CurrentSystemProperties[i].SystemPropertyType.SystemPropertyTypeValidation.SystemPropertyTypeValidationName == "MultiLineTextBox")
+                    {
+                        @Html.TextAreaFor(modelItem => Model.CurrentSystemProperties[i].SystemPropertyValue, new { style = "width:100%", @class = "form-control" })
+                    }
+                    else // else it is a TextBox
+                    {
+                        @Html.TextBoxFor(modelItem => Model.CurrentSystemProperties[i].SystemPropertyValue, new { style = "width:100%", @class = "form-control" })
+                    }
+                    <div class="small text-muted">
+                        @Model.CurrentSystemProperties[i].SystemPropertyType.SystemPropertyTypeDescription
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @{await Html.RenderPartialAsync("_FormControls");}
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{await Html.RenderPartialAsync("_SystemDependencyPartial");}
+}

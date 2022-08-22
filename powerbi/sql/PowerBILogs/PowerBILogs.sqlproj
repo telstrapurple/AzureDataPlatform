@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Name>PowerBILogs</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>4.1</ProjectVersion>
+    <ProjectGuid>{e5450865-7d35-4a8d-8ac6-7407f97ccd2c}</ProjectGuid>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.SqlAzureV12DatabaseSchemaProvider</DSP>
+    <OutputType>Database</OutputType>
+    <RootPath>
+    </RootPath>
+    <RootNamespace>PowerBILogs</RootNamespace>
+    <AssemblyName>PowerBILogs</AssemblyName>
+    <ModelCollation>1033,CI</ModelCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
+    <DeployToDatabase>True</DeployToDatabase>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetLanguage>CS</TargetLanguage>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <SqlServerVerification>False</SqlServerVerification>
+    <IncludeCompositeObjects>True</IncludeCompositeObjects>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <DefaultCollation>SQL_Latin1_General_CP1_CI_AS</DefaultCollation>
+    <DefaultFilegroup>PRIMARY</DefaultFilegroup>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
+    <!-- Default to the v11.0 targets path if the targets file for the current VS version is not found -->
+    <SSDTExists Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')">True</SSDTExists>
+    <VisualStudioVersion Condition="'$(SSDTExists)' == ''">11.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Condition="'$(SQLDBExtensionsRefPath)' != ''" Project="$(SQLDBExtensionsRefPath)\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <ItemGroup>
+    <Folder Include="Properties" />
+    <Folder Include="pbi\" />
+    <Folder Include="pbi\Tables\" />
+    <Folder Include="tempstage\" />
+    <Folder Include="tempstage\Tables\" />
+    <Folder Include="pbi\Stored Procedures\" />
+    <Folder Include="Security\" />
+    <Folder Include="lga" />
+    <Folder Include="pbi\Views" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="pbi\Tables\Workspaces.sql" />
+    <Build Include="tempstage\Tables\Workspaces.sql" />
+    <Build Include="pbi\Stored Procedures\usp_GenericMerge.sql" />
+    <Build Include="Security\pbi.sql" />
+    <Build Include="Security\tempstage.sql" />
+    <Build Include="tempstage\Tables\Datasets.sql" />
+    <Build Include="pbi\Tables\Datasets.sql" />
+    <Build Include="tempstage\Tables\WorkspacesDatasets.sql" />
+    <Build Include="pbi\Tables\WorkspacesDatasets.sql" />
+    <Build Include="tempstage\Tables\Reports.sql" />
+    <Build Include="pbi\Tables\Reports.sql" />
+    <Build Include="tempstage\Tables\Dataflows.sql" />
+    <Build Include="pbi\Tables\Dataflows.sql" />
+    <Build Include="tempstage\Tables\Dashboards.sql" />
+    <Build Include="pbi\Tables\Dashboards.sql" />
+    <Build Include="tempstage\Tables\DatasetsDatasources.sql" />
+    <Build Include="pbi\Tables\DatasetsDatasources.sql" />
+    <Build Include="tempstage\Tables\DataflowsDatasources.sql" />
+    <Build Include="pbi\Tables\DataflowsDatasources.sql" />
+    <Build Include="tempstage\Tables\DashboardsTiles.sql" />
+    <Build Include="pbi\Tables\DashboardsTiles.sql" />
+    <Build Include="tempstage\Tables\WorkspacesUsers.sql" />
+    <Build Include="pbi\Tables\WorkspacesUsers.sql" />
+    <Build Include="tempstage\Tables\WorkspacesReports.sql" />
+    <Build Include="pbi\Tables\WorkspacesReports.sql" />
+    <Build Include="tempstage\Tables\WorkspacesDataflows.sql" />
+    <Build Include="pbi\Tables\WorkspacesDataflows.sql" />
+    <Build Include="tempstage\Tables\WorkspacesDashboards.sql" />
+    <Build Include="pbi\Tables\WorkspacesDashboards.sql" />
+    <Build Include="tempstage\Tables\WorkspacesWorkbooks.sql" />
+    <Build Include="pbi\Tables\WorkspacesWorkbooks.sql" />
+    <Build Include="pbi\Stored Procedures\sp_MSforeachtable.sql" />
+    <Build Include="pbi\Stored Procedures\sp_MSforeach_worker.sql" />
+    <Build Include="pbi\Tables\ActivityEventsLoadLog.sql" />
+    <Build Include="pbi\Stored Procedures\usp_Get_ActivityEvents_Timestamp.sql" />
+    <Build Include="pbi\Stored Procedures\usp_Set_ActivityEvents_Timestamp.sql" />
+    <Build Include="pbi\Tables\ActivityEvents.sql" />
+    <Build Include="tempstage\Tables\ActivityEvents.sql" />
+    <Build Include="pbi\Stored Procedures\usp_Get_ActivityEventsDiff.sql" />
+    <Build Include="lga\ActivityEvents.sql" />
+    <Build Include="Security\lga.sql" />
+    <Build Include="pbi\Views\vw_Dashboards.sql" />
+    <Build Include="pbi\Views\vw_Dataflows.sql" />
+    <Build Include="pbi\Views\vw_DatasetsDatasources.sql" />
+    <Build Include="pbi\Views\vw_Datasets.sql" />
+    <Build Include="pbi\Views\vw_Reports.sql" />
+    <Build Include="pbi\Views\vw_Users.sql" />
+    <Build Include="pbi\Views\vw_Workbooks.sql" />
+    <Build Include="pbi\Views\vw_Workspaces.sql" />
+    <Build Include="pbi\Views\vw_ActivityEvents.sql" />
+    <Build Include="pbi\Views\vw_DashboardsTiles.sql" />
+    <Build Include="pbi\Views\vw_DataflowsDatasources.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <ArtifactReference Include="$(DacPacRootPath)\Extensions\Microsoft\SQLDB\Extensions\SqlServer\130\SqlSchemas\master.dacpac">
+      <HintPath>$(DacPacRootPath)\Extensions\Microsoft\SQLDB\Extensions\SqlServer\130\SqlSchemas\master.dacpac</HintPath>
+      <SuppressMissingDependenciesErrors>False</SuppressMissingDependenciesErrors>
+      <DatabaseVariableLiteralValue>master</DatabaseVariableLiteralValue>
+    </ArtifactReference>
+  </ItemGroup>
+</Project>

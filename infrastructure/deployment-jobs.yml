@@ -1,0 +1,643 @@
+parameters:
+  - name: adosServiceConnectionName
+    type: string
+  - name: environmentName
+    type: string
+  - name: environmentCode
+    type: string
+  - name: location
+    type: string
+  - name: locationCode
+    type: string
+  - name: globalAdminGroupId
+    type: string
+  - name: tenantId
+    type: string
+  - name: subscriptionId
+    type: string
+  - name: configFile
+    type: string
+  - name: jobEnvironment
+    type: string
+  - name: pullSourceAppId
+    type: string
+  - name: pullSourceUrl
+    type: string
+  - name: deploySHIR
+    type: boolean
+  - name: deployPowerBi
+    type: boolean
+  - name: DataBricksPSVersion
+    displayName: DataBricksPS Module Version
+    type: string
+    default: "1.6.2.0"
+  - name: AzSynapseVersion
+    displayName: Az.Synapse Module Version
+    type: string
+    default: "0.17.0"
+  - name: AzPurviewVersion
+    displayName: Az.Purview Module Version
+    type: string
+    default: "0.1.0"
+jobs:
+  - deployment: deployADPFoundation
+    displayName: Deploy Foundation Components
+    environment: ${{ parameters.jobEnvironment }}
+    pool:
+      vmImage: windows-latest
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: PowerShell@2
+              displayName: Test configuration against schema
+              inputs:
+                pwsh: true
+                targetType: filePath
+                filePath: "$(Pipeline.Workspace)/infrastructure/scripts/Test-Schema.ps1"
+                arguments: >
+                  -configFilePath "$(Pipeline.Workspace)/infrastructure/scripts/$(configFile)"
+                  -schemaFilePath "$(Pipeline.Workspace)/infrastructure/scripts/config.schema.json"
+            - task: AzurePowerShell@5
+              name: Identities
+              displayName: Run Identities deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: OtherVersion
+                preferredAzurePowerShellVersion: 6.5.0
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-Identities.ps1
+                ScriptArguments: >-
+                  -EnvironmentName '${{ parameters.environmentName }}'
+                  -EnvironmentCode '${{ parameters.environmentCode }}'
+                  -Location '${{ parameters.location }}'
+                  -LocationCode '${{ parameters.locationCode }}'
+                  -TenantId '${{ parameters.tenantId }}'
+                  -SubscriptionId '${{ parameters.subscriptionId }}'
+                  -ConfigFile '${{ parameters.configFile }}'
+                  -Confirm:$false
+            - task: AzurePowerShell@5
+              name: Core
+              displayName: Run Core deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: OtherVersion
+                preferredAzurePowerShellVersion: 6.5.0
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-Core.ps1
+                ScriptArguments: >-
+                  -EnvironmentName '${{ parameters.environmentName }}'
+                  -EnvironmentCode '${{ parameters.environmentCode }}'
+                  -Location '${{ parameters.location }}'
+                  -LocationCode '${{ parameters.locationCode }}'
+                  -TenantId '${{ parameters.tenantId }}'
+                  -SubscriptionId '${{ parameters.subscriptionId }}'
+                  -ConfigFile '${{ parameters.configFile }}'
+                  -azureADGroupId_resourceGroupContributor '$(Identities.azureADGroupId_resourceGroupContributor)'
+                  -azureADGroupId_keyVaultAdministrator '$(Identities.azureADGroupId_keyVaultAdministrator)'
+                  -Confirm:$false
+  - deployment: deployADPNetwork
+    displayName: Networking Components
+    environment: ${{ parameters.jobEnvironment }}
+    dependsOn:
+      - deployADPFoundation
+    pool:
+      vmImage: windows-latest
+    variables:
+      diagnosticsObject: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.diagnosticsObject'] ]
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: AzurePowerShell@5
+              name: Network
+              displayName: Run Network deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: LatestVersion
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-Network.ps1
+                ScriptArguments: >-
+                  -EnvironmentName '${{ parameters.environmentName }}'
+                  -EnvironmentCode '${{ parameters.environmentCode }}'
+                  -Location '${{ parameters.location }}'
+                  -LocationCode '${{ parameters.locationCode }}'
+                  -TenantId '${{ parameters.tenantId }}'
+                  -SubscriptionId '${{ parameters.subscriptionId }}'
+                  -ConfigFile '${{ parameters.configFile }}'
+                  -diagnosticsObject '$(diagnosticsObject)'
+                  -Confirm:$false
+  - deployment: deployADPAutomation
+    displayName: Automation Components
+    environment: ${{ parameters.jobEnvironment }}
+    dependsOn:
+      - deployADPFoundation
+    pool:
+      vmImage: windows-latest
+    variables:
+      diagnosticsObject: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.diagnosticsObject'] ]
+      deploymentKeyVaultName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.deploymentKeyVaultName'] ]
+      codeStorageAccountName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.codeStorageAccountName'] ]
+      codeStorageResourceGroupName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.codeStorageResourceGroupName'] ]
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: AzurePowerShell@5
+              name: Automation
+              displayName: Run Automation deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: OtherVersion
+                preferredAzurePowerShellVersion: 6.5.0
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-Automation.ps1
+                ScriptArguments: >-
+                  -EnvironmentName '${{ parameters.environmentName }}'
+                  -EnvironmentCode '${{ parameters.environmentCode }}'
+                  -Location '${{ parameters.location }}'
+                  -LocationCode '${{ parameters.locationCode }}'
+                  -TenantId '${{ parameters.tenantId }}'
+                  -SubscriptionId '${{ parameters.subscriptionId }}'
+                  -ConfigFile '${{ parameters.configFile }}'
+                  -deploymentKeyVaultName '$(deploymentKeyVaultName)'
+                  -diagnosticsObject '$(diagnosticsObject)'
+                  -codeStorageAccountName '$(codeStorageAccountName)'
+                  -codeStorageResourceGroupName '$(codeStorageResourceGroupName)'
+                  -Confirm:$false
+  - deployment: deployADPPolicy
+    displayName: Policy Components
+    environment: ${{ parameters.jobEnvironment }}
+    dependsOn:
+      - deployADPFoundation
+    pool:
+      vmImage: windows-latest
+    variables:
+      diagnosticsObject: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.diagnosticsObject'] ]
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: AzurePowerShell@5
+              name: Policy
+              displayName: Run Policy deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: OtherVersion
+                preferredAzurePowerShellVersion: 6.5.0
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-Policy.ps1
+                ScriptArguments: >-
+                  -EnvironmentName $(environmentName)
+                  -EnvironmentCode ${{ parameters.environmentCode }}
+                  -Location ${{ parameters.location }}
+                  -LocationCode ${{ parameters.locationCode }}
+                  -TenantId ${{ parameters.tenantId }}
+                  -SubscriptionId ${{ parameters.subscriptionId }}
+                  -ConfigFile ${{ parameters.configFile }}
+                  -diagnosticsObject '$(diagnosticsObject)'
+                  -Confirm:$false
+  - deployment: deployADPData
+    displayName: Data Components
+    environment: ${{ parameters.jobEnvironment }}
+    dependsOn:
+      - deployADPFoundation
+      - deployADPNetwork
+    pool:
+      vmImage: windows-latest
+    variables:
+      diagnosticsObject: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.diagnosticsObject'] ]
+      deploymentKeyVaultName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.deploymentKeyVaultName'] ]
+      generalNetworkObject: $[ dependencies.deployADPNetwork.outputs['deployADPNetwork.Network.generalNetworkObject'] ]
+      databricksNetworkObject: $[ dependencies.deployADPNetwork.outputs['deployADPNetwork.Network.databricksNetworkObject'] ]
+      azureADGroupId_sqlAdministrator: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Identities.azureADGroupId_sqlAdministrator'] ]
+      azureADGroupId_dataLakeAdministrator: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Identities.azureADGroupId_dataLakeAdministrator'] ]
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: PowerShell@2
+              displayName: Install Az.Synapse module
+              inputs:
+                pwsh: true
+                targetType: inline
+                script: |
+                  Get-PSRepository
+                  Install-Module -Name Az.Synapse -RequiredVersion "${{ parameters.AzSynapseVersion }}" -Force -Verbose -ErrorAction 'Stop'
+            - task: AzurePowerShell@5
+              name: Data
+              displayName: Run Data deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: OtherVersion
+                preferredAzurePowerShellVersion: 6.5.0
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-Data.ps1
+                ScriptArguments: >-
+                  -EnvironmentName '${{ parameters.environmentName }}'
+                  -EnvironmentCode '${{ parameters.environmentCode }}'
+                  -Location '${{ parameters.location }}'
+                  -LocationCode '${{ parameters.locationCode }}'
+                  -TenantId '${{ parameters.tenantId }}'
+                  -SubscriptionId '${{ parameters.subscriptionId }}'
+                  -ConfigFile '${{ parameters.configFile }}'
+                  -deploymentKeyVaultName '$(deploymentKeyVaultName)'
+                  -diagnosticsObject '$(diagnosticsObject)'
+                  -generalNetworkObject '$(generalNetworkObject)'
+                  -databricksNetworkObject '$(databricksNetworkObject)'
+                  -azureADGroupId_sqlAdministrator '$(azureADGroupId_sqlAdministrator)'
+                  -azureADGroupId_dataLakeAdministrator '$(azureADGroupId_dataLakeAdministrator)'
+                  -Confirm:$false
+  - deployment: deployADPDatabricks
+    displayName: Databricks Components
+    environment: ${{ parameters.jobEnvironment }}
+    dependsOn:
+      - deployADPFoundation
+      - deployADPData
+      - deployADPNetwork
+    pool:
+      vmImage: windows-latest
+    variables:
+      diagnosticsObject: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.diagnosticsObject'] ]
+      deploymentKeyVaultName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.deploymentKeyVaultName'] ]
+      databricksNetworkObject: $[ dependencies.deployADPNetwork.outputs['deployADPNetwork.Network.databricksNetworkObject'] ]
+      azureADGroupId_databricksContributor: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Identities.azureADGroupId_databricksContributor'] ]
+      sqlServerResourceId: $[ dependencies.deployADPData.outputs['deployADPData.Data.sqlServerResourceId'] ]
+      dataLakeResourceId: $[ dependencies.deployADPData.outputs['deployADPData.Data.dataLakeResourceId'] ]
+      synapseStorageAccountID: $[ dependencies.deployADPData.outputs['deployADPData.Data.synapseStorageAccountID'] ]
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: PowerShell@2
+              displayName: Install DatabricksPS module
+              inputs:
+                pwsh: true
+                targetType: inline
+                script: |
+                  Get-PSRepository
+                  Install-Module -Name DatabricksPS -RequiredVersion "${{ parameters.DataBricksPSVersion }}" -Force -Verbose -ErrorAction 'Stop'
+            - task: AzureCLI@2
+              name: DatabricksToken
+              displayName: Get access tokens for Databricks and the Azure Management API
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                scriptLocation: inlineScript
+                scriptType: bash
+                inlineScript: |
+                  databricksAadToken=$(az account get-access-token --resource '2ff814a6-3304-4ab8-85cb-cd0e6f879c1d' --output tsv --query accessToken)
+                  azureManagementApiAadToken=$(az account get-access-token --resource 'https://management.core.windows.net/' --output tsv --query accessToken)
+
+                  echo "##vso[task.setvariable variable=databricksAadToken;issecret=true;isOutput=true;]$databricksAadToken"
+                  echo "##vso[task.setvariable variable=azureManagementApiAadToken;issecret=true;isOutput=true;]$azureManagementApiAadToken"
+            - task: AzurePowerShell@5
+              name: Databricks
+              displayName: Run Databricks deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: OtherVersion
+                preferredAzurePowerShellVersion: 6.5.0
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-Databricks.ps1
+                ScriptArguments: >-
+                  -EnvironmentName '${{ parameters.environmentName }}'
+                  -EnvironmentCode '${{ parameters.environmentCode }}'
+                  -Location '${{ parameters.location }}'
+                  -LocationCode '${{ parameters.locationCode }}'
+                  -TenantId '${{ parameters.tenantId }}'
+                  -SubscriptionId '${{ parameters.subscriptionId }}'
+                  -ConfigFile '${{ parameters.configFile }}'
+                  -diagnosticsObject '$(diagnosticsObject)'
+                  -databricksNetworkObject '$(databricksNetworkObject)'
+                  -deploymentKeyVaultName '$(deploymentKeyVaultName)'
+                  -DatabricksAadToken '$(DatabricksToken.databricksAadToken)'
+                  -AzureManagementApiAadToken '$(DatabricksToken.azureManagementApiAadToken)'
+                  -sqlServerResourceId '$(sqlServerResourceId)'
+                  -dataLakeResourceId '$(dataLakeResourceId)'
+                  -azureADGroupId_databricksContributor '$(azureADGroupId_databricksContributor)'
+                  -synapseStorageAccountID '$(synapseStorageAccountID)'
+                  -Confirm:$false
+  - deployment: deployADPDataFactory
+    displayName: Data Factory Components
+    environment: ${{ parameters.jobEnvironment }}
+    dependsOn:
+      - deployADPFoundation
+      - deployADPData
+      - deployADPNetwork
+    pool:
+      vmImage: windows-latest
+    variables:
+      diagnosticsObject: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.diagnosticsObject'] ]
+      deploymentKeyVaultName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.deploymentKeyVaultName'] ]
+      generalNetworkObject: $[ dependencies.deployADPNetwork.outputs['deployADPNetwork.Network.generalNetworkObject'] ]
+      azureADGroupId_dataFactoryContributor: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Identities.azureADGroupId_dataFactoryContributor'] ]
+      sqlServerResourceId: $[ dependencies.deployADPData.outputs['deployADPData.Data.sqlServerResourceId'] ]
+      dataLakeResourceId: $[ dependencies.deployADPData.outputs['deployADPData.Data.dataLakeResourceId'] ]
+      codeStorageAccountName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.codeStorageAccountName'] ]
+      codeStorageResourceGroupName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.codeStorageResourceGroupName'] ]
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: AzurePowerShell@5
+              name: DataFactory
+              displayName: Run Data Factory deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: LatestVersion
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-DataFactory.ps1
+                ScriptArguments: >-
+                  -EnvironmentName '${{ parameters.environmentName }}'
+                  -EnvironmentCode '${{ parameters.environmentCode }}'
+                  -Location '${{ parameters.location }}'
+                  -LocationCode '${{ parameters.locationCode }}'
+                  -TenantId '${{ parameters.tenantId }}'
+                  -SubscriptionId '${{ parameters.subscriptionId }}'
+                  -ConfigFile '${{ parameters.configFile }}'
+                  -deploymentKeyVaultName '$(deploymentKeyVaultName)'
+                  -diagnosticsObject '$(diagnosticsObject)'
+                  -generalNetworkObject '$(generalNetworkObject)'
+                  -codeStorageAccountName '$(codeStorageAccountName)'
+                  -codeStorageResourceGroupName '$(codeStorageResourceGroupName)'
+                  -dataLakeResourceId '$(dataLakeResourceId)'
+                  -sqlServerResourceId '$(sqlServerResourceId)'
+                  -azureADGroupId_dataFactoryContributor '$(azureADGroupId_dataFactoryContributor)'
+                  -deploySHIR '${{ parameters.deploySHIR }}'
+                  -Confirm:$false
+  - deployment: deployADPPurview
+    displayName: Purview Components
+    environment: ${{ parameters.jobEnvironment }}
+    dependsOn:
+      - deployADPFoundation
+      - deployADPData
+      - deployADPNetwork
+    pool:
+      vmImage: windows-latest
+    variables:
+      diagnosticsObject: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.diagnosticsObject'] ]
+      deploymentKeyVaultName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.deploymentKeyVaultName'] ]
+      generalNetworkObject: $[ dependencies.deployADPNetwork.outputs['deployADPNetwork.Network.generalNetworkObject'] ]
+      codeStorageAccountName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.codeStorageAccountName'] ]
+      codeStorageResourceGroupName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.codeStorageResourceGroupName'] ]
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: PowerShell@2
+              displayName: Install Az.Purview module
+              inputs:
+                pwsh: true
+                targetType: inline
+                script: |
+                  Get-PSRepository
+                  Install-Module -Name Az.Purview -RequiredVersion "${{ parameters.AzPurviewVersion }}" -Force -Verbose -ErrorAction 'Stop'
+            - task: AzurePowerShell@5
+              name: Purview
+              displayName: Run Purview deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: LatestVersion
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-Purview.ps1
+                ScriptArguments: >-
+                  -EnvironmentName '${{ parameters.environmentName }}'
+                  -EnvironmentCode '${{ parameters.environmentCode }}'
+                  -Location '${{ parameters.location }}'
+                  -LocationCode '${{ parameters.locationCode }}'
+                  -TenantId '${{ parameters.tenantId }}'
+                  -SubscriptionId '${{ parameters.subscriptionId }}'
+                  -ConfigFile '${{ parameters.configFile }}'
+                  -diagnosticsObject '$(diagnosticsObject)'
+                  -deploymentKeyVaultName '$(deploymentKeyVaultName)'
+                  -generalNetworkObject '$(generalNetworkObject)'
+                  -codeStorageAccountName '$(codeStorageAccountName)'
+                  -codeStorageResourceGroupName '$(codeStorageResourceGroupName)'
+                  -deploySHIR '${{ parameters.deploySHIR }}'
+                  -Confirm:$false
+  - deployment: deployADPPowerBI
+    displayName: PowerBI Components
+    environment: ${{ parameters.jobEnvironment }}
+    dependsOn:
+      - deployADPDataFactory
+      - deployADPFoundation
+      - deployADPNetwork
+    pool:
+      vmImage: windows-latest
+    variables:
+      diagnosticsObject: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.diagnosticsObject'] ]
+      deploymentKeyVaultName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.deploymentKeyVaultName'] ]
+      generalNetworkObject: $[ dependencies.deployADPNetwork.outputs['deployADPNetwork.Network.generalNetworkObject'] ]
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: AzurePowerShell@5
+              name: PowerBi
+              displayName: Run PowerBi deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: LatestVersion
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-PowerBi.ps1
+                ScriptArguments: >-
+                  -EnvironmentName '${{ parameters.environmentName }}'
+                  -EnvironmentCode '${{ parameters.environmentCode }}'
+                  -Location '${{ parameters.location }}'
+                  -LocationCode '${{ parameters.locationCode }}'
+                  -TenantId '${{ parameters.tenantId }}'
+                  -SubscriptionId '${{ parameters.subscriptionId }}'
+                  -ConfigFile '${{ parameters.configFile }}'
+                  -deploymentKeyVaultName '$(deploymentKeyVaultName)'
+                  -diagnosticsObject '$(diagnosticsObject)'
+                  -generalNetworkObject '$(generalNetworkObject)'
+                  -deployPowerBi '${{ parameters.deployPowerBi }}'
+                  -Confirm:$false
+  - deployment: deployADPApplication
+    displayName: Application Components
+    environment: ${{ parameters.jobEnvironment }}
+    dependsOn:
+      - deployADPFoundation
+      - deployADPData
+      - deployADPNetwork
+      - deployADPAutomation
+      - deployADPDataFactory
+      - deployADPDatabricks
+    pool:
+      vmImage: windows-latest
+    variables:
+      diagnosticsObject: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.diagnosticsObject'] ]
+      deploymentKeyVaultName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.deploymentKeyVaultName'] ]
+      generalNetworkObject: $[ dependencies.deployADPNetwork.outputs['deployADPNetwork.Network.generalNetworkObject'] ]
+      sqlServerDomainName: $[ dependencies.deployADPData.outputs['deployADPData.Data.sqlServerDomainName'] ]
+      databasesObject: $[ dependencies.deployADPData.outputs['deployADPData.Data.databasesObject'] ]
+      dataFactoryResourceId: $[ dependencies.deployADPDataFactory.outputs['deployADPDataFactory.DataFactory.dataFactoryResourceId'] ]
+      dataLakeResourceId: $[ dependencies.deployADPData.outputs['deployADPData.Data.dataLakeResourceId'] ]
+      dataFactoryPrincipalId: $[ dependencies.deployADPDataFactory.outputs['deployADPDataFactory.DataFactory.dataFactoryPrincipalId'] ]
+      databricksServicePrincipalId: $[ dependencies.deployADPDatabricks.outputs['deployADPDatabricks.Databricks.databricksServicePrincipalId'] ]
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: AzurePowerShell@5
+              name: Application
+              displayName: Run Web App deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: OtherVersion
+                preferredAzurePowerShellVersion: 6.6.0
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-WebApp.ps1
+                ScriptArguments: >-
+                  -EnvironmentName '${{ parameters.environmentName }}'
+                  -EnvironmentCode '${{ parameters.environmentCode }}'
+                  -GlobalAdminGroupId '${{ parameters.globalAdminGroupId }}'
+                  -Location '${{ parameters.location }}'
+                  -LocationCode '${{ parameters.locationCode }}'
+                  -TenantId '${{ parameters.tenantId }}'
+                  -SubscriptionId '${{ parameters.subscriptionId }}'
+                  -ConfigFile '${{ parameters.configFile }}'
+                  -PullSourceAppId '${{ parameters.pullSourceAppId }}'
+                  -PullSourceUrl '${{ parameters.pullSourceUrl }}'
+                  -databasesObject '$(databasesObject)'
+                  -sqlServerDomainName '$(sqlServerDomainName)'
+                  -deploymentKeyVaultName '$(deploymentKeyVaultName)'
+                  -generalNetworkObject '$(generalNetworkObject)'
+                  -diagnosticsObject '$(diagnosticsObject)'
+                  -dataFactoryResourceId '$(dataFactoryResourceId)'
+                  -databricksServicePrincipalId '$(databricksServicePrincipalId)'
+                  -dataFactoryPrincipalId '$(dataFactoryPrincipalId)'
+                  -dataLakeResourceId '$(dataLakeResourceId)'
+                  -Confirm:$false
+  - deployment: deployADPAccess
+    displayName: Access Components
+    environment: ${{ parameters.jobEnvironment }}
+    dependsOn:
+      - deployADPFoundation
+      - deployADPDataFactory
+      - deployADPDatabricks
+      - deployADPData
+      - deployADPNetwork
+      - deployADPAutomation
+      - deployADPApplication
+    pool:
+      vmImage: windows-latest
+    variables:
+      diagnosticsObject: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.diagnosticsObject'] ]
+      deploymentKeyVaultName: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Core.deploymentKeyVaultName'] ]
+      azureADGroupId_keyVaultAdministrator: $[ dependencies.deployADPFoundation.outputs['deployADPFoundation.Identities.azureADGroupId_keyVaultAdministrator'] ]
+      generalNetworkObject: $[ dependencies.deployADPNetwork.outputs['deployADPNetwork.Network.generalNetworkObject'] ]
+      databricksNetworkObject: $[ dependencies.deployADPNetwork.outputs['deployADPNetwork.Network.databricksNetworkObject'] ]
+      automationAccountPrincipalId: $[ dependencies.deployADPAutomation.outputs['deployADPAutomation.Automation.automationAccountPrincipalId'] ]
+      sqlServerName: $[ dependencies.deployADPData.outputs['deployADPData.Data.sqlServerName'] ]
+      sqlServerResourceGroupName: $[ dependencies.deployADPData.outputs['deployADPData.Data.sqlServerResourceGroupName'] ]
+      databasesObject: $[ dependencies.deployADPData.outputs['deployADPData.Data.databasesObject'] ]
+      dataLakeResourceId: $[ dependencies.deployADPData.outputs['deployADPData.Data.dataLakeResourceId'] ]
+      dataLakeStorageAccountName: $[ dependencies.deployADPData.outputs['deployADPData.Data.dataLakeStorageAccountName'] ]
+      databricksToken: $[ dependencies.deployADPDatabricks.outputs['deployADPDatabricks.Databricks.databricksToken'] ]
+      databricksWorkspaceUrl: $[ dependencies.deployADPDatabricks.outputs['deployADPDatabricks.Databricks.databricksWorkspaceUrl'] ]
+      databricksServicePrincipalId: $[ dependencies.deployADPDatabricks.outputs['deployADPDatabricks.Databricks.databricksServicePrincipalId'] ]
+      databricksApplicationId: $[ dependencies.deployADPDatabricks.outputs['deployADPDatabricks.Databricks.databricksApplicationId'] ]
+      dataFactoryPrincipalId: $[ dependencies.deployADPDataFactory.outputs['deployADPDataFactory.DataFactory.dataFactoryPrincipalId'] ]
+      functionAppServicePrincipalId: $[ dependencies.deployADPApplication.outputs['deployADPApplication.Application.functionAppServicePrincipalId'] ]
+      functionAppMasterKey: $[ dependencies.deployADPApplication.outputs['deployADPApplication.Application.functionAppMasterKey'] ]
+      functionAppURL: $[ dependencies.deployADPApplication.outputs['deployADPApplication.Application.functionAppURL'] ]
+      webAppServicePrincipalId: $[ dependencies.deployADPApplication.outputs['deployADPApplication.Application.webAppServicePrincipalId'] ]
+      sqlServerManagedIdentity: $[ dependencies.deployADPData.outputs['deployADPData.Data.sqlServerManagedIdentity'] ]
+      synapseWorkspaceName: $[ dependencies.deployADPData.outputs['deployADPData.Data.synapseWorkspaceName'] ]
+      synapseSQLPoolName: $[ dependencies.deployADPData.outputs['deployADPData.Data.synapseSQLPoolName'] ]
+      synapseStorageAccountName: $[ dependencies.deployADPData.outputs['deployADPData.Data.synapseStorageAccountName'] ]
+      synapseStorageAccountContainer: $[ dependencies.deployADPData.outputs['deployADPData.Data.synapseStorageAccountContainer'] ]
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: PowerShell@2
+              displayName: Install PowerShell modules
+              inputs:
+                pwsh: true
+                targetType: inline
+                script: |
+                  Get-PSRepository
+                  Install-Module -Name DatabricksPS -RequiredVersion "${{ parameters.DataBricksPSVersion }}" -Force -Verbose -ErrorAction 'Stop'
+                  Install-Module -Name Az.Synapse -RequiredVersion "${{ parameters.AzSynapseVersion }}" -Force -Verbose -ErrorAction 'Stop'
+            - task: AzurePowerShell@5
+              name: KeyVault
+              displayName: Run KeyVault deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: OtherVersion
+                preferredAzurePowerShellVersion: 6.5.0
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-KeyVault.ps1
+                ScriptArguments: >-
+                  -EnvironmentName '${{ parameters.environmentName }}'
+                  -EnvironmentCode '${{ parameters.environmentCode }}'
+                  -Location '${{ parameters.location }}'
+                  -LocationCode '${{ parameters.locationCode }}'
+                  -TenantId '${{ parameters.tenantId }}'
+                  -SubscriptionId '${{ parameters.subscriptionId }}'
+                  -ConfigFile '${{ parameters.configFile }}'
+                  -diagnosticsObject '$(diagnosticsObject)'
+                  -generalNetworkObject '$(generalNetworkObject)'
+                  -databricksNetworkObject '$(databricksNetworkObject)'
+                  -dataFactoryPrincipalId '$(dataFactoryPrincipalId)'
+                  -sqlServerName '$(sqlServerName)'
+                  -databasesObject '$(databasesObject)'
+                  -databricksToken '$(databricksToken)'
+                  -databricksWorkspaceUrl '$(databricksWorkspaceUrl)'
+                  -dataLakeStorageAccountName '$(dataLakeStorageAccountName)'
+                  -functionAppServicePrincipalId '$(functionAppServicePrincipalId)'
+                  -functionAppMasterKey '$(functionAppMasterKey)'
+                  -functionAppURL '$(functionAppURL)'
+                  -databricksApplicationId '$(databricksApplicationId)'
+                  -databricksServicePrincipalId '$(databricksServicePrincipalId)'
+                  -azureADGroupId_keyVaultAdministrator '$(azureADGroupId_keyVaultAdministrator)'
+                  -automationAccountPrincipalId '$(automationAccountPrincipalId)'
+                  -synapseWorkspaceName '$(synapseWorkspaceName)'
+                  -synapseSQLPoolName '$(synapseSQLPoolName)'
+                  -synapseStorageAccountName '$(synapseStorageAccountName)'
+                  -synapseStorageAccountContainer '$(synapseStorageAccountContainer)'
+                  -Confirm:$false
+            - task: AzurePowerShell@5
+              name: SQLAccess
+              displayName: Run SQL Access deployment
+              inputs:
+                azureSubscription: ${{ parameters.adosServiceConnectionName }}
+                pwsh: true
+                azurePowerShellVersion: OtherVersion
+                preferredAzurePowerShellVersion: 6.5.0
+                ScriptType: FilePath
+                ScriptPath: $(Pipeline.Workspace)/infrastructure/scripts/Deploy-SqlAccess.ps1
+                ScriptArguments: >-
+                  -EnvironmentName '${{ parameters.environmentName }}'
+                  -EnvironmentCode '${{ parameters.environmentCode }}'
+                  -Location '${{ parameters.location }}'
+                  -LocationCode '${{ parameters.locationCode }}'
+                  -TenantId '${{ parameters.tenantId }}'
+                  -SubscriptionId '${{ parameters.subscriptionId }}'
+                  -ConfigFile '${{ parameters.configFile }}'
+                  -sqlServerName '$(sqlServerName)'
+                  -sqlServerResourceGroupName '$(sqlServerResourceGroupName)'
+                  -databasesObject '$(databasesObject)'
+                  -functionAppServicePrincipalId '$(functionAppServicePrincipalId)'
+                  -webAppServicePrincipalId '$(webAppServicePrincipalId)'
+                  -dataFactoryPrincipalId '$(dataFactoryPrincipalId)'
+                  -keyVaultName '$(KeyVault.keyVaultName)'
+                  -deploymentKeyVaultName '$(deploymentKeyVaultName)'
+                  -keyVaultResourceGroupName '$(KeyVault.keyVaultResourceGroupName)'
+                  -sqlServerManagedIdentity '$(sqlServerManagedIdentity)'
+                  -synapseWorkspaceName '$(synapseWorkspaceName)'
+                  -Confirm:$false

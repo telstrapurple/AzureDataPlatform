@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "gatewayName": {
+      "value": "TP-SYD-DEV-ADP-NAT-001"
+    },
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    "gatewaySKU": {
+      "value": "Standard"
+    },
+    "publicIPSKU": {
+      "value": "Standard"
+    },
+    "gatewayPublicIPName": {
+      "value": "TP-SYD-DEV-ADP-PIP-001"
+    },
+    "publicIPAddressVersion": {
+      "value": "IPv4"
+    },
+    "publicIPAllocationMethod": {
+      "value": "Static"
+    },
+    "idleTimeoutGatewayMinutes": {
+      "value": 4
+    },
+    "idleTimeoutPIPMinutes": {
+      "value": 4
+    }
+  }
+}

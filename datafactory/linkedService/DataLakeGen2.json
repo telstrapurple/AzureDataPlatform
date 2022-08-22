@@ -1,0 +1,16 @@
+{
+	"name": "DataLakeGen2",
+	"properties": {
+		"type": "AzureBlobFS",
+		"parameters": {
+			"dataLakeServiceEndPoint": {
+				"type": "string"
+			}
+		},
+		"description": "This is the generic Azure Data Lake Gen 2 connection",
+		"annotations": [],
+		"typeProperties": {
+			"url": "@linkedService().dataLakeServiceEndPoint"
+		}
+	}
+}

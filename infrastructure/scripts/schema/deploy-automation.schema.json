@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-automation.schema.json",
+  "title": "Azure Data Platform Config - Automation",
+  "description": "Automation Configuration for the Azure Data Platform",
+  "type": "object",
+  "properties": {
+    //automationAccount
+    //                 .sku
+    //automationRunAs
+    //               .minCertificateExpiryInMonths
+    //               .maxCertificateExpiryInMonths
+    //automationAccountPrincipalId,
+    //webConnection.serviceAccountUPN
+    "automationAccount": {
+      "$ref": "#/definitions/automationAccount"
+    },
+    "automationRunAs": {
+      "$ref": "#/definitions/automationRunAs"
+    },
+    "automationAccountPrincipalId": {
+      "$ref": "#/definitions/automationAccountPrincipalId"
+    },
+    "webConnection": {
+      "$ref": "#/definitions/webConnection",
+      "description": "Additional properties to configure the automation web connections passed to ARM template webConnection.json"
+    }
+  },
+  "required": [
+    "automationAccount",
+    "automationRunAs",
+    "automationAccountPrincipalId",
+    "webConnection"
+  ],
+  "definitions": {
+    "automationAccount": {
+      "type": "object",
+      "description": "Config values passed to ARM template that deploys the automation account",
+      "properties": {
+        "sku": {
+          "$ref": "./config.common.schema.json#/definitions/AutomationAccountSku"
+        }
+      },
+      "required": ["sku"]
+    },
+    "automationRunAs": {
+      "type": "object",
+      "description": "Config values for creating a certificate for the Automation RunAs account",
+      "properties": {
+        "minCertificateExpiryInMonths": {
+          "type": "integer",
+          "description": "RunAs certificate will be automatically renewed if less than this many months of validity remaining"
+        },
+        "maxCertificateExpiryInMonths": {
+          "type": "integer",
+          "description": "RunAs certificate will be created or automatically renewed with this many months expiry"
+        }
+      },
+      "required": [
+        "minCertificateExpiryInMonths",
+        "maxCertificateExpiryInMonths"
+      ]
+    },
+    "automationAccountPrincipalId": {
+      "type": "string",
+      "description": "The OID of the Automation Account service principal. Required if `deployAzureADResources` is set to false. Ignored (may be left blank) if `deployAzureADResources` is set to true."
+    },
+    "webConnection": {
+      "type": "object",
+      "properties": {
+        "serviceAccountUPN": {
+          "type": "string"
+        }
+      },
+      "required": ["serviceAccountUPN"]
+    }
+  }
+}

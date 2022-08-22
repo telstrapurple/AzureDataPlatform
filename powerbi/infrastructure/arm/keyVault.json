@@ -1,0 +1,279 @@
+﻿{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "companyCode": {
+            "type": "string",
+            "maxLength": 16
+        },
+        "companyName": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "departmentCode": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "resourceType": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "resourceCode": {
+            "type": "string",
+            "maxLength": 4
+        },
+        "environmentCode": {
+            "type": "string",
+            "maxLength": 50
+        },
+        "environmentLongName": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "azureLocation": {
+            "type": "string",
+            "defaultValue": "australiaeast",
+            "allowedValues": [
+                "australiaeast",
+                "australiasoutheast"
+            ]
+        },
+        "delimeter": {
+            "type": "string",
+            "defaultValue": "-",
+            "allowedValues": [
+                "-",
+                "_",
+                ""
+            ]
+        },
+        "suffix": {
+            "type": "string",
+            "defaultValue": "001"
+        },
+        "accessPolicy_AzureDevOps": {
+            "type": "string"
+        },
+        "accessPolicy_Administrators": {
+            "type": "string"
+        },
+        "accessPolicy_hybridWorkerMSI": {
+            "type": "string"
+        },
+        "tagObject": {
+            "type": "object"
+        },
+        "secretsObject": {
+            "type": "secureObject",
+            "defaultValue": "{}",
+            "metadata": {
+                "description": "Specifies all secrets {\"secretName\":\"\",\"secretValue\":\"\"} wrapped in a secure object."
+            }
+        },
+        "subnetName": {
+            "type": "string"
+        },
+        "vnetName": {
+            "type": "string"
+        },
+        "networkResourceGroupName": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "sku": "Standard",
+        "enabledForDeployment": "true",
+        "enabledForTemplateDeployment": "true",
+        "enabledForDiskEncryption": "true",
+        "tenantId": "[subscription().tenantId]",
+        "akvName": "[toUpper(concat(parameters('companyCode'),parameters('delimeter'),parameters('environmentCode'),parameters('delimeter'),parameters('departmentCode'),parameters('delimeter'),parameters('resourceCode'),parameters('delimeter'),parameters('suffix')))]",
+        "virtualNetworkSubnetId": "[resourceId(parameters('networkResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnetName'))]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-02-14",
+            "name": "[variables('akvName')]",
+            "type": "Microsoft.KeyVault/vaults",
+            "location": "[parameters('azureLocation')]",
+            "tags": "[parameters('tagObject')]",
+            "properties": {
+                "enabledForDeployment": "[variables('enabledForDeployment')]",
+                "enabledForTemplateDeployment": "[variables('enabledForTemplateDeployment')]",
+                "enabledForDiskEncryption": "[variables('enabledForDiskEncryption')]",
+                "networkAcls": {
+                    "defaultAction": "Deny",
+                    "virtualNetworkRules": [
+                        {
+                            "id": "[variables('virtualNetworkSubnetId')]"
+                        }
+                    ]
+                },
+                "accessPolicies": [
+                    {
+                        "tenantId": "[subscription().tenantId]",
+                        "objectId": "[parameters('accessPolicy_AzureDevOps')]",
+                        "permissions": {
+                            "keys": [
+                                "encrypt",
+                                "decrypt",
+                                "wrapKey",
+                                "unwrapKey",
+                                "sign",
+                                "verify",
+                                "get",
+                                "list",
+                                "create",
+                                "update",
+                                "import",
+                                "delete",
+                                "backup",
+                                "restore"
+                            ],
+                            "secrets": [
+                                "get",
+                                "list",
+                                "set",
+                                "delete"
+                            ],
+                            "certificates": [
+                                "get",
+                                "list",
+                                "delete",
+                                "create",
+                                "import",
+                                "update",
+                                "managecontacts",
+                                "getissuers",
+                                "listissuers",
+                                "setissuers",
+                                "deleteissuers",
+                                "manageissuers",
+                                "recover",
+                                "purge"
+                            ]
+                        }
+                    },
+                    {
+                        "tenantId": "[subscription().tenantId]",
+                        "objectId": "[parameters('accessPolicy_Administrators')]",
+                        "permissions": {
+                            "keys": [
+                                "encrypt",
+                                "decrypt",
+                                "wrapKey",
+                                "unwrapKey",
+                                "sign",
+                                "verify",
+                                "get",
+                                "list",
+                                "create",
+                                "update",
+                                "import",
+                                "delete",
+                                "backup",
+                                "restore"
+                            ],
+                            "secrets": [
+                                "get",
+                                "list",
+                                "set",
+                                "delete"
+                            ],
+                            "certificates": [
+                                "get",
+                                "list",
+                                "delete",
+                                "create",
+                                "import",
+                                "update",
+                                "managecontacts",
+                                "getissuers",
+                                "listissuers",
+                                "setissuers",
+                                "deleteissuers",
+                                "manageissuers",
+                                "recover",
+                                "purge"
+                            ]
+                        }
+                    },
+                    {
+                        "tenantId": "[subscription().tenantId]",
+                        "objectId": "[parameters('accessPolicy_hybridWorkerMSI')]",
+                        "permissions": {
+                            "keys": [
+                                "encrypt",
+                                "decrypt",
+                                "wrapKey",
+                                "unwrapKey",
+                                "sign",
+                                "verify",
+                                "get",
+                                "list",
+                                "create",
+                                "update",
+                                "import",
+                                "delete",
+                                "backup",
+                                "restore"
+                            ],
+                            "secrets": [
+                                "get",
+                                "list",
+                                "set",
+                                "delete"
+                            ],
+                            "certificates": [
+                                "get",
+                                "list",
+                                "delete",
+                                "create",
+                                "import",
+                                "update",
+                                "managecontacts",
+                                "getissuers",
+                                "listissuers",
+                                "setissuers",
+                                "deleteissuers",
+                                "manageissuers",
+                                "recover",
+                                "purge"
+                            ]
+                        }
+                    }
+                ],
+                "tenantId": "[variables('tenantId')]",
+                "sku": {
+                    "name": "[variables('sku')]",
+                    "family": "A"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "name": "[concat(variables('akvName'), '/', parameters('secretsObject').secrets[copyIndex()].secretName)]",
+            "apiVersion": "2016-10-01",
+            "dependsOn": [
+                "[concat('Microsoft.KeyVault/vaults/', variables('akvName'))]"
+            ],
+            "copy": {
+                "name": "secretsCopy",
+                "count": "[length(parameters('secretsObject').secrets)]"
+            },
+            "properties": {
+                "value": "[parameters('secretsObject').secrets[copyIndex()].secretValue]"
+            }
+        }
+    ],
+    "outputs": {
+        "keyVaultName": {
+            "type": "string",
+            "value": "[variables('akvName')]"
+        },
+        "keyVaultResourceID": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.KeyVault/vaults', variables('akvName'))]"
+        }
+
+    }
+}

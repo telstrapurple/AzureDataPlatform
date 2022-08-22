@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-identities.schema.json",
+  "title": "Azure Data Platform Config - Identities",
+  "description": "Identities Configuration for the Azure Data Platform",
+  "type": "object",
+
+  "properties": {
+    "azureADGroups": {
+      "$ref": "#/definitions/azureADGroups"
+    },
+    "create": {
+      "$ref": "#/definitions/create"
+    }
+  },
+  "required": ["azureADGroups", "create"],
+
+  "definitions": {
+    "create": {
+      "type": "object",
+      "properties": {
+        "azureADGroups": {
+          "type": "boolean",
+          "description": "Whether or not to create Azure AD security groups."
+        }
+      },
+      "required": ["azureADGroups"]
+    },
+    "azureADGroups": {
+      "type": "object",
+      "description": "The AD groups that must either exist or be created",
+      "properties": {
+        "resourceGroupContributor": {
+          "type": "string",
+          "description": "The name of the Resource Group Contributor security group (eg. ADP-AzureResourceGroup-Contributor), or the GUID of an AAD group that already exists."
+        },
+        "dataFactoryContributor": {
+          "type": "string",
+          "description": "The name of the Data Factory Contributor security group (eg. ADP-DataFactory-Contributor), or the GUID of an AAD group that already exists."
+        },
+        "databricksContributor": {
+          "type": "string",
+          "description": "The name of the Databricks Contributor security group (eg. ADP-Databricks-Contributor), or the GUID of an AAD group that already exists."
+        },
+        "keyVaultAdministrator": {
+          "type": "string",
+          "description": "The name of the KeyVault Administrator security group (eg. ADP-KeyVault-Administrator), or the GUID of an AAD group that already exists."
+        },
+        "sqlAdministrator": {
+          "type": "string",
+          "description": "The name of the SQL Administrator security group (eg. ADP-SQL-Administrator), or the GUID of an AAD group that already exists."
+        },
+        "sqlAdministratorGroupName": {
+          "type": "string",
+          "description": "The name of the SQL Administrator security group. If `sqlAdministrator` is set to a name, then `sqlAdministratorGroupName` should be set to the same value. If `sqlAdministrator` is set to a GUID, then `sqlAdministratorGroupName` should be set to the display name of the group represented by that GUID."
+        },
+        "configuratorAdministrator": {
+          "type": "string",
+          "description": "The name of the Configurator Administrator security group (eg. ADP-Configurator-Administrator), or the GUID of an AAD group that already exists."
+        }
+      },
+      "required": [
+        "resourceGroupContributor",
+        "dataFactoryContributor",
+        "databricksContributor",
+        "keyVaultAdministrator",
+        "sqlAdministrator",
+        "sqlAdministratorGroupName",
+        "configuratorAdministrator"
+      ]
+    }
+  }
+}

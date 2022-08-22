@@ -1,0 +1,68 @@
+{
+	"name": "Generic_Local_Json",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LocalFileStorage",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"host": {
+					"value": "@dataset().host",
+					"type": "Expression"
+				},
+				"userid": {
+					"value": "@dataset().userid",
+					"type": "Expression"
+				},
+				"password": {
+					"value": "@dataset().password",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"host": {
+				"type": "string"
+			},
+			"filePath": {
+				"type": "string"
+			},
+			"fileName": {
+				"type": "string"
+			},
+			"compressionType": {
+				"type": "string"
+			},
+			"userid": {
+				"type": "string"
+			},
+			"password": {
+				"type": "string"
+			},
+			"encoding": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Blob"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "FileServerLocation",
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().filePath",
+					"type": "Expression"
+				}
+			},
+			"encodingName": {
+				"value": "@dataset().encoding",
+				"type": "Expression"
+			}
+		}
+	}
+}

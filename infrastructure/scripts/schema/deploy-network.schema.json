@@ -1,0 +1,216 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-network.schema.json",
+  "title": "Azure Data Platform Config - Network",
+  "description": "Network Configuration for the Azure Data Platform",
+  "type": "object",
+  "properties": {
+    //create.ddosPlan
+    //      .networkWatcher
+    //      .virtualNetwork
+    //resourceGroupNames.network
+    //generalNetwork (if creating)
+    //              .vNetCIDR
+    //              .subNetCIDR_VM
+    //              .subNetCIDR_WebApp
+    //              .subNetName_VM
+    //              .subNetName_WebApp
+    //generalNetworkIds (if using existing)
+    //                 .vNetResourceId
+    //                 .subnetVMResourceId
+    //                 .subnetWebAppResourceId
+    //databricksNetwork (if creating)
+    //                 .vNetCIDR
+    //                 .subNetCIDR_DBRPublic
+    //                 .subNetCIDR_DBRPrivate
+    //                 .subNetName_DBRPublic
+    //                 .subNetName_DBRPrivate
+    //databricksNetworkIds (if using existing)
+    //                 .vNetResourceId
+    //                 .subnetDBRPublicResourceId
+    //                 .subnetDBRPrivateResourceId
+
+    "generalNetwork": {
+      "$ref": "#/definitions/generalNetwork"
+    },
+    "generalNetworkIds": {
+      "$ref": "#/definitions/generalNetworkIds"
+    },
+    "databricksNetwork": {
+      "$ref": "#/definitions/databricksNetwork"
+    },
+    "databricksNetworkIds": {
+      "$ref": "#/definitions/databricksNetworkIds"
+    },
+    "create": {
+      "$ref": "#/definitions/create"
+    }
+  },
+
+  "required": ["create"],
+
+  //todo: is it possible to make elements conditionally mandatory on the value of /create/virtualNetworks
+  // "required": ["generalNetwork", "databricksNetwork"],
+  // "allOf": [
+  //   {
+  //     "if": {
+  //       "properties": {
+  //         "/create/virtualnetwork": { "const": true }
+  //       },
+  //       "then": { "required": ["generalNetwork", "databricksNetwork"] },
+  //       "else": { "required": ["generalNetworkIds", "databricksNetworkIds"] }
+  //     }
+  //   }
+  // ],
+
+  //Not as good as saying that "required" properties being dependent on the value of "/create/virtualnetwork" see ☝,
+  //but this "allOf" at least shows you need:
+  //  one of generalNetwork or generalNetworkIds, and
+  //  one of databricksNetwork or databricksNetworkIds
+  "allOf": [
+    {
+      "oneOf": [
+        { "required": ["generalNetwork"] },
+        { "required": ["generalNetworkIds"] }
+      ]
+    },
+    {
+      "oneOf": [
+        { "required": ["databricksNetwork"] },
+        { "required": ["databricksNetworkIds"] }
+      ]
+    }
+  ],
+  "definitions": {
+    "create": {
+      "type": "object",
+      "properties": {
+        "ddosPlan": {
+          "type": "boolean",
+          "description": "Whether or not to create a DDOS Protection Plan."
+        },
+        "networkWatcher": {
+          "type": "boolean",
+          "description": "Whether or not to create Network Watcher resources."
+        },
+        "virtualNetwork": {
+          "type": "boolean",
+          "description": "Whether or not to create networking resources. If true MUST define `generalNetwork` and `databricksNetwork`. If false MUST define `generalNetworkIds` and `databricksNetworkIds`"
+        }
+      },
+      "required": ["ddosPlan", "networkWatcher", "virtualNetwork"]
+    },
+    "generalNetwork": {
+      "type": "object",
+      "description": "Config values to create general network resources",
+      "properties": {
+        "vNetCIDR": {
+          "type": "string",
+          "description": "Address range of the general network VNet"
+        },
+        "subNetCIDR_VM": {
+          "type": "string",
+          "description": "Address range of the VM subnet"
+        },
+        "subNetCIDR_WebApp": {
+          "type": "string",
+          "description": "Address range of the web app subnet"
+        },
+        "subNetName_VM": {
+          "type": "string",
+          "description": "Name of the VM subnet"
+        },
+        "subNetName_WebApp": {
+          "type": "string",
+          "description": "Name of the web app subnet"
+        }
+      },
+      "required": [
+        "vNetCIDR",
+        "subNetCIDR_VM",
+        "subNetCIDR_WebApp",
+        "subNetName_VM",
+        "subNetName_WebApp"
+      ]
+    },
+    "generalNetworkIds": {
+      "type": "object",
+      "description": "Config values referring to existing network resource when _not_ creating the general network resources",
+      "properties": {
+        "vNetResourceId": {
+          "type": "string",
+          "description": "Resource ID of the general VNet"
+        },
+        "subnetVMResourceId": {
+          "type": "string",
+          "description": "Resource ID of the VM subnet. Must be a subnet in the general VNet"
+        },
+        "subnetWebAppResourceId": {
+          "type": "string",
+          "description": "Resource ID of the webapp subnet. Must be a subnet in the general VNet"
+        }
+      },
+      "required": [
+        "vNetResourceId",
+        "subnetVMResourceId",
+        "subnetWebAppResourceId"
+      ]
+    },
+    "databricksNetwork": {
+      "type": "object",
+      "description": "Config values to create databricks network resources",
+      "properties": {
+        "vNetCIDR": {
+          "type": "string",
+          "description": "Address range of the databricks network VNet"
+        },
+        "subNetCIDR_DBRPublic": {
+          "type": "string",
+          "description": "Address range of the public subnet"
+        },
+        "subNetCIDR_DBRPrivate": {
+          "type": "string",
+          "description": "Address range of the private subnet"
+        },
+        "subNetName_DBRPublic": {
+          "type": "string",
+          "description": "Name of the public subnet"
+        },
+        "subNetName_DBRPrivate": {
+          "type": "string",
+          "description": "Name ofthe private subnet"
+        }
+      },
+      "required": [
+        "vNetCIDR",
+        "subNetCIDR_DBRPublic",
+        "subNetCIDR_DBRPrivate",
+        "subNetName_DBRPublic",
+        "subNetName_DBRPrivate"
+      ]
+    },
+    "databricksNetworkIds": {
+      "type": "object",
+      "description": "Config values referring to existing network resource when _not_ creating the databricks network resources",
+      "properties": {
+        "vNetResourceId": {
+          "type": "string",
+          "description": "Resource ID of the databricks VNet"
+        },
+        "subnetDBRPublicResourceId": {
+          "type": "string",
+          "description": "Resource ID of the public subnet. Must be a subnet in the databricks VNet"
+        },
+        "subnetDBRPrivateResourceId": {
+          "type": "string",
+          "description": "Resource ID of the private subnet. Must be a subnet in the databricks VNet"
+        }
+      },
+      "required": [
+        "vNetResourceId",
+        "subnetDBRPublicResourceId",
+        "subnetDBRPrivateResourceId"
+      ]
+    }
+  }
+}

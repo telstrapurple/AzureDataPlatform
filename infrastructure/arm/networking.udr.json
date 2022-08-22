@@ -1,0 +1,57 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "udrName": {
+      "type": "string"
+    },
+    "tagObject": {
+      "type": "object"
+    },
+    "disableBgpRoutePropagation": {
+      "type": "bool",
+      "metadata": {
+        "description": "Whether to disable the routes learned by BGP on that route table. True means disable."
+      }
+    },
+    "routeArray": {
+      "type": "array",
+      "defaultValue": []
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/routeTables",
+      "apiVersion": "2020-05-01",
+      "name": "[parameters('udrName')]",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": {
+        "copy": [
+          {
+            "name": "routes",
+            "count": "[length(parameters('routeArray'))]",
+            "input": {
+              "name": "[parameters('routeArray')[copyIndex('routes')].name]",
+              "properties": {
+                "addressPrefix": "[parameters('routeArray')[copyIndex('routes')].addressPrefix]",
+                "nextHopType": "[parameters('routeArray')[copyIndex('routes')].nextHopType]",
+                "nextHopIpAddress": "[if(empty(parameters('routeArray')[copyIndex('routes')].nextHopIpAddress), null(), parameters('routeArray')[copyIndex('routes')].nextHopIpAddress)]"
+              }
+            }
+          }
+        ],
+        "disableBgpRoutePropagation": "[parameters('disableBgpRoutePropagation')]"
+      }
+    }
+  ],
+  "outputs": {
+    "udrResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/routeTables', parameters('udrName'))]"
+    }
+  }
+}

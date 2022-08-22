@@ -1,0 +1,589 @@
+{
+	"name": "Pipe_Generic_ODBC_To_Lake_Batch",
+	"properties": {
+		"description": "This is the generic pipeline to copy ODBC data from source to the lake in batches",
+		"activities": [
+			{
+				"name": "LKP - Get the min and max values",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "FN - Get ODBC User Name",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "OdbcSource",
+						"query": {
+							"value": "@concat('SELECT MIN(', pipeline().parameters.BatchColumnName, ') AS \"MinValue\", MAX(', pipeline().parameters.BatchColumnName, ') AS \"MaxValue\" FROM ',pipeline().parameters.SourceTableName)",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00"
+					},
+					"dataset": {
+						"referenceName": "Generic_ODBC",
+						"type": "DatasetReference",
+						"parameters": {
+							"odbcConnectionStringSecret": {
+								"value": "@pipeline().parameters.KeyVaultSecretConnectionString",
+								"type": "Expression"
+							},
+							"odbcUserName": {
+								"value": "@activity('FN - Get ODBC User Name').output.Response",
+								"type": "Expression"
+							},
+							"odbcPasswordSecret": {
+								"value": "@pipeline().parameters.KeyVaultSecretPassword",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "SP - Log the error - Get the min and max values",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the min and max values",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+					"storedProcedureParameters": {
+						"ActivityName": {
+							"value": "Get the min and max values",
+							"type": "String"
+						},
+						"DataFactoryName": {
+							"value": {
+								"value": "@{pipeline().DataFactory}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ErrorMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get the min and max values').error.message}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"OutputMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get the min and max values').output}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@{pipeline().Pipeline}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineRunID": {
+							"value": {
+								"value": "@{pipeline().RunId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerID": {
+							"value": {
+								"value": "@{pipeline().TriggerId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerName": {
+							"value": {
+								"value": "@{pipeline().TriggerName}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerTime": {
+							"value": {
+								"value": "@{pipeline().TriggerTime}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerType": {
+							"value": {
+								"value": "@{pipeline().TriggerType}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TaskInstanceID": {
+							"value": {
+								"value": "@pipeline().parameters.TaskInstanceID",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"LogType": {
+							"value": "Error",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSQL",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"secretName": "sqlDatabaseConnectionStringConfig"
+					}
+				}
+			},
+			{
+				"name": "LKP - Get the partition list",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the min and max values",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[DI].[usp_BatchPartitionList_Get]",
+						"storedProcedureParameters": {
+							"MaxValue": {
+								"type": "String",
+								"value": {
+									"value": "@activity('LKP - Get the min and max values').output.firstRow.MaxValue",
+									"type": "Expression"
+								}
+							},
+							"MinValue": {
+								"type": "String",
+								"value": {
+									"value": "@activity('LKP - Get the min and max values').output.firstRow.MinValue",
+									"type": "Expression"
+								}
+							},
+							"PartitionCount": {
+								"type": "Int32",
+								"value": {
+									"value": "@pipeline().parameters.PartitionCount",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "Generic_AzureSQL",
+						"type": "DatasetReference",
+						"parameters": {
+							"secretName": "sqlDatabaseConnectionStringConfig"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "SP - Log the error - Get the partition list",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the partition list",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+					"storedProcedureParameters": {
+						"ActivityName": {
+							"value": "Get the min and max values",
+							"type": "String"
+						},
+						"DataFactoryName": {
+							"value": {
+								"value": "@{pipeline().DataFactory}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ErrorMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get the partition list').error.message}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"OutputMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get the partition list').output}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@{pipeline().Pipeline}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineRunID": {
+							"value": {
+								"value": "@{pipeline().RunId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerID": {
+							"value": {
+								"value": "@{pipeline().TriggerId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerName": {
+							"value": {
+								"value": "@{pipeline().TriggerName}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerTime": {
+							"value": {
+								"value": "@{pipeline().TriggerTime}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerType": {
+							"value": {
+								"value": "@{pipeline().TriggerType}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TaskInstanceID": {
+							"value": {
+								"value": "@pipeline().parameters.TaskInstanceID",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"LogType": {
+							"value": "Error",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSQL",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"secretName": "sqlDatabaseConnectionStringConfig"
+					}
+				}
+			},
+			{
+				"name": "FEL - Loop through all partitions",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the partition list",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LKP - Get the partition list').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"batchCount": 5,
+					"activities": [
+						{
+							"name": "PIPE - Run the generic ODBC to Lake pipeline",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "Pipe_Generic_ODBC_To_Lake",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"TaskID": {
+										"value": "@pipeline().parameters.TaskID",
+										"type": "Expression"
+									},
+									"DataLakeServiceEndPoint": {
+										"value": "@pipeline().parameters.DataLakeServiceEndPoint",
+										"type": "Expression"
+									},
+									"DataLakeFilePath": {
+										"value": "@pipeline().parameters.DataLakeFilePath",
+										"type": "Expression"
+									},
+									"DataLakeFileName": {
+										"value": "@replace(pipeline().parameters.DataLakeFileName, '.', concat('_', item().PartitionNo, '.'))",
+										"type": "Expression"
+									},
+									"KeyVaultName": {
+										"value": "@pipeline().parameters.KeyVaultName",
+										"type": "Expression"
+									},
+									"TaskInstanceID": {
+										"value": "@pipeline().parameters.TaskInstanceID",
+										"type": "Expression"
+									},
+									"KeyVaultSecretUserName": {
+										"value": "@pipeline().parameters.KeyVaultSecretUserName",
+										"type": "Expression"
+									},
+									"KeyVaultSecretPassword": {
+										"value": "@pipeline().parameters.KeyVaultSecretPassword",
+										"type": "Expression"
+									},
+									"KeyVaultSecretConnectionString": {
+										"value": "@pipeline().parameters.KeyVaultSecretConnectionString",
+										"type": "Expression"
+									},
+									"WhereClause": {
+										"value": "@concat(' WHERE ', pipeline().parameters.BatchColumnName, ' >= ', item().StartValue, ' AND ',pipeline().parameters.BatchColumnName, ' < ', item().EndValue)",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "FN - Get ODBC User Name",
+				"type": "AzureFunctionActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": true,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"functionName": "GetKeyVaultSecret",
+					"method": "POST",
+					"body": {
+						"keyvaultName": "@pipeline().parameters.KeyVaultName",
+						"secretName": "@pipeline().parameters.KeyVaultSecretUserName"
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureFunction",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "SP - Log the error - Get ODBC User Name",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "FN - Get ODBC User Name",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+					"storedProcedureParameters": {
+						"ActivityName": {
+							"value": "FN - Get ODBC User Name",
+							"type": "String"
+						},
+						"DataFactoryName": {
+							"value": {
+								"value": "@{pipeline().DataFactory}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ErrorMessage": {
+							"value": {
+								"value": "@{activity('FN - Get ODBC User Name').Error.message}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"OutputMessage": {
+							"value": {
+								"value": "@{activity('FN - Get ODBC User Name').output}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@{pipeline().Pipeline}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineRunID": {
+							"value": {
+								"value": "@{pipeline().RunId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerID": {
+							"value": {
+								"value": "@{pipeline().TriggerId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerName": {
+							"value": {
+								"value": "@{pipeline().TriggerName}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerTime": {
+							"value": {
+								"value": "@{pipeline().TriggerTime}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerType": {
+							"value": {
+								"value": "@{pipeline().TriggerType}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TaskInstanceID": {
+							"value": {
+								"value": "@pipeline().parameters.TaskInstanceID",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"LogType": {
+							"value": "Error",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSQL",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"secretName": "sqlDatabaseConnectionStringConfig"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"TaskID": {
+				"type": "int"
+			},
+			"DataLakeServiceEndPoint": {
+				"type": "string"
+			},
+			"DataLakeFilePath": {
+				"type": "string"
+			},
+			"DataLakeFileName": {
+				"type": "string"
+			},
+			"KeyVaultName": {
+				"type": "string"
+			},
+			"TaskInstanceID": {
+				"type": "int"
+			},
+			"KeyVaultSecretUserName": {
+				"type": "string"
+			},
+			"KeyVaultSecretPassword": {
+				"type": "string"
+			},
+			"KeyVaultSecretConnectionString": {
+				"type": "string"
+			},
+			"PartitionCount": {
+				"type": "int"
+			},
+			"BatchColumnName": {
+				"type": "string"
+			},
+			"SourceTableName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "ETL/ODBC Load/Batch Loads"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

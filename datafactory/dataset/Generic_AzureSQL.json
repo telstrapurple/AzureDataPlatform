@@ -1,0 +1,28 @@
+{
+	"name": "Generic_AzureSQL",
+	"properties": {
+		"description": "This is the generic Azure SQL data set",
+		"linkedServiceName": {
+			"referenceName": "AzureSQL",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"secretName": {
+					"value": "@dataset().secretName",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"secretName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "SQL Server"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

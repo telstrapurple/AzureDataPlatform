@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-datafactory.schema.json",
+  "title": "Azure Data Platform Config - Datafactory",
+  "description": "Datafactory Configuration for the Azure Data Platform",
+  "type": "object",
+  "properties": {
+    //virtualMachine
+    //              .vmNamePrefix
+    //              .vmCount
+    //              .applyHUB
+    //              .vmSize
+    //              .diskType
+    //              .OSPublisher
+    //              .OSOffer
+    //              .OSVersion
+    //              .TimeZone
+    //create.virtualMachine
+
+    "virtualMachine": {
+      "$ref": "#/definitions/virtualMachine",
+      "description": "Parameters for configuring the VM(s) used for the DataFactory self hosted integration runtime. These parameters are passed to ARM template virtualMachine.SHIRInstall.json"
+    },
+    "create": {
+      "$ref": "#/definitions/create"
+    }
+  },
+  "required": ["virtualMachine", "create"],
+  "definitions": {
+    "create": {
+      "type": "object",
+      "properties": {
+        "virtualMachine": {
+          "type": "boolean",
+          "description": "Whether or not to create the data factory self hosted IR VMs."
+        }
+      },
+      "required": ["virtualMachine"]
+    },
+    "virtualMachine": {
+      "type": "object",
+      "properties": {
+        "vmNamePrefix": {
+          "type": "string",
+          "description": "VM name prefix used for naming VMs, NICs, VM diagnostic settings, disks, etc"
+        },
+        "vmCount": {
+          "type": "number",
+          "description": "The number of VMs to create"
+        },
+        "applyHUB": {
+          "type": "boolean",
+          "description": "Whether or not to apply HUB licensing",
+          "default": true
+        },
+        "vmSize": {
+          "type": "string",
+          "description": "VM SKU. To find the list of SKus for your location: Get-AzVMSize -location $location | select -ExpandProperty Name"
+        },
+        "diskType": {
+          "type": "string",
+          "description": "Storage disk type",
+          "enum": ["Standard_LRS", "Premium_LRS"]
+        },
+        "OSPublisher": {
+          "type": "string",
+          "description": "VM image publisher"
+        },
+        "OSOffer": {
+          "type": "string",
+          "description": "VM image offer"
+        },
+        "OSVersion": {
+          "type": "string",
+          "description": "VM image version"
+        },
+        "TimeZone": {
+          "type": "string",
+          "description": "System timezone to set on each VM. To get allowed names: [System.TimeZoneInfo]::GetSystemTimeZones()|select -ExpandProperty Id | Sort"
+        }
+      },
+      "required": [
+        "vmNamePrefix",
+        "vmCount",
+        "applyHUB",
+        "vmSize",
+        "diskType",
+        "OSPublisher",
+        "OSOffer",
+        "OSVersion",
+        "TimeZone"
+      ]
+    }
+  }
+}

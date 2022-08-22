@@ -1,0 +1,45 @@
+parameters:
+  - name: adosServiceConnectionName
+    type: string
+  - name: environmentName
+    type: string
+  - name: environmentCode
+    type: string
+  - name: location
+    type: string
+  - name: locationCode
+    type: string
+  - name: configFileName
+    type: string
+  - name: tenantId
+    type: string
+  - name: subscriptionId
+    type: string
+
+steps:
+  - task: PowerShell@2
+    displayName: Install azure.datafactory.tools module
+    inputs:
+      pwsh: true
+      targetType: inline
+      script: >-
+        Install-Module -Name azure.datafactory.tools -RequiredVersion 0.17.0 -Force -Verbose
+
+  - task: AzurePowerShell@5
+    displayName: Deploy DataFactory objects
+    inputs:
+      azureSubscription: ${{ parameters.adosServiceConnectionName }}
+      pwsh: true
+      azurePowerShellVersion: LatestVersion
+      ScriptType: FilePath
+      ScriptPath: $(Pipeline.Workspace)/datafactory/deployment.ps1
+      ScriptArguments: >-
+        -EnvironmentName '${{ parameters.environmentName }}'
+        -EnvironmentCode '${{ parameters.environmentCode }}'
+        -Location '${{ parameters.location }}'
+        -LocationCode '${{ parameters.locationCode }}'
+        -TenantId '${{ parameters.tenantId }}'
+        -SubscriptionId '${{ parameters.subscriptionId }}'
+        -ConfigFileName '${{ parameters.configFileName }}'
+        -DataFactoryLocation '$(Pipeline.Workspace)/datafactory'
+        -InfrastructureScriptsLocation '$(Pipeline.Workspace)/infrastructure'

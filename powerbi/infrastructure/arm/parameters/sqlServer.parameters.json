@@ -1,0 +1,66 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "companyCode": {
+            "value": "TP"
+        },
+        "companyName": {
+            "value": "Telstra Purple"
+        },
+        "departmentCode": {
+            "value": "BI"
+        },
+        "resourceType": {
+            "value": "SQL Database"
+        },
+        "resourceCode": {
+            "value": "SQL"
+        },
+        "azureLocation": {
+            "value": "australiaeast"
+        },
+        "environmentCode": {
+            "value": "DEV"
+        },
+        "environmentLongName": {
+            "value": "Development"
+        },
+        "delimeter": {
+            "value": "-"
+        },
+        "sqlAdministratorLoginUsername": {
+            "value": ""
+        },
+        "sqlAdministratorLoginPassword": {
+            "value": ""
+        },
+        "suffix": {
+            "value": "001"
+        },
+        "sql_AzureADGroupName": {
+            "value": ""
+        },
+        "sql_AzureADGroupID": {
+            "value": ""
+        },
+        "azureTenantID": {
+            "value": ""
+        },
+        "tagObject": {
+            "value": {
+                "Application": "ADS",
+                "Environment": "Dev"
+            }
+        },
+        "subnetName": {
+            "value": ""
+        },
+        "vnetName": {
+            "value": ""
+        },
+        "networkResourceGroupName": {
+            "value": ""
+        }
+    }
+}

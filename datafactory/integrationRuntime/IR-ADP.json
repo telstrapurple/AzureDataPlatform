@@ -1,0 +1,7 @@
+{
+	"name": "IR-ADP",
+	"properties": {
+		"type": "SelfHosted",
+		"description": "This is the Azure integration runtime"
+	}
+}

@@ -1,0 +1,24 @@
+@model object
+
+<div class="alert alert-secondary" id="bottom">
+    <button type="submit" class="btn btn-success">
+        <i class="fas fa-check"></i>
+        Save
+    </button>
+</div>
+
+<div class="small">
+    @* 
+    When this partial is included without specifying a model, the page's model is passed in.  In this case, we want to
+    default to just routing to the index page.  Otherwise, we can use the string as the URL.
+    Note that this relies on the fact that the page models are not simple strings.
+    *@
+    <a href="@(Model is string ? Model : "./Index")">
+        <i class="fas fa-arrow-left"></i>
+        Back to List
+    </a>
+    <a href="#" class="float-right">
+        <i class="fas fa-arrow-up"></i>
+        Back to top
+    </a>
+</div>

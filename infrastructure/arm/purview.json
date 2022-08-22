@@ -1,0 +1,46 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+
+    "purviewAccountName": {
+      "type": "string"
+    },
+    "managedResourceGroupName": {
+      "type": "string"
+    },
+    "publicNetworkAccess": {
+      "type": "string",
+      "defaultValue": "Enabled"
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Purview/accounts",
+      "apiVersion": "2021-07-01",
+      "name": "[parameters('purviewAccountName')]",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "dependsOn": [],
+      "sku": {
+        "name": "Standard",
+        "capacity": 1
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "publicNetworkAccess": "[parameters('publicNetworkAccess')]",
+        "managedResourceGroupName": "[parameters('managedResourceGroupName')]"
+      }
+    }
+  ],
+  "outputs": {}
+}

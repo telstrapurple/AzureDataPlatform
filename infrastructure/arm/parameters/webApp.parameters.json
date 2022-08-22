@@ -1,0 +1,34 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    // Specific params
+    "servicePlanId": {
+      "value": ""
+    },
+    "appName": {
+      "value": "TP-SYD-DEV-ADP-APP-001"
+    },
+    "alwaysOn": {
+      "value": true
+    },
+    "appSettings": {
+      "value": []
+    },
+    "subnetWebAppResourceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourceGroups/TP-SYD-DEV-ADP-ARG-Network/providers/Microsoft.Network/virtualNetworks/TP-SYD-DEV-ADP-VNT-10.23.0.0/subnets/WebApp"
+    },
+    "addAppServiceFileAuditLogs": {
+      "value": true
+    }
+  }
+}

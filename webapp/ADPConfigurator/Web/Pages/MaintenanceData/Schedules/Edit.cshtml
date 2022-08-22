@@ -1,0 +1,61 @@
+﻿@page
+@model Web.Pages.MaintenanceData.Schedules.EditModel
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>
+    <i class="float-right fas fa-clock"></i>
+    Edit Schedule
+</h1>
+
+<form method="post">
+    <div class="row">
+        <div class="col-md-4">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Schedule.ScheduleId" />
+            <input type="hidden" asp-for="Schedule.DeletedIndicator" />
+            <input type="hidden" asp-for="Schedule.DateCreated" />
+            <input type="hidden" asp-for="Schedule.CreatedBy" />
+            <input type="hidden" asp-for="Schedule.DateModified" />
+            <input type="hidden" asp-for="Schedule.ModifiedBy" />
+            <div class="form-group">
+                <label asp-for="Schedule.ScheduleName" class="control-label">Schedule Name</label>
+                <input asp-for="Schedule.ScheduleName" class="form-control" />
+                <span asp-validation-for="Schedule.ScheduleName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Schedule.ScheduleDescription" class="control-label">Schedule Description</label>
+                <input asp-for="Schedule.ScheduleDescription" class="form-control" />
+                <span asp-validation-for="Schedule.ScheduleDescription" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Schedule.StartDate" class="control-label">Start Date</label>
+                <input asp-for="Schedule.StartDate" class="form-control" />
+                <span asp-validation-for="Schedule.StartDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Schedule.Frequency" class="control-label">Frequency</label>
+                <input asp-for="Schedule.Frequency" class="form-control" />
+                <span asp-validation-for="Schedule.Frequency" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Schedule.ScheduleIntervalId" class="control-label">Schedule Interval</label>
+                <select asp-for="Schedule.ScheduleIntervalId" class="form-control" asp-items="ViewBag.ScheduleIntervalId"></select>
+                <span asp-validation-for="Schedule.ScheduleIntervalId" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="Schedule.Enabled" /> @Html.DisplayNameFor(model => model.Schedule.Enabled)
+                </label>
+            </div> 
+        </div>
+    </div>
+
+    @{await Html.RenderPartialAsync("_FormControls");}
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

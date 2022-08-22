@@ -1,0 +1,70 @@
+﻿@page
+@model Web.Pages.MaintenanceData.Schedules.DeleteModel
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h1>
+    <i class="float-right fas fa-clock"></i>
+    Delete Schedule
+</h1>
+
+<div class="alert alert-danger" role="alert">
+    <i class="fas fa-exclamation-triangle"></i>
+    Are you sure you want to delete this Schedule?
+</div>
+
+<dl class="row">
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(model => model.Schedule.ScheduleName)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(model => model.Schedule.ScheduleName)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(model => model.Schedule.ScheduleDescription)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(model => model.Schedule.ScheduleDescription)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(model => model.Schedule.StartDate)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(model => model.Schedule.StartDate)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(model => model.Schedule.Frequency)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(model => model.Schedule.Frequency)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(model => model.Schedule.ScheduleInterval)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(model => model.Schedule.ScheduleInterval.ScheduleIntervalName)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(model => model.Schedule.Enabled)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(model => model.Schedule.Enabled)
+    </dd>
+</dl>
+
+<form method="post">
+    <input type="hidden" asp-for="Schedule.ScheduleId" />
+    <button type="submit" class="btn btn-danger">
+        <i class="fas fa-trash"></i>
+        Delete
+    </button>
+</form>
+
+<div>
+    <a asp-page="./Index">
+        <i class="fas fa-arrow-left"></i>
+        Back to List
+    </a>
+</div>

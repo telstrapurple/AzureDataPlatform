@@ -1,0 +1,20 @@
+<script asp-add-nonce="true">
+    $(function () {
+        $('.json-data').each((index, elem) => {
+            const originalText = elem.textContent.trim();
+
+            if (!originalText) {
+                $(elem).html('&mdash;');
+                return;
+            }
+            
+            try {
+                $(elem)
+                    .text(JSON.stringify(JSON.parse(originalText), null, 2))
+                    .css({ whiteSpace: 'pre' });
+            } catch (e) {
+                // Ignore this, the data just wasn't JSON, keep the original text
+            }
+        });
+    });
+</script>

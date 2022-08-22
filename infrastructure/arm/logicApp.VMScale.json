@@ -1,0 +1,183 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    },
+    // Specific params
+    "lgaName": {
+      "type": "string"
+    },
+    "aaaName": {
+      "type": "string"
+    },
+    "runbookName": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2017-07-01",
+      "name": "[parameters('lgaName')]",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": {
+        "state": "Enabled",
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "$connections": {
+              "defaultValue": {},
+              "type": "Object"
+            }
+          },
+          "triggers": {
+            "manual": {
+              "type": "Request",
+              "kind": "Http",
+              "inputs": {
+                "schema": {
+                  "properties": {
+                    "ResourceGroupName": {
+                      "type": "string"
+                    },
+                    "VMList": {
+                      "type": "string"
+                    },
+                    "VMSize": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "actions": {
+            "Scale_Azure_VMs": {
+              "runAfter": {},
+              "type": "ApiConnection",
+              "inputs": {
+                "body": {
+                  "properties": {
+                    "parameters": {
+                      "ResourceGroupName": "@triggerBody()?['ResourceGroupName']",
+                      "VMList": "@triggerBody()?['VMList']",
+                      "VmSize": "@triggerBody()?['VMSize']"
+                    }
+                  }
+                },
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['azureautomation']['connectionId']"
+                  }
+                },
+                "method": "put",
+                "path": "[concat('/subscriptions/@{encodeURIComponent(''', subscription().subscriptionid, ''')}/resourceGroups/@{encodeURIComponent(''', resourceGroup().name,''')}/providers/Microsoft.Automation/automationAccounts/@{encodeURIComponent(''', parameters('aaaName'), ''')}/jobs')]",
+                "queries": {
+                  "runbookName": "[parameters('runbookName')]",
+                  "wait": true,
+                  "x-ms-api-version": "2015-10-31"
+                }
+              }
+            },
+            "Send_a_response_to_the_callbackUri": {
+              "runAfter": {
+                "Scale_Azure_VMs": ["Succeeded"]
+              },
+              "type": "Http",
+              "inputs": {
+                "method": "POST",
+                "uri": "@{triggerBody()['callBackUri']}"
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {
+          "$connections": {
+            "value": {
+              "azureautomation": {
+                "connectionId": "[concat('/subscriptions/', subscription().subscriptionid, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Web/connections/azureautomation')]",
+                "connectionName": "azureautomation",
+                "id": "[concat('/subscriptions/', subscription().subscriptionid, '/providers/Microsoft.Web/locations/', variables('azureLocation'), '/managedApis/azureautomation')]"
+              }
+            }
+          }
+        }
+      },
+      "resources": [
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "providers/diagnosticSettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "Microsoft.Insights/diagnostics",
+          "dependsOn": ["[parameters('lgaName')]"],
+          "properties": {
+            "name": "Diagnostics",
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "metrics": [
+              {
+                "category": "AllMetrics",
+                "timeGrain": null,
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ],
+            "logs": [
+              {
+                "category": "WorkflowRuntime",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "callbackURL": {
+      "type": "string",
+      "value": "[listCallbackUrl(resourceId(resourceGroup().name,'Microsoft.Logic/workflows/triggers', parameters('lgaName'), 'manual'), '2016-06-01').value]"
+    }
+  }
+}

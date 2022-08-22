@@ -1,0 +1,77 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    "aaaName": {
+      "value": "TP-SYD-DEV-ADP-AAA-001"
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.operationalinsights/workspaces/tp-syd-dev-adp-law-001"
+    },
+    "diagnosticsStorageAccountId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.storage/storageAccount/tpsyddevadpsta001"
+    },
+    "diagnosticsRetentionInDays": {
+      "value": 30
+    },
+    "sku": {
+      "value": "Basic"
+    },
+    "runbookBlobContainer": {
+      "value": "https://tpsyddevadpsta001.blob.core.windows.net/code/"
+    },
+    "runbookBlobSASToken": {
+      "value": ""
+    },
+    "parentModules": {
+      "value": [
+        {
+          "name": "Az.Accounts",
+          "url": "https://www.powershellgallery.com/api/v2/package/Az.Accounts/2.2.1"
+        },
+        {
+          "name": "DatabricksPS",
+          "url": "https://www.powershellgallery.com/api/v2/package/DatabricksPS/1.2.2.0"
+        }
+      ]
+    },
+    "childModules": {
+      "value": [
+        {
+          "name": "Az.Sql",
+          "url": "https://www.powershellgallery.com/api/v2/package/Az.Sql/2.12.0"
+        },
+        {
+          "name": "Az.Compute",
+          "url": "https://www.powershellgallery.com/api/v2/package/Az.Compute/4.6.0"
+        }
+      ]
+    },
+    "runbooks": {
+      "value": [
+        {
+          "name": "Scale_Azure_SQL",
+          "description": "Runbook to scale Azure SQL database",
+          "file": "Scale_Azure_SQL.ps1",
+          "version": "1.0.0.0",
+          "type": "PowerShell"
+        },
+        {
+          "name": "Resize_VM",
+          "description": "Runbook to resize an Azure virtual machine",
+          "file": "Resize_VM.ps1",
+          "version": "1.0.0.0",
+          "type": "PowerShell"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-keyvault.schema.json",
+  "title": "Azure Data Platform Config - Key Vault",
+  "description": "Key Vault Configuration for the Azure Data Platform",
+  "type": "object"
+  //nothing needed in here.
+  //All properties needed are defined/declared in other schema files.
+}

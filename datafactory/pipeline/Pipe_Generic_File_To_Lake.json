@@ -1,0 +1,1153 @@
+{
+  "name": "Pipe_Generic_File_To_Lake",
+  "properties": {
+    "description": "This pipeline is used to copy On PRem SQL, Azure SQL and Oracle data from source into the data lake",
+    "activities": [
+      {
+        "name": "IF - Check if source file type is parquet",
+        "type": "IfCondition",
+        "dependsOn": [
+          {
+            "activity": "SV - Log or NoLog",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(toUpper(pipeline().parameters.SourceConfig.value[0].SourceFileFormat), 'PARQUET')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "EP - Generic_File_To_Lake_Parquet_Log",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_To_Lake_Parquet_Log",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "SourceConnectionSecret": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SecretName",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "SourceServiceEndPoint": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "SourceFilePath": {
+                    "value": "@pipeline().parameters.SourceFilePath",
+                    "type": "Expression"
+                  },
+                  "SourceFileName": {
+                    "value": "@pipeline().parameters.SourceFileName",
+                    "type": "Expression"
+                  },
+                  "TargetServiceEndPoint": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "TargetFilePath": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+                    "type": "Expression"
+                  },
+                  "TargetFileName": {
+                    "value": "@pipeline().parameters.TargetFileName",
+                    "type": "Expression"
+                  },
+                  "SchemaMapping": {
+                    "value": "@pipeline().parameters.SchemaMapping",
+                    "type": "Expression"
+                  },
+                  "ColumnDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ColumnDelimiter",
+                    "type": "Expression"
+                  },
+                  "RowDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].RowDelimiter",
+                    "type": "Expression"
+                  },
+                  "EscapeCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].EscapeCharacter",
+                    "type": "Expression"
+                  },
+                  "QuoteCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].QuoteCharacter",
+                    "type": "Expression"
+                  },
+                  "FirstRowAsHeader": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].FirstRowAsHeader",
+                    "type": "Expression"
+                  },
+                  "NullValue": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].NullValue",
+                    "type": "Expression"
+                  },
+                  "SkipLineCount": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SkipLineCount",
+                    "type": "Expression"
+                  },
+                  "Encoding": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Encoding",
+                    "type": "Expression"
+                  },
+                  "CompressionType": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].CompressionType",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Host",
+                    "type": "Expression"
+                  },
+                  "SourceFileFormat": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SourceFileFormat",
+                    "type": "Expression"
+                  },
+                  "KeyVaultName": {
+                    "value": "@pipeline().parameters.KeyVaultName",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "CallingPipeline": {
+                    "value": "@pipeline().parameters.CallingPipeline",
+                    "type": "Expression"
+                  },
+                  "UseDeltaLakeIndicator": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].UseDeltaLakeIndicator",
+                    "type": "Expression"
+                  },
+                  "FileLoadLogID": {
+                    "value": "@pipeline().parameters.FileLoadLogID",
+                    "type": "Expression"
+                  },
+                  "Log": {
+                    "value": "@variables('Log')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "EP - Generic_File_To_Lake_Parquet_NoLog",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_To_Lake_Parquet_NoLog",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "SourceConnectionSecret": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SecretName",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "SourceServiceEndPoint": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "SourceFilePath": {
+                    "value": "@pipeline().parameters.SourceFilePath",
+                    "type": "Expression"
+                  },
+                  "SourceFileName": {
+                    "value": "@pipeline().parameters.SourceFileName",
+                    "type": "Expression"
+                  },
+                  "TargetServiceEndPoint": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "TargetFilePath": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+                    "type": "Expression"
+                  },
+                  "TargetFileName": {
+                    "value": "@pipeline().parameters.TargetFileName",
+                    "type": "Expression"
+                  },
+                  "SchemaMapping": {
+                    "value": "@pipeline().parameters.SchemaMapping",
+                    "type": "Expression"
+                  },
+                  "ColumnDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ColumnDelimiter",
+                    "type": "Expression"
+                  },
+                  "RowDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].RowDelimiter",
+                    "type": "Expression"
+                  },
+                  "EscapeCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].EscapeCharacter",
+                    "type": "Expression"
+                  },
+                  "QuoteCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].QuoteCharacter",
+                    "type": "Expression"
+                  },
+                  "FirstRowAsHeader": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].FirstRowAsHeader",
+                    "type": "Expression"
+                  },
+                  "NullValue": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].NullValue",
+                    "type": "Expression"
+                  },
+                  "SkipLineCount": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SkipLineCount",
+                    "type": "Expression"
+                  },
+                  "Encoding": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Encoding",
+                    "type": "Expression"
+                  },
+                  "CompressionType": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].CompressionType",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Host",
+                    "type": "Expression"
+                  },
+                  "SourceFileFormat": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SourceFileFormat",
+                    "type": "Expression"
+                  },
+                  "KeyVaultName": {
+                    "value": "@pipeline().parameters.KeyVaultName",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "CallingPipeline": {
+                    "value": "@pipeline().parameters.CallingPipeline",
+                    "type": "Expression"
+                  },
+                  "UseDeltaLakeIndicator": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].UseDeltaLakeIndicator",
+                    "type": "Expression"
+                  },
+                  "FileLoadLogID": {
+                    "value": "@pipeline().parameters.FileLoadLogID",
+                    "type": "Expression"
+                  },
+                  "Log": {
+                    "value": "@variables('Log')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "IF - Check if source file type is delimited text",
+        "type": "IfCondition",
+        "dependsOn": [
+          {
+            "activity": "SV - Log or NoLog",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(toUpper(pipeline().parameters.SourceConfig.value[0].SourceFileFormat), 'DELIMITEDTEXT')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "EP - Generic_File_To_Lake_DelimitedText_Log",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_To_Lake_DelimitedText_Log",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "SourceConnectionSecret": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SecretName",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "SourceServiceEndPoint": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "SourceFilePath": {
+                    "value": "@pipeline().parameters.SourceFilePath",
+                    "type": "Expression"
+                  },
+                  "SourceFileName": {
+                    "value": "@pipeline().parameters.SourceFileName",
+                    "type": "Expression"
+                  },
+                  "TargetServiceEndPoint": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "TargetFilePath": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+                    "type": "Expression"
+                  },
+                  "TargetFileName": {
+                    "value": "@pipeline().parameters.TargetFileName",
+                    "type": "Expression"
+                  },
+                  "SchemaMapping": {
+                    "value": "@pipeline().parameters.SchemaMapping",
+                    "type": "Expression"
+                  },
+                  "ColumnDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ColumnDelimiter",
+                    "type": "Expression"
+                  },
+                  "RowDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].RowDelimiter",
+                    "type": "Expression"
+                  },
+                  "EscapeCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].EscapeCharacter",
+                    "type": "Expression"
+                  },
+                  "QuoteCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].QuoteCharacter",
+                    "type": "Expression"
+                  },
+                  "FirstRowAsHeader": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].FirstRowAsHeader",
+                    "type": "Expression"
+                  },
+                  "NullValue": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].NullValue",
+                    "type": "Expression"
+                  },
+                  "SkipLineCount": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SkipLineCount",
+                    "type": "Expression"
+                  },
+                  "Encoding": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Encoding",
+                    "type": "Expression"
+                  },
+                  "CompressionType": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].CompressionType",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Host",
+                    "type": "Expression"
+                  },
+                  "SourceFileFormat": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SourceFileFormat",
+                    "type": "Expression"
+                  },
+                  "KeyVaultName": {
+                    "value": "@pipeline().parameters.KeyVaultName",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "CallingPipeline": {
+                    "value": "@pipeline().parameters.CallingPipeline",
+                    "type": "Expression"
+                  },
+                  "UseDeltaLakeIndicator": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].UseDeltaLakeIndicator",
+                    "type": "Expression"
+                  },
+                  "FileLoadLogID": {
+                    "value": "@pipeline().parameters.FileLoadLogID",
+                    "type": "Expression"
+                  },
+                  "Log": {
+                    "value": "@variables('Log')",
+                    "type": "Expression"
+                  },
+                  "storageAccountName": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].StorageAccountName",
+                    "type": "Expression"
+                  },
+                  "accountKeySecretName": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].AccountKeySecretName",
+                    "type": "Expression"
+                  },
+                  "fileShare": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].FileShare",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "EP - Generic_File_To_Lake_DelimitedText_NoLog",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_To_Lake_DelimitedText_NoLog",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "SourceConnectionSecret": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SecretName",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "SourceServiceEndPoint": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "SourceFilePath": {
+                    "value": "@pipeline().parameters.SourceFilePath",
+                    "type": "Expression"
+                  },
+                  "SourceFileName": {
+                    "value": "@pipeline().parameters.SourceFileName",
+                    "type": "Expression"
+                  },
+                  "TargetServiceEndPoint": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "TargetFilePath": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+                    "type": "Expression"
+                  },
+                  "TargetFileName": {
+                    "value": "@pipeline().parameters.TargetFileName",
+                    "type": "Expression"
+                  },
+                  "SchemaMapping": {
+                    "value": "@pipeline().parameters.SchemaMapping",
+                    "type": "Expression"
+                  },
+                  "ColumnDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ColumnDelimiter",
+                    "type": "Expression"
+                  },
+                  "RowDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].RowDelimiter",
+                    "type": "Expression"
+                  },
+                  "EscapeCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].EscapeCharacter",
+                    "type": "Expression"
+                  },
+                  "QuoteCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].QuoteCharacter",
+                    "type": "Expression"
+                  },
+                  "FirstRowAsHeader": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].FirstRowAsHeader",
+                    "type": "Expression"
+                  },
+                  "NullValue": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].NullValue",
+                    "type": "Expression"
+                  },
+                  "SkipLineCount": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SkipLineCount",
+                    "type": "Expression"
+                  },
+                  "Encoding": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Encoding",
+                    "type": "Expression"
+                  },
+                  "CompressionType": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].CompressionType",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Host",
+                    "type": "Expression"
+                  },
+                  "SourceFileFormat": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SourceFileFormat",
+                    "type": "Expression"
+                  },
+                  "KeyVaultName": {
+                    "value": "@pipeline().parameters.KeyVaultName",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "CallingPipeline": {
+                    "value": "@pipeline().parameters.CallingPipeline",
+                    "type": "Expression"
+                  },
+                  "UseDeltaLakeIndicator": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].UseDeltaLakeIndicator",
+                    "type": "Expression"
+                  },
+                  "FileLoadLogID": {
+                    "value": "@pipeline().parameters.FileLoadLogID",
+                    "type": "Expression"
+                  },
+                  "Log": {
+                    "value": "@variables('Log')",
+                    "type": "Expression"
+                  },
+                  "storageAccountName": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].StorageAccountName",
+                    "type": "Expression"
+                  },
+                  "accountKeySecretName": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].AccountKeySecretName",
+                    "type": "Expression"
+                  },
+                  "fileShare": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].FileShare",
+                    "type": "Expression"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "IF - Check if source file type is json",
+        "type": "IfCondition",
+        "dependsOn": [
+          {
+            "activity": "SV - Log or NoLog",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(toUpper(pipeline().parameters.SourceConfig.value[0].SourceFileFormat), 'JSON')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "EP - Generic_File_To_Lake_Json_Log",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_To_Lake_Json_Log",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "SourceConnectionSecret": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SecretName",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "SourceServiceEndPoint": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "SourceFilePath": {
+                    "value": "@pipeline().parameters.SourceFilePath",
+                    "type": "Expression"
+                  },
+                  "SourceFileName": {
+                    "value": "@pipeline().parameters.SourceFileName",
+                    "type": "Expression"
+                  },
+                  "TargetServiceEndPoint": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "TargetFilePath": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+                    "type": "Expression"
+                  },
+                  "TargetFileName": {
+                    "value": "@pipeline().parameters.TargetFileName",
+                    "type": "Expression"
+                  },
+                  "SchemaMapping": {
+                    "value": "@pipeline().parameters.SchemaMapping",
+                    "type": "Expression"
+                  },
+                  "ColumnDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ColumnDelimiter",
+                    "type": "Expression"
+                  },
+                  "RowDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].RowDelimiter",
+                    "type": "Expression"
+                  },
+                  "EscapeCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].EscapeCharacter",
+                    "type": "Expression"
+                  },
+                  "QuoteCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].QuoteCharacter",
+                    "type": "Expression"
+                  },
+                  "FirstRowAsHeader": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].FirstRowAsHeader",
+                    "type": "Expression"
+                  },
+                  "NullValue": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].NullValue",
+                    "type": "Expression"
+                  },
+                  "SkipLineCount": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SkipLineCount",
+                    "type": "Expression"
+                  },
+                  "Encoding": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Encoding",
+                    "type": "Expression"
+                  },
+                  "CompressionType": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].CompressionType",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Host",
+                    "type": "Expression"
+                  },
+                  "SourceFileFormat": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SourceFileFormat",
+                    "type": "Expression"
+                  },
+                  "KeyVaultName": {
+                    "value": "@pipeline().parameters.KeyVaultName",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "CallingPipeline": {
+                    "value": "@pipeline().parameters.CallingPipeline",
+                    "type": "Expression"
+                  },
+                  "UseDeltaLakeIndicator": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].UseDeltaLakeIndicator",
+                    "type": "Expression"
+                  },
+                  "FileLoadLogID": {
+                    "value": "@pipeline().parameters.FileLoadLogID",
+                    "type": "Expression"
+                  },
+                  "Log": {
+                    "value": "@variables('Log')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "EP - Generic_File_To_Lake_Json_NoLog",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_To_Lake_Json_NoLog",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "SourceConnectionSecret": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SecretName",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "SourceServiceEndPoint": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "SourceFilePath": {
+                    "value": "@pipeline().parameters.SourceFilePath",
+                    "type": "Expression"
+                  },
+                  "SourceFileName": {
+                    "value": "@pipeline().parameters.SourceFileName",
+                    "type": "Expression"
+                  },
+                  "TargetServiceEndPoint": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "TargetFilePath": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+                    "type": "Expression"
+                  },
+                  "TargetFileName": {
+                    "value": "@pipeline().parameters.TargetFileName",
+                    "type": "Expression"
+                  },
+                  "SchemaMapping": {
+                    "value": "@pipeline().parameters.SchemaMapping",
+                    "type": "Expression"
+                  },
+                  "ColumnDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ColumnDelimiter",
+                    "type": "Expression"
+                  },
+                  "RowDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].RowDelimiter",
+                    "type": "Expression"
+                  },
+                  "EscapeCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].EscapeCharacter",
+                    "type": "Expression"
+                  },
+                  "QuoteCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].QuoteCharacter",
+                    "type": "Expression"
+                  },
+                  "FirstRowAsHeader": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].FirstRowAsHeader",
+                    "type": "Expression"
+                  },
+                  "NullValue": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].NullValue",
+                    "type": "Expression"
+                  },
+                  "SkipLineCount": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SkipLineCount",
+                    "type": "Expression"
+                  },
+                  "Encoding": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Encoding",
+                    "type": "Expression"
+                  },
+                  "CompressionType": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].CompressionType",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Host",
+                    "type": "Expression"
+                  },
+                  "SourceFileFormat": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SourceFileFormat",
+                    "type": "Expression"
+                  },
+                  "KeyVaultName": {
+                    "value": "@pipeline().parameters.KeyVaultName",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "CallingPipeline": {
+                    "value": "@pipeline().parameters.CallingPipeline",
+                    "type": "Expression"
+                  },
+                  "UseDeltaLakeIndicator": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].UseDeltaLakeIndicator",
+                    "type": "Expression"
+                  },
+                  "FileLoadLogID": {
+                    "value": "@pipeline().parameters.FileLoadLogID",
+                    "type": "Expression"
+                  },
+                  "Log": {
+                    "value": "@variables('Log')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "SV - Log or NoLog",
+        "type": "SetVariable",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "variableName": "Log",
+          "value": {
+            "value": "@if(or(or(equals(pipeline().parameters.TargetConfig.value[0].UseDeltaLakeIndicator, 'Y'),contains(pipeline().parameters.CallingPipeline,'Pipe_Generic_File_To_Target_Database')) ,equals(pipeline().parameters.CallingPipeline,'Pipe_Generic_File_To_Target_Lake_Raw_Insert')),false,true)",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "IF - Check if source file type is XML",
+        "type": "IfCondition",
+        "dependsOn": [
+          {
+            "activity": "SV - Log or NoLog",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(toUpper(pipeline().parameters.SourceConfig.value[0].SourceFileFormat), 'XML')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "EP - Generic_File_To_Lake_Xml_Log",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_To_Lake_Xml_Log",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "SourceConnectionSecret": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SecretName",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "SourceServiceEndPoint": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "SourceFilePath": {
+                    "value": "@pipeline().parameters.SourceFilePath",
+                    "type": "Expression"
+                  },
+                  "SourceFileName": {
+                    "value": "@pipeline().parameters.SourceFileName",
+                    "type": "Expression"
+                  },
+                  "TargetServiceEndPoint": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "TargetFilePath": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+                    "type": "Expression"
+                  },
+                  "TargetFileName": {
+                    "value": "@pipeline().parameters.TargetFileName",
+                    "type": "Expression"
+                  },
+                  "SchemaMapping": {
+                    "value": "@pipeline().parameters.SchemaMapping",
+                    "type": "Expression"
+                  },
+                  "CompressionType": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].CompressionType",
+                    "type": "Expression"
+                  },
+                  "ColumnDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ColumnDelimiter",
+                    "type": "Expression"
+                  },
+                  "RowDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].RowDelimiter",
+                    "type": "Expression"
+                  },
+                  "EscapeCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].EscapeCharacter",
+                    "type": "Expression"
+                  },
+                  "QuoteCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].QuoteCharacter",
+                    "type": "Expression"
+                  },
+                  "FirstRowAsHeader": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].FirstRowAsHeader",
+                    "type": "Expression"
+                  },
+                  "NullValue": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].NullValue",
+                    "type": "Expression"
+                  },
+                  "SkipLineCount": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SkipLineCount",
+                    "type": "Expression"
+                  },
+                  "Encoding": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Encoding",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Host",
+                    "type": "Expression"
+                  },
+                  "SourceFileFormat": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SourceFileFormat",
+                    "type": "Expression"
+                  },
+                  "KeyVaultName": {
+                    "value": "@pipeline().parameters.KeyVaultName",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "CallingPipeline": {
+                    "value": "@pipeline().parameters.CallingPipeline",
+                    "type": "Expression"
+                  },
+                  "UseDeltaLakeIndicator": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].UseDeltaLakeIndicator",
+                    "type": "Expression"
+                  },
+                  "FileLoadLogID": {
+                    "value": "@pipeline().parameters.FileLoadLogID",
+                    "type": "Expression"
+                  },
+                  "Log": {
+                    "value": "@variables('Log')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "EP - Generic_File_To_Lake_Xml_NoLog",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_To_Lake_Xml_NoLog",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "SourceConnectionSecret": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SecretName",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "SourceServiceEndPoint": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "SourceFilePath": {
+                    "value": "@pipeline().parameters.SourceFilePath",
+                    "type": "Expression"
+                  },
+                  "SourceFileName": {
+                    "value": "@pipeline().parameters.SourceFileName",
+                    "type": "Expression"
+                  },
+                  "TargetServiceEndPoint": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "TargetFilePath": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+                    "type": "Expression"
+                  },
+                  "TargetFileName": {
+                    "value": "@pipeline().parameters.TargetFileName",
+                    "type": "Expression"
+                  },
+                  "SchemaMapping": {
+                    "value": "@pipeline().parameters.SchemaMapping",
+                    "type": "Expression"
+                  },
+                  "CompressionType": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].CompressionType",
+                    "type": "Expression"
+                  },
+                  "ColumnDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ColumnDelimiter",
+                    "type": "Expression"
+                  },
+                  "RowDelimiter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].RowDelimiter",
+                    "type": "Expression"
+                  },
+                  "EscapeCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].EscapeCharacter",
+                    "type": "Expression"
+                  },
+                  "QuoteCharacter": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].QuoteCharacter",
+                    "type": "Expression"
+                  },
+                  "FirstRowAsHeader": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].FirstRowAsHeader",
+                    "type": "Expression"
+                  },
+                  "NullValue": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].NullValue",
+                    "type": "Expression"
+                  },
+                  "SkipLineCount": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SkipLineCount",
+                    "type": "Expression"
+                  },
+                  "Encoding": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Encoding",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].Host",
+                    "type": "Expression"
+                  },
+                  "SourceFileFormat": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].SourceFileFormat",
+                    "type": "Expression"
+                  },
+                  "KeyVaultName": {
+                    "value": "@pipeline().parameters.KeyVaultName",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "CallingPipeline": {
+                    "value": "@pipeline().parameters.CallingPipeline",
+                    "type": "Expression"
+                  },
+                  "UseDeltaLakeIndicator": {
+                    "value": "@pipeline().parameters.TargetConfig.value[0].UseDeltaLakeIndicator",
+                    "type": "Expression"
+                  },
+                  "FileLoadLogID": {
+                    "value": "@pipeline().parameters.FileLoadLogID",
+                    "type": "Expression"
+                  },
+                  "Log": {
+                    "value": "@variables('Log')",
+                    "type": "Expression"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "parameters": {
+      "TaskType": {
+        "type": "string"
+      },
+      "SchemaMapping": {
+        "type": "object"
+      },
+      "KeyVaultName": {
+        "type": "string"
+      },
+      "TaskConfig": {
+        "type": "object"
+      },
+      "SourceConfig": {
+        "type": "object"
+      },
+      "TargetConfig": {
+        "type": "object"
+      },
+      "TaskInstanceID": {
+        "type": "int"
+      },
+      "CallingPipeline": {
+        "type": "string"
+      },
+      "SourceFilePath": {
+        "type": "string"
+      },
+      "SourceFileName": {
+        "type": "string"
+      },
+      "FileLoadLogID": {
+        "type": "int"
+      },
+      "TargetFileName": {
+        "type": "string"
+      }
+    },
+    "variables": {
+      "Log": {
+        "type": "Boolean"
+      }
+    },
+    "folder": {
+      "name": "ETL/File Load/Generic File to Lake"
+    },
+    "annotations": []
+  },
+  "type": "Microsoft.DataFactory/factories/pipelines"
+}

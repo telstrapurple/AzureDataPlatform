@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    "dbrName": {
+      "value": "TP-SYD-DEV-ADP-DBR-001"
+    },
+    "vNetResourceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Network/providers/Microsoft.Network/virtualNetworks/TP-SYD-DEV-ADP-VNT-10.22.0.0"
+    },
+    "subNetName_DBRPublic": {
+      "value": "Public"
+    },
+    "subNetName_DBRPrivate": {
+      "value": "Private"
+    },
+    "pricingTier": {
+      "value": "premium"
+    },
+    "enableNoPublicIp": {
+      "value": false
+    },
+    "managedResourceGroupName": {
+      "value": "TP-SYD-DEV-ARG-Data-Managed"
+    },
+    "authorizations": {
+      "value": []
+    }
+  }
+}

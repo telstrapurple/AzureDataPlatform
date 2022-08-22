@@ -1,0 +1,39 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "vNetName": {
+            "value": "TP-SYD-DEV-VNT-10.1.0.0"
+        },
+        "subNetName": {
+            "value": "TP-SYD-DEV-SUB-Data"
+        },
+        "vNetCIDR": {
+            "value": "10.1.0.0/23"
+        },
+        "subNetCIDR": {
+            "value": "10.1.0.0/24"
+        },
+        "azureLocation": {
+            "value": "australiaeast"
+        },
+        "companyName": {
+            "value": "Telstra Purple"
+        },
+        "environmentCode": {
+            "value": "DEV"
+        },
+        "environmentLongName": {
+            "value": "Development"
+        },
+        "resourceType": {
+            "value": "Network"
+        },
+        "tagObject": {
+            "value": {
+                "Application": "ADS",
+                "Environment": "Dev"
+            }
+        }
+    }
+}

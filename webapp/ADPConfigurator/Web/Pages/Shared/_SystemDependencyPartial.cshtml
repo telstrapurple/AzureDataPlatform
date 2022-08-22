@@ -1,0 +1,38 @@
+﻿<script type="text/javascript" asp-add-nonce="true">
+        const systems = @Html.Raw(ViewBag.Systems);
+        $("#btnAddSystemDependency").on('click', function () {
+            var maxId = @Html.Raw(ViewBag.SystemDependencyIndex);
+            var lastItemId = $("#tblSystemDependency > tbody > tr:last-child").attr('id');
+            var tableRow = maxId;
+            if (tableRow < lastItemId)
+            {
+                tableRow = lastItemId;
+            }
+            tableRow++;
+            var itemCount = $('#tblSystemDependency > tbody > tr').length;
+            var systemDependencyOptions = '';
+            // Get options
+            for (var i = 0; i < systems.length; i++)
+            {
+                systemDependencyOptions = systemDependencyOptions + '<option value="' + systems[i].id + '">' + systems[i].name + '</option>';
+            }
+
+            $("#tblSystemDependency > tbody").append($('<tr id="' + tableRow + '">')
+                .append($('<input name="SystemDependencies[' + itemCount + '].SystemDependencyId" type="hidden" value="' + tableRow + '">'))
+                .append($('<input name="SystemDependencies[' + itemCount + '].DeletedIndicator" type="hidden" value="False">'))
+                .append($('<td>')
+                    .append($('<select class="form-control" data-val="true" name="SystemDependencies[' + itemCount + '].DependencyId" style="width:100%" type="text" value=""/>')
+                        .append($(systemDependencyOptions))))
+                .append($('<td>')
+                    .append($('<button id="btnDelete-' + tableRow + '" type="button" class="btn btn-danger"/>')
+                        .append($('<i class="fas fa-trash"></i>'))
+                        .append(' Delete'))));
+        });
+
+        $("#tblSystemDependency").on('click','[id*="btnDelete"]', function () { 
+            var id = this.id.replace("btnDelete-", "");
+            $('#tblSystemDependency >tbody > tr[id|="' + id + '"]').hide('slow', function () {
+                $('#tblSystemDependency >tbody > tr[id|="' + id + '"] > input[name*="DeletedIndicator"]').val("True");
+            });
+        });
+</script>

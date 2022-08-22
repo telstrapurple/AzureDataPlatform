@@ -1,0 +1,191 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // DDoS params
+    "ddosPlanId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    },
+    // Specific params
+    "vNetName": {
+      "type": "String"
+    },
+    "vNetCIDR": {
+      "type": "String"
+    },
+    "subNetName_DBRPublic": {
+      "type": "String"
+    },
+    "subNetCIDR_DBRPublic": {
+      "type": "String"
+    },
+    "subNetName_DBRPrivate": {
+      "type": "String"
+    },
+    "subNetCIDR_DBRPrivate": {
+      "type": "String"
+    },
+    "nsgResourceId": {
+      "type": "String"
+    },
+    "natGatewayResourceId": {
+      "type": "String"
+    },
+    "udrResourceId": {
+      "type": "String"
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]",
+    "ddosPlanId": "[if(greater(length(parameters('ddosPlanId')), 0), '', parameters('ddosPlanId'))]",
+    "ddosPlanIdObject": {
+      "id": "[variables('ddosPlanId')]"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2019-11-01",
+      "name": "[parameters('vNetName')]",
+      "tags": "[parameters('tagObject')]",
+      "location": "[variables('azureLocation')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": ["[parameters('vNetCIDR')]"]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('subNetName_DBRPublic')]",
+            "properties": {
+              "addressPrefix": "[parameters('subNetCIDR_DBRPublic')]",
+              "routeTable": "[if(empty(parameters('udrResourceId')), null(), json(concat('{\"id\": \"', parameters('udrResourceId'), '\"}')))]",
+              "serviceEndpoints": [
+                {
+                  "service": "Microsoft.Storage"
+                },
+                {
+                  "service": "Microsoft.KeyVault"
+                },
+                {
+                  "service": "Microsoft.Sql"
+                }
+              ],
+              "networkSecurityGroup": "[if(empty(parameters('nsgResourceId')), null(), json(concat('{\"id\": \"', parameters('nsgResourceId'), '\"}')))]",
+              "natGateway": "[if(empty(parameters('natGatewayResourceId')), null(), json(concat('{\"id\": \"', parameters('natGatewayResourceId'), '\"}')))]",
+              "delegations": [
+                {
+                  "name": "db4660078ee34859a1e024c2f9a98e7c",
+                  "properties": {
+                    "serviceName": "Microsoft.Databricks/workspaces"
+                  }
+                }
+              ],
+              "privateEndpointNetworkPolicies": "Enabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          },
+          {
+            "name": "[parameters('subNetName_DBRPrivate')]",
+            "properties": {
+              "addressPrefix": "[parameters('subNetCIDR_DBRPrivate')]",
+              "networkSecurityGroup": "[if(empty(parameters('nsgResourceId')), null(), json(concat('{\"id\": \"', parameters('nsgResourceId'), '\"}')))]",
+              "natGateway": "[if(empty(parameters('natGatewayResourceId')), null(), json(concat('{\"id\": \"', parameters('natGatewayResourceId'), '\"}')))]",
+              "delegations": [
+                {
+                  "name": "db4660078ee34859a1e024c2f9a98e7c",
+                  "properties": {
+                    "serviceName": "Microsoft.Databricks/workspaces"
+                  }
+                }
+              ],
+              "serviceEndpoints": [
+                {
+                  "service": "Microsoft.Storage"
+                },
+                {
+                  "service": "Microsoft.KeyVault"
+                },
+                {
+                  "service": "Microsoft.Sql"
+                }
+              ],
+              "privateEndpointNetworkPolicies": "Enabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          }
+        ],
+        "virtualNetworkPeerings": [],
+        "enableDdosProtection": "[not(empty(variables('ddosPlanId')))]",
+        "enableVmProtection": false,
+        "ddosProtectionPlan": "[if(empty(variables('ddosPlanId')), null(), variables('ddosPlanIdObject'))]"
+      },
+      "resources": [
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "Microsoft.Network/virtualNetworks/providers/diagnosticSettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "[concat(parameters('vNetName'), '/Microsoft.Insights/', 'diagnostics')]",
+          "dependsOn": ["[parameters('vNetName')]"],
+          "properties": {
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "metrics": [],
+            "logs": [
+              {
+                "category": "VMProtectionAlerts",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "vNetResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vNetName'))]"
+    },
+    "subnetDBRPublicResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vNetName'), parameters('subNetName_DBRPublic'))]"
+    },
+    "subnetDBRPrivateResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vNetName'), parameters('subNetName_DBRPrivate'))]"
+    }
+  }
+}

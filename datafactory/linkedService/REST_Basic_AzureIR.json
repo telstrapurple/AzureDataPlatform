@@ -1,0 +1,36 @@
+{
+	"name": "REST_Basic_AzureIR",
+	"properties": {
+		"type": "RestService",
+		"typeProperties": {
+			"authenticationType": "Basic",
+			"url": "@linkedService().restEndpoint",
+			"userName": "@linkedService().username",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "KeyVault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "@linkedService().passwordSecretName"
+			}
+		},
+		"connectVia": {
+			"referenceName": "IR-ADP",
+			"type": "IntegrationRuntimeReference"
+		},
+		"parameters": {
+			"username": {
+				"type": "string"
+			},
+			"passwordSecretName": {
+				"type": "string"
+			},
+			"restEndpoint": {
+				"type": "string"
+			}
+		},
+		"description": "Generic REST Connection using Basic Authentication Type and Self-Hosted Azure Integration Runtime\n",
+		"annotations": []
+	}
+}

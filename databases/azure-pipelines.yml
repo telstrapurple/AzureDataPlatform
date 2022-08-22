@@ -1,0 +1,103 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - databases/*
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: build
+    displayName: Build
+    jobs:
+      - job: build
+        displayName: Build
+        pool:
+          vmImage: ubuntu-latest
+        variables:
+          buildConfiguration: Release
+          sourceDirectory: databases/Migrator
+        steps:
+          - script: dotnet build --configuration $(buildConfiguration)
+            displayName: Build .NET solution
+            workingDirectory: $(sourceDirectory)
+
+          - script: dotnet publish --output $(Build.ArtifactStagingDirectory)/migrator --configuration $(buildConfiguration) --no-build
+            displayName: Publish project
+            workingDirectory: $(sourceDirectory)
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish artifacts
+            inputs:
+              artifact: migrator
+              targetPath: $(Build.ArtifactStagingDirectory)/migrator
+      - job: copy
+        displayName: Copy files
+        steps:
+          - task: CopyFiles@2
+            displayName: Copy Database files to the artifacts directory
+            inputs:
+              TargetFolder: $(Build.ArtifactStagingDirectory)/databases
+              SourceFolder: databases
+              Contents: |
+                ADP_Config/**/*.*
+                ADP_Stage/**/*.*
+                deployment.ps1
+
+          - task: CopyFiles@2
+            displayName: Copy common infrastructure files to the artifacts directory
+            inputs:
+              TargetFolder: $(Build.ArtifactStagingDirectory)/infrastructure
+              SourceFolder: infrastructure/scripts
+              Contents: "**/*"
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Database artifacts
+            inputs:
+              artifact: databases
+              targetPath: $(Build.ArtifactStagingDirectory)/databases
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish infrastructure artifacts
+            inputs:
+              artifact: infrastructure
+              targetPath: $(Build.ArtifactStagingDirectory)/infrastructure
+
+  - stage: deployToDev
+    displayName: Deploy to Dev
+    condition: and(succeeded(), ne(variables['build.reason'], 'PullRequest'))
+    jobs:
+      - deployment: deployToDev
+        displayName: Deploy to Dev
+        environment: ads-dev
+        pool:
+          vmImage: windows-latest
+        variables:
+          #
+          # Has the following variables:
+          #  - configFile
+          #  - environmentCode
+          #  - environmentName
+          #  - location
+          #  - locationCode
+          #  - subscriptionId
+          #  - tenantId
+          #
+          - group: ads-platform-dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: deployment-steps.yml
+                  parameters:
+                    adosServiceConnectionName: Purple - Development - Azure Data Platform
+                    environmentCode: $(environmentCode)
+                    environmentName: $(environmentName)
+                    location: $(location)
+                    locationCode: $(locationCode)
+                    tenantId: $(tenantId)
+                    subscriptionId: $(subscriptionId)
+                    configFileName: $(configFile)

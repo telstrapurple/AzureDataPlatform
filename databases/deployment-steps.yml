@@ -1,0 +1,38 @@
+parameters:
+  - name: adosServiceConnectionName
+    type: string
+  - name: environmentCode
+    type: string
+  - name: environmentName
+    type: string
+  - name: location
+    type: string
+  - name: locationCode
+    type: string
+  - name: tenantId
+    type: string
+  - name: subscriptionId
+    type: string
+  - name: configFileName
+    type: string
+
+steps:
+  - task: AzurePowerShell@5
+    displayName: Migrate databases
+    inputs:
+      azureSubscription: ${{ parameters.adosServiceConnectionName }}
+      azurePowerShellVersion: LatestVersion
+      pwsh: true
+      ScriptType: FilePath
+      ScriptPath: $(Pipeline.Workspace)/databases/deployment.ps1
+      ScriptArguments: >-
+        -EnvironmentCode '${{ parameters.environmentCode }}'
+        -EnvironmentName '${{ parameters.environmentName }}'
+        -Location '${{ parameters.location }}'
+        -LocationCode '${{ parameters.locationCode }}'
+        -TenantId '${{ parameters.tenantId }}'
+        -SubscriptionId '${{ parameters.subscriptionId }}'
+        -ConfigFileName '${{ parameters.configFileName }}'
+        -DatabasesLocation '$(Pipeline.Workspace)/databases'
+        -InfrastructureScriptsLocation '$(Pipeline.Workspace)/infrastructure'
+        -MigratorLocation '$(Pipeline.Workspace)/migrator'

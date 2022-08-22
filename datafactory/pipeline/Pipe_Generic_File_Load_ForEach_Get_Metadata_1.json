@@ -1,0 +1,138 @@
+{
+  "name": "Pipe_Generic_File_Load_ForEach_Get_Metadata_1",
+  "properties": {
+    "activities": [
+      {
+        "name": "FEL - Get Metadata",
+        "type": "ForEach",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@pipeline().parameters.ChildItems",
+            "type": "Expression"
+          },
+          "isSequential": false,
+          "batchCount": 10,
+          "activities": [
+            {
+              "name": "EP - Get Metadata",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_Get_Metadata_2",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "ServiceEndpoint": {
+                    "value": "@pipeline().parameters.ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "FilePath": {
+                    "value": "@concat(concat(pipeline().parameters.FilePath, '/'), item().name)",
+                    "type": "Expression"
+                  },
+                  "FileName": {
+                    "value": "@pipeline().parameters.FileName",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.Host",
+                    "type": "Expression"
+                  },
+                  "onPremisesUserName": {
+                    "value": "@pipeline().parameters.onPremisesUserName",
+                    "type": "Expression"
+                  },
+                  "onPremisesPassword": {
+                    "value": "@pipeline().parameters.onPremisesPassword",
+                    "type": "Expression"
+                  },
+                  "storageAccountName": {
+                    "value": "@pipeline().parameters.storageAccountName",
+                    "type": "Expression"
+                  },
+                  "accountKeySecretName": {
+                    "value": "@pipeline().parameters.accountKeySecretName",
+                    "type": "Expression"
+                  },
+                  "fileShare": {
+                    "value": "@pipeline().parameters.fileShare",
+                    "type": "Expression"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "parameters": {
+      "TaskConfig": {
+        "type": "object"
+      },
+      "TaskID": {
+        "type": "int"
+      },
+      "TaskInstanceID": {
+        "type": "int"
+      },
+      "TaskType": {
+        "type": "string"
+      },
+      "ChildItems": {
+        "type": "array"
+      },
+      "ServiceEndpoint": {
+        "type": "string"
+      },
+      "FilePath": {
+        "type": "string"
+      },
+      "FileName": {
+        "type": "string"
+      },
+      "Host": {
+        "type": "string"
+      },
+      "onPremisesUserName": {
+        "type": "securestring"
+      },
+      "onPremisesPassword": {
+        "type": "securestring"
+      },
+      "storageAccountName": {
+        "type": "string"
+      },
+      "accountKeySecretName": {
+        "type": "string"
+      },
+      "fileShare": {
+        "type": "string"
+      }
+    },
+    "folder": {
+      "name": "ETL/File Load/Get Metadata"
+    },
+    "annotations": []
+  }
+}

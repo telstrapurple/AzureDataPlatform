@@ -1,0 +1,40 @@
+{
+	"name": "Generic_ODBC",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Odbc",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"odbcConnectionSecret": {
+					"value": "@dataset().odbcConnectionStringSecret",
+					"type": "Expression"
+				},
+				"odbcPasswordSecret": {
+					"value": "@dataset().odbcPasswordSecret",
+					"type": "Expression"
+				},
+				"odbcUserName": {
+					"value": "@dataset().odbcUserName",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"odbcConnectionStringSecret": {
+				"type": "string"
+			},
+			"odbcUserName": {
+				"type": "string"
+			},
+			"odbcPasswordSecret": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "ODBC"
+		},
+		"annotations": [],
+		"type": "OdbcTable",
+		"schema": []
+	}
+}

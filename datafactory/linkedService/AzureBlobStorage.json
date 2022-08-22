@@ -1,0 +1,16 @@
+{
+	"name": "AzureBlobStorage",
+	"properties": {
+		"type": "AzureBlobStorage",
+		"parameters": {
+			"serviceEndPoint": {
+				"type": "string"
+			}
+		},
+		"description": "This is a generic Azure Blob Storage connection",
+		"annotations": [],
+		"typeProperties": {
+			"serviceEndpoint": "@linkedService().serviceEndPoint"
+		}
+	}
+}

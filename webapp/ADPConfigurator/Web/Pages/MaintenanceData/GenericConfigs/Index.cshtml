@@ -1,0 +1,41 @@
+﻿@page
+@model Web.Pages.MaintenanceData.GenericConfigs.IndexModel
+
+@{
+    ViewData["Title"] = "Settings";
+}
+
+<h1>
+    <i class="float-right fas fa-code"></i>
+    Settings
+</h1>
+
+<form method="post">
+    @for (var i = 0; i < Model.GenericConfig.Count; i++)
+    {
+        <div class="form-group">
+            @Html.HiddenFor(modelItem => Model.GenericConfig[i].GenericConfigId)
+            @Html.HiddenFor(modelItem => Model.GenericConfig[i].DateCreated)
+            @Html.HiddenFor(modelItem => Model.GenericConfig[i].CreatedBy)
+            @Html.HiddenFor(modelItem => Model.GenericConfig[i].DateModified)
+            @Html.HiddenFor(modelItem => Model.GenericConfig[i].ModifiedBy)
+            @Html.HiddenFor(modelItem => Model.GenericConfig[i].GenericConfigName)
+            @Html.HiddenFor(modelItem => Model.GenericConfig[i].GenericConfigDescription)
+            <label for="@Html.NameFor(modelItem => Model.GenericConfig[i].GenericConfigValue)">
+                @Html.DisplayFor(modelItem => Model.GenericConfig[i].GenericConfigName)
+            </label>
+            @Html.TextBoxFor(modelItem => Model.GenericConfig[i].GenericConfigValue, new { style = "width:100%", @class = "form-control" })
+            <p class="small text-muted">
+                @Html.DisplayFor(modelItem => Model.GenericConfig[i].GenericConfigDescription)
+            </p>
+        </div>
+    }
+    
+    <div class="form-group">
+        <button type="submit" class="btn btn-success">
+            <i class="fas fa-check"></i>
+            Save
+        </button>
+    </div>
+</form>
+

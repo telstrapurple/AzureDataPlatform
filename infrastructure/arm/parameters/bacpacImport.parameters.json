@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "sqlServerName": {
+      "value": "TP-SYD-DEV-ADP-SQL-001"
+    },
+    "databaseName": {
+      "value": "ADP_Config"
+    },
+    "storageUri": {
+      "value": "https://tpsyddevadpsta001.blob.core.windows.net/bacpac/ADP_Config.bacpac"
+    },
+    "storageKey": {
+      "value": ""
+    },
+    "administratorLogin": {
+      "value": "sql_ADPAdmin"
+    },
+    "administratorLoginPassword": {
+      "value": ""
+    }
+  }
+}

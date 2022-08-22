@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-databricks.schema.json",
+  "title": "Azure Data Platform Config - Databricks",
+  "description": "Databricks Configuration for the Azure Data Platform",
+  "type": "object",
+  "properties": {
+    //databricks.sku
+    //databricksNetwork
+    //                 .subNetName_DBRPublic   //covered by deploy-network.schema.json
+    //                 .subNetName_DBRPrivate  //covered by deploy-network.schema.json
+    //databricksAADAppRegistration
+    //                            .minCredentialExpiryInMonths
+    //                            .maxCredentialExpiryInMonths
+    //databricksClusters
+    //                  .minWorkers
+    //                  .maxWorkers
+    //                  .terminationDurationMinutes
+    //                  .sparkVersion
+    //                  .standardClusterSparkConfig
+    //                  .deployStandardSku
+    //                  .deployHighConcurrencySku
+
+    "databricks": {
+      "$ref": "#/definitions/databricks",
+      "description": "Parameters passed to ARM template dataBricks.json"
+    },
+    "databricksAADAppRegistration": {
+      "$ref": "#/definitions/databricksAADAppRegistration",
+      "description": "Config properties for the databricks app registration credentials"
+    },
+    "databricksClusters": {
+      "$ref": "#/definitions/databricksClusters",
+      "description": "Config properties for the databricks Cluster"
+    }
+  },
+  "required": [
+    "databricks",
+    "databricksAADAppRegistration",
+    "databricksClusters"
+  ],
+  "definitions": {
+    "databricks": {
+      "type": "object",
+      "properties": {
+        "pricingTier": {
+          "$ref": "#/definitions/databricksSku",
+          "default": "trial"
+        }
+      },
+      "required": ["pricingTier"]
+    },
+    "databricksSku": {
+      "type": "string",
+      "enum": ["trial", "standard", "premium"]
+    },
+    "databricksAADAppRegistration": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "minCredentialExpiryInMonths": {
+          "type": "number"
+        },
+        "maxCredentialExpiryInMonths": {
+          "type": "number"
+        }
+      },
+      "required": ["minCredentialExpiryInMonths", "maxCredentialExpiryInMonths"]
+    },
+    "databricksClusters": {
+      "type": "object",
+      "description": "Properties for setting up the databricks cluster. See documentation here: https://docs.microsoft.com/en-gb/azure/databricks/dev-tools/api/latest/clusters#--create",
+      "properties": {
+        "minWorkers": {
+          "type": "number",
+          "description": "See Cluster Autoscale parameters https://docs.microsoft.com/en-gb/azure/databricks/dev-tools/api/latest/clusters#clusterautoscale"
+        },
+        "maxWorkers": {
+          "type": "number",
+          "description": "See Cluster Autoscale parameters https://docs.microsoft.com/en-gb/azure/databricks/dev-tools/api/latest/clusters#clusterautoscale"
+        },
+        "terminationDurationMinutes": {
+          "type": "number",
+          "description": "See parameter autotermination_minutes: documentation here: https://docs.microsoft.com/en-gb/azure/databricks/dev-tools/api/latest/clusters#--create"
+        },
+        "sparkVersion": {
+          "type": "string",
+          "description": "See parameter spark_version: documentation here: https://docs.microsoft.com/en-gb/azure/databricks/dev-tools/api/latest/clusters#--create"
+        },
+        "standardClusterSparkConfig": {
+          "type": "object",
+          "description": "Map of additional variables to pass to the spark cluster"
+        },
+        "deployStandardSku": {
+          "type": "string",
+          "description": "Sku to use when deploying a standard cluster."
+        },
+        "deployHighConcurrencySku": {
+          "type": "boolean",
+          "description": "Whether or not to create an additional high concurrency cluster using the SKU specified in deployStandardSku"
+        }
+      },
+      "required": [
+        "minWorkers",
+        "maxWorkers",
+        "terminationDurationMinutes",
+        "sparkVersion",
+        // "standardClusterSparkConfig", //not mandatory. All the others _are_ mandatory
+        "deployStandardSku",
+        "deployHighConcurrencySku"
+      ]
+    }
+  }
+}

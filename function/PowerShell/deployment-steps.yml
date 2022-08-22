@@ -1,0 +1,60 @@
+parameters:
+  - name: adosServiceConnectionName
+    type: string
+  - name: environmentCode
+    type: string
+  - name: location
+    type: string
+  - name: locationCode
+    type: string
+  - name: configFileName
+    type: string
+  - name: tenantId
+    type: string
+  - name: subscriptionId
+    type: string
+
+steps:
+  - task: AzurePowerShell@5
+    displayName: Get the Function App name
+    env:
+      CONFIG_FILE_NAME: ${{ parameters.configFileName }}
+      ENVIRONMENT_CODE: ${{ parameters.environmentCode }}
+      INFRASTRUCTURE_SCRIPTS_LOCATION: $(Pipeline.Workspace)/infrastructure
+      LOCATION: ${{ parameters.location }}
+      LOCATION_CODE: ${{ parameters.locationCode }}
+      TENANT_ID: ${{ parameters.tenantId }}
+      SUBSCRIPTION_ID: ${{ parameters.subscriptionId }}
+    inputs:
+      azureSubscription: ${{ parameters. adosServiceConnectionName}}
+      pwsh: true
+      azurePowerShellVersion: LatestVersion
+      ScriptType: InlineScript
+      Inline: |
+        $adpContextParameters = @{
+          EnvironmentCode = $env:ENVIRONMENT_CODE
+          Location        = $env:LOCATION
+          LocationCode    = $env:LOCATION_CODE
+          TenantId        = $env:TENANT_ID
+          SubscriptionId  = $env:SUBSCRIPTION_ID
+        }
+
+        $adpModuleFilePath = Join-Path -Path $env:INFRASTRUCTURE_SCRIPTS_LOCATION -ChildPath './functions/adp.psm1'
+        $configFilePath = Join-Path -Path $env:INFRASTRUCTURE_SCRIPTS_LOCATION -ChildPath $env:CONFIG_FILE_NAME
+
+        Import-Module -Name $adpModuleFilePath -Force -Verbose:$false
+        $adpContext = Initialize-ADPContext -parameters $adpContextParameters -configFilePath $configFilePath -outputTag:$false
+
+        # Default is '001'
+        $functionAppResourceName = Get-ResourceName -context $adpContext -resourceCode 'FNA' -suffix '01'
+        Write-Output -InputObject ('Computed Function App resource name is ''{0}''' -f $functionAppResourceName)
+
+        Write-Host -Object ('##vso[task.setvariable variable=functionAppName]{0}' -f $functionAppResourceName)
+
+  - task: AzureRmWebAppDeployment@4
+    displayName: Deploy to Function App
+    inputs:
+      azureSubscription: ${{ parameters.adosServiceConnectionName }}
+      WebAppName: $(functionAppName)
+      appType: functionApp
+      packageForLinux: $(Pipeline.Workspace)/function

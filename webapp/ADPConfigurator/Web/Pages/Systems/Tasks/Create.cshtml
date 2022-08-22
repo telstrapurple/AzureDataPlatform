@@ -1,0 +1,205 @@
+﻿@page "{id:int}"
+@model Web.Pages.Systems.Tasks.CreateModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>
+    <i class="float-right fas fa-tasks"></i>
+    Create Task in @Html.DisplayFor(modelItem => Model.Task.System.SystemName)
+</h1>
+
+<form method="post">
+    <div class="row">
+        <div class="col-md-5 col-sm-12">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Task.SystemId" />
+            <div class="form-group">
+                <label asp-for="Task.TaskName" class="control-label">Task Name</label>
+                <input asp-for="Task.TaskName" class="form-control" />
+                <span asp-validation-for="Task.TaskName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Task.TaskDescription" class="control-label">Task Description</label>
+                <input asp-for="Task.TaskDescription" class="form-control" />
+                <span asp-validation-for="Task.TaskDescription" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Task.ScheduleId" class="control-label">Schedule</label>
+                <select asp-for="Task.ScheduleId" class="form-control" asp-items="ViewBag.ScheduleId"></select>
+                <span asp-validation-for="Task.ScheduleId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Task.TaskTypeId" class="control-label">Task Type</label>
+                <select asp-for="Task.TaskTypeId" class="form-control" asp-items="ViewBag.TaskTypeId"></select>
+                <span asp-validation-for="Task.TaskTypeId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Task.SourceConnectionId" class="control-label">Source Connection</label>
+                <select asp-for="Task.SourceConnectionId" class="form-control" asp-items="ViewBag.SourceConnectionId"></select>
+                <span asp-validation-for="Task.SourceConnectionId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Task.EtlconnectionId" class="control-label">ETL Connection</label>
+                <select asp-for="Task.EtlconnectionId" class="form-control" asp-items="ViewBag.EtlconnectionId"></select>
+                <span asp-validation-for="Task.EtlconnectionId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Task.StageConnectionId" class="control-label">Stage Connection</label>
+                <select asp-for="Task.StageConnectionId" class="form-control" asp-items="ViewBag.StageConnectionId"></select>
+                <span asp-validation-for="Task.StageConnectionId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Task.TargetConnectionId" class="control-label">Target Connection</label>
+                <select asp-for="Task.TargetConnectionId" class="form-control" asp-items="ViewBag.TargetConnectionId"></select>
+                <span asp-validation-for="Task.TargetConnectionId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Task.TaskOrderId" class="control-label">Task Order</label>
+                <input asp-for="Task.TaskOrderId" class="form-control" />
+                <span asp-validation-for="Task.TaskOrderId" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input type="checkbox" class="form-check-input" disabled="disabled" checked="checked"/> @Html.DisplayNameFor(model => model.Task.Enabled)
+                </label>
+            </div>
+            <div>
+                <a href="#bottom">
+                    <i class="fas fa-arrow-down"></i>
+                    Skip to Save button
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-7 col-sm-12">
+                   
+            <!-- file column mapping -->
+            <div id="fileColumnMapping">
+                <h2>Column Mappings</h2>
+                <table class="table table" id="tblFileColumnMapping">
+                    <thead>
+                        <tr>
+                            <th>
+                                Source Column
+                            </th>
+                            <th>
+                                Target Column
+                            </th>
+                            <th style="width:20%">
+                                Data Type
+                            </th>
+                            <th>
+                                Data Length
+                            </th>
+                            <th>
+                                Delete
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+                <div class="form-group">
+                    <button id="btnAddMapping" type="button" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i>
+                        Add new mapping
+                    </button>
+                </div>
+            </div>
+            
+            <!-- task property passthrough mapping -->
+            <div id="taskPropertyPassthroughMapping">
+                <h2>Task Property Passthrough</h2>
+                <table class="table table" id="tblTaskPropertyPassthroughMapping">
+                    <thead>
+                        <tr>
+                            <th>
+                                Task Passthrough Name
+                            </th>
+                            <th>
+                                Delete
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+                <div class="form-group">
+                    <input id="btnAddPassthrough" type="button" value="Add new passthrough" class="btn btn-primary" />
+                </div>
+            </div>
+        </div>
+    </div>
+            
+    <hr />
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="float-right">
+                <span>
+                    <i class="fas fa-arrow-down"></i>
+                    Skip to:
+                </span>
+                @foreach (var group in @Model.CurrentTaskProperties.GroupBy(property => property.TaskPropertyType.TaskPropertyTypeName.ToCharArray()[0]))
+                {
+                    <a href="#TaskProperties_Group_@group.First().TaskPropertyType.TaskPropertyTypeId" class="pl-1">
+                        @group.First().TaskPropertyType.TaskPropertyTypeName.ToCharArray()[0]
+                    </a>
+                }
+            </div>
+            <h2>Properties</h2>
+            @for (var i = 0; i < Model.CurrentTaskProperties.Count; i++)
+            {
+                <div class="form-group" id="TaskProperties_Group_@Model.CurrentTaskProperties[i].TaskPropertyType.TaskPropertyTypeId">
+                    @Html.HiddenFor(modelItem => Model.CurrentTaskProperties[i].TaskPropertyId)
+                    @Html.HiddenFor(modelItem => Model.CurrentTaskProperties[i].DeletedIndicator)
+                    @Html.HiddenFor(modelItem => Model.CurrentTaskProperties[i].TaskPropertyTypeId)
+                    <label for="@Html.NameFor(modelItem => Model.CurrentTaskProperties[i].TaskPropertyType.TaskPropertyTypeName)">
+                        @Html.DisplayFor(modelItem => Model.CurrentTaskProperties[i].TaskPropertyType.TaskPropertyTypeName)
+                    </label>
+                    @if (Model.CurrentTaskProperties[i].TaskPropertyType.TaskPropertyTypeValidation.TaskPropertyTypeValidationName == "DropDownList")
+                    {
+                        var itemList = new SelectList(Model.TaskPropertyTypeOptions.Where(t => t.TaskPropertyTypeId == Model.CurrentTaskProperties[i].TaskPropertyType.TaskPropertyTypeId), "TaskPropertyTypeOptionName", "TaskPropertyTypeOptionName");
+                        <select asp-for="CurrentTaskProperties[i].TaskPropertyValue" class="form-control" asp-items="itemList"></select>
+                        <span asp-validation-for="CurrentTaskProperties[i].TaskPropertyValue" class="text-danger"></span>
+                    }
+                    else if (Model.CurrentTaskProperties[i].TaskPropertyType.TaskPropertyTypeValidation.TaskPropertyTypeValidationName == "NumberBox")
+                    {
+                        @Html.TextBoxFor(modelItem => Model.CurrentTaskProperties[i].TaskPropertyValue, new {style = "width:100%", @class = "form-control", @type = "number"})
+                    }
+                    else if (Model.CurrentTaskProperties[i].TaskPropertyType.TaskPropertyTypeValidation.TaskPropertyTypeValidationName == "MultiLineTextBox")
+                    {
+                        @Html.TextAreaFor(modelItem => Model.CurrentTaskProperties[i].TaskPropertyValue, new {style = "width:100%", @class = "form-control"})
+                    }
+                    // The "Target File Path" is a special case - we need to display the prefix that will be automatically
+                    // prepended to the user's input
+                    else if (Model.CurrentTaskProperties[i].TaskPropertyType.TaskPropertyTypeName == "Target File Path")
+                    {
+                        <div class="target-path">
+                            <span>@Model.Task.System.TargetPathPrefix</span>
+                            @Html.TextBoxFor(modelItem => Model.CurrentTaskProperties[i].TaskPropertyValue, new { @class = "form-control" })
+                        </div>
+                    }
+                    else // else it is a TextBox
+                    {
+                        @Html.TextBoxFor(modelItem => Model.CurrentTaskProperties[i].TaskPropertyValue, new {style = "width:100%", @class = "form-control"})
+                    }
+                    <p class="small text-muted">
+                        @Model.CurrentTaskProperties[i].TaskPropertyType.TaskPropertyTypeDescription
+                    </p>
+                </div>
+            }
+        </div>
+    </div>
+
+    @{await Html.RenderPartialAsync("_FormControls", @Url.Page("./Index", new { systemid = @Model.Task.System.SystemId }));}
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{await Html.RenderPartialAsync("_FileColumnMappingPartial");}
+    @{await Html.RenderPartialAsync("_TaskPropertyPassthroughMappingPartial");}
+    @{await Html.RenderPartialAsync("_DynamicTaskPageFiltering");}
+}

@@ -1,0 +1,192 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    },
+    // Specific params
+    "aaaName": {
+      "type": "string"
+    },
+    "sku": {
+      "type": "string",
+      "maxLength": 128,
+      "allowedValues": ["Free", "Basic"]
+    },
+    "runbookBlobContainer": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "runbookBlobSASToken": {
+      "type": "string"
+    },
+    "parentModules": {
+      "type": "array"
+    },
+    "childModules": {
+      "type": "array"
+    },
+    "runbooks": {
+      "type": "array"
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Automation/automationAccounts",
+      "name": "[parameters('aaaName')]",
+      "apiVersion": "2015-10-31",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": {
+        "sku": {
+          "name": "[parameters('sku')]"
+        }
+      },
+      "resources": [
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "Microsoft.Automation/automationAccounts/providers/diagnosticSettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "[concat(parameters('aaaName'), '/', 'Microsoft.Insights/', 'diagnostics')]",
+          "dependsOn": ["[parameters('aaaName')]"],
+          "properties": {
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "metrics": [
+              {
+                "category": "AllMetrics",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                },
+                "timeGrain": null
+              }
+            ],
+            "logs": [
+              {
+                "category": "JobLogs",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "JobStreams",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "DscNodeStatus",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.Automation/automationAccounts/modules",
+      "apiVersion": "2015-10-31",
+      "name": "[concat(parameters('aaaName'), '/', parameters('parentModules')[copyIndex()].name)]",
+      "copy": {
+        "name": "modulesParentLoop",
+        "count": "[length(parameters('parentModules'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Automation/automationAccounts', parameters('aaaName'))]"
+      ],
+      "properties": {
+        "contentLink": {
+          "uri": "[parameters('parentModules')[copyIndex()].url]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Automation/automationAccounts/modules",
+      "apiVersion": "2015-10-31",
+      "name": "[concat(parameters('aaaName'), '/', parameters('childModules')[copyIndex()].name)]",
+      "copy": {
+        "name": "childModulesLoop",
+        "count": "[length(parameters('childModules'))]"
+      },
+      "dependsOn": [
+        "modulesParentLoop",
+        "[resourceId('Microsoft.Automation/automationAccounts', parameters('aaaName'))]"
+      ],
+      "properties": {
+        "contentLink": {
+          "uri": "[parameters('childModules')[copyIndex()].url]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Automation/automationAccounts/runbooks",
+      "apiVersion": "2018-06-30",
+      "name": "[concat(parameters('aaaName'), '/', parameters('runbooks')[copyIndex()].name)]",
+      "location": "[variables('azureLocation')]",
+      "copy": {
+        "name": "runbooksLoop",
+        "count": "[length(parameters('runbooks'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Automation/automationAccounts', parameters('aaaName'))]"
+      ],
+      "properties": {
+        "description": "[parameters('runbooks')[copyIndex()].description]",
+        "runbookType": "[parameters('runbooks')[copyIndex()].type]",
+        "publishContentLink": {
+          "uri": "[concat(parameters('runbookBlobContainer'), '/', parameters('runbooks')[copyIndex()].file, parameters('runbookBlobSASToken'))]",
+          "version": "[parameters('runbooks')[copyIndex()].version]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "automationAccountName": {
+      "type": "string",
+      "value": "[parameters('aaaName')]"
+    },
+    "automationAccountResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Automation/automationAccounts', parameters('aaaName'))]"
+    }
+  }
+}

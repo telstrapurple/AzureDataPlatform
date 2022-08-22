@@ -1,0 +1,121 @@
+﻿@page
+@model Web.Pages.MaintenanceData.Connections.IndexModel
+
+@{
+    ViewData["Title"] = "Connections";
+}
+
+<h1>
+    <i class="float-right fas fa-plug"></i>
+    Connections
+</h1>
+
+<div class="float-right">
+    <a asp-page="Create" class="btn btn-outline-success">
+        <i class="fas fa-plus-circle"></i>
+        Create New
+    </a>
+</div>
+
+<form asp-page="./Index" method="get" class="form-inline pb-2">
+    <div class="form-actions no-color">
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Search:</span>
+            </div>
+            <input type="text" name="SearchString" class="form-control" value="@ViewData["CurrentFilter"]"/>
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Search
+                </button>
+                <a role="button" class="btn btn-secondary" asp-page="./Index">
+                    <i class="fas fa-search-minus"></i>
+                    Clear
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@if (Model.Connection.Count > 0)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    Name
+                </th>
+                <th>
+                    Type
+                </th>
+                <th>
+                    Enabled
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Connection)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.ConnectionName)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.ConnectionType.ConnectionTypeName)
+                    </td>
+                    <td>
+                        @(item.Enabled ? "Enabled" : "\u2014")
+                    </td>
+                    <td class="text-right">
+                        <div class="btn-group">
+                            <a asp-page="./Edit" asp-route-id="@item.ConnectionId" class="btn btn-outline-secondary text-nowrap">
+                                <i class="fas fa-edit fa-sm"></i>
+                                Edit
+                            </a>
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="sr-only">Toggle Dropdown</span>
+                            </button>
+                            <div class="dropdown-menu">
+                                <a asp-page="./Delete" asp-route-id="@item.ConnectionId" class="dropdown-item text-nowrap text-danger">
+                                    <i class="fas fa-trash fa-sm"></i>
+                                    Delete
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-warning" role="alert">
+        <i class="fas fa-exclamation-triangle"></i>
+        There are no connections configured
+    </div>
+}
+
+@{
+    var prevDisabled = !Model.Connection.HasPreviousPage ? "disabled" : "";
+    var nextDisabled = !Model.Connection.HasNextPage ? "disabled" : "";
+}
+
+<div class="alert alert-secondary">
+    <a asp-page="./Index"
+       asp-route-pageIndex="@(Model.Connection.PageIndex - 1)"
+       asp-route-currentFilter="@ViewData["CurrentFilter"]"
+       class="btn btn-primary @prevDisabled">
+        <i class="fas fa-chevron-left"></i>
+        Previous
+    </a>
+    <a asp-page="./Index"
+       asp-route-pageIndex="@(Model.Connection.PageIndex + 1)"
+       asp-route-currentFilter="@ViewData["CurrentFilter"]"
+       class="btn btn-primary @nextDisabled">
+        Next
+        <i class="fas fa-chevron-right"></i>
+    </a>
+</div>

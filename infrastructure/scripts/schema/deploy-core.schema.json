@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-core.schema.json",
+  "title": "Azure Data Platform Config - Core",
+  "description": "Core Configuration for the Azure Data Platform",
+  "type": "object",
+  "properties": {
+    "logAnalyticsSolutions": {
+      "type": "array",
+      "description": "The various Log Analytics Solutions to deploy, e.g. SQLAssessment, AzureNetworking, VMInsights, etc.",
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "logAnalytics": {
+      "$ref": "#/definitions/logAnalytics",
+      "description": "Additional properties for configuring operation insights, passed to ARM template logAnalytics.json"
+    },
+    "create": {
+      "$ref": "#/definitions/create"
+    }
+  },
+  "required": ["logAnalyticsSolutions", "create", "logAnalytics"],
+  "definitions": {
+    "create": {
+      "type": "object",
+      "properties": {
+        "resourceGroups": {
+          "type": "boolean",
+          "description": "Whether or not to create resource groups."
+        },
+        "diagnostics": {
+          "type": "boolean",
+          "description": "Whether or not to create centralised diagnostics."
+        },
+        "sentinel": {
+          "type": "boolean",
+          "description": "Whether or not to create Azure Sentinel."
+        }
+      },
+      "required": ["resourceGroups", "diagnostics", "sentinel"]
+    },
+    "logAnalytics": {
+      "type": "object",
+      "properties": {
+        "serviceTier": {
+          "type": "string",
+          "default": "PerGB2018",
+          "enum": ["PerGB2018", "CapacityReservation"]
+        },
+        "capacityReservationLevel": {
+          "type": "integer",
+          "default": 0
+        },
+        "retentionInDays": {
+          "type": "integer",
+          "default": 31
+        },
+        "dailyQuotaGb": {
+          "type": "integer",
+          "default": 5
+        },
+        "publicIngestion": {
+          "type": "boolean",
+          "default": true
+        },
+        "publicQuery": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [] //none required, all have default values in the ARM template logAnalytics.json
+    }
+  }
+}

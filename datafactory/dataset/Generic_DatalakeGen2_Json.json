@@ -1,0 +1,57 @@
+{
+	"name": "Generic_DatalakeGen2_Json",
+	"properties": {
+		"description": "This is the generic Data Lake Gen 2 data set for json files",
+		"linkedServiceName": {
+			"referenceName": "DataLakeGen2",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"dataLakeServiceEndPoint": {
+					"value": "@dataset().serviceEndPoint",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"serviceEndPoint": {
+				"type": "string"
+			},
+			"filePath": {
+				"type": "string"
+			},
+			"fileName": {
+				"type": "string"
+			},
+			"compressionType": {
+				"type": "string"
+			},
+			"encoding": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Blob"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().filePath",
+					"type": "Expression"
+				}
+			},
+			"encodingName": {
+				"value": "@dataset().encoding",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

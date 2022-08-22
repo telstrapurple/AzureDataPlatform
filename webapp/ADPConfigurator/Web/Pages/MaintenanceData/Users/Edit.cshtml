@@ -1,0 +1,85 @@
+﻿@page
+@model Web.Pages.MaintenanceData.Users.EditModel
+
+@{
+    ViewData["Title"] = "Edit User";
+}
+
+<h1>
+    <i class="float-right fas fa-user-alt"></i>
+    Edit User
+</h1>
+
+<form method="post">
+    <div class="row">
+        <div class="col-md-4 col-sm-12">
+            <div class="form-group">
+                <label asp-for="SelectedUser.UserName" class="control-label">Name</label>
+                <input asp-for="SelectedUser.UserName" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="SelectedUser.EmailAddress" class="control-label">Email Address</label>
+                <input asp-for="SelectedUser.EmailAddress" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="SelectedUser.DateCreated">First signed in</label>
+                <input asp-for="SelectedUser.DateCreated" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="SelectedUser.DateModified">Last signed in</label>
+                <input asp-for="SelectedUser.DateModified" class="form-control" readonly />
+            </div>
+
+            <div class="form-group">
+                <label for="adminAccess">Access Type</label>
+                <div id="adminAccess" title="@(Model.IsSelf ? "You cannot modify your own admin status" : null)">
+                    <div>
+                        <input type="radio"
+                               asp-for="SelectedUser.AdminIndicator"
+                               value="true"
+                               id="admin"
+                               name="AdminIndicator"
+                               disabled="@(Model.IsSelf ? "disabled" : null)" />
+                        <label for="admin" class="d-inline">
+                            Admin
+                            <span class="d-inline-block small mb-3">
+                                Admins have access to all systems, and can modify all maintenance data
+                            </span>
+                        </label>
+                    </div>
+
+                    <div>
+                        <input type="radio"
+                               asp-for="SelectedUser.AdminIndicator"
+                               value="false"
+                               id="notAdmin"
+                               name="AdminIndicator"
+                               disabled="@(Model.IsSelf ? "disabled" : null)" />
+
+                        <label for="notAdmin" class="d-inline">
+                            Regular
+                            <span class="d-inline-block small mb-3">
+                                Regular users can only view and modify systems for which they have been granted permissions
+                            </span>
+                        </label>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 offset-md-1 col-sm-12 offset-sm-0">
+            <h2>Permissions</h2>
+                <div class="alert alert-warning" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    System permissions are managed by AAD group membership
+                </div>
+        </div>
+    </div>
+
+    @{await Html.RenderPartialAsync("_FormControls");}
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_TableSelectPartial");}
+}

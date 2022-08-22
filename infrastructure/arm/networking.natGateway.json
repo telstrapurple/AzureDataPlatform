@@ -1,0 +1,114 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "gatewayName": {
+      "type": "string"
+    },
+    "tagObject": {
+      "type": "object"
+    },
+    "gatewaySKU": {
+      "type": "string",
+      "defaultValue": "Standard",
+      "allowedValues": ["Standard"],
+      "metadata": {
+        "description": "SKU for the NAT gateway"
+      }
+    },
+    "publicIPSKU": {
+      "type": "string",
+      "defaultValue": "Standard",
+      "allowedValues": ["Standard"],
+      "metadata": {
+        "description": "SKU for the public IP"
+      }
+    },
+    "gatewayPublicIPName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the gateway public IP"
+      }
+    },
+    "publicIPAddressVersion": {
+      "type": "string",
+      "defaultValue": "IPv4",
+      "metadata": {
+        "description": "The public IP address version"
+      }
+    },
+    "publicIPAllocationMethod": {
+      "type": "string",
+      "defaultValue": "Static",
+      "allowedValues": ["Static", "Dynamic"],
+      "metadata": {
+        "description": "The public IP allocation method"
+      }
+    },
+    "idleTimeoutGatewayMinutes": {
+      "type": "int",
+      "defaultValue": 4,
+      "minValue": 0,
+      "maxValue": 30,
+      "metadata": {
+        "description": "The idle timeout for the nat gateway"
+      }
+    },
+    "idleTimeoutPIPMinutes": {
+      "type": "int",
+      "defaultValue": 4,
+      "minValue": 0,
+      "maxValue": 30,
+      "metadata": {
+        "description": "The idle timeout for the public IP"
+      }
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2020-05-01",
+      "name": "[parameters('gatewayPublicIPName')]",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "sku": {
+        "name": "[parameters('publicIPSKU')]"
+      },
+      "properties": {
+        "publicIPAddressVersion": "[parameters('publicIPAddressVersion')]",
+        "publicIPAllocationMethod": "[parameters('publicIPAllocationMethod')]",
+        "idleTimeoutInMinutes": "[parameters('idleTimeoutPIPMinutes')]"
+      }
+    },
+    {
+      "type": "Microsoft.Network/natGateways",
+      "apiVersion": "2019-04-01",
+      "name": "[parameters('gatewayName')]",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "sku": {
+        "name": "[parameters('gatewaySKU')]"
+      },
+      "properties": {
+        "idleTimeoutInMinutes": "[parameters('idleTimeoutGatewayMinutes')]",
+        "publicIpAddresses": [
+          {
+            "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('gatewayPublicIPName'))]"
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', parameters('gatewayPublicIPName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "natGatewayResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/natGateways', parameters('gatewayName'))]"
+    }
+  }
+}

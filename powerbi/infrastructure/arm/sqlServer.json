@@ -1,0 +1,141 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "companyCode": {
+            "type": "string",
+            "maxLength": 16
+        },
+        "companyName": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "departmentCode": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "resourceType": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "resourceCode": {
+            "type": "string",
+            "maxLength": 4
+        },
+        "environmentCode": {
+            "type": "string",
+            "maxLength": 50
+        },
+        "environmentLongName": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "azureLocation": {
+            "type": "string",
+            "defaultValue": "australiasoutheast",
+            "allowedValues": [
+                "australiaeast",
+                "australiasoutheast"
+            ]
+        },
+        "delimeter": {
+            "type": "string",
+            "defaultValue": "-",
+            "allowedValues": [
+                "-",
+                "_",
+                ""
+            ]
+        },
+        "sqlAdministratorLoginUsername": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password of the admin user of the SQL Server"
+            }
+        },
+        "sqlAdministratorLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password of the admin user of the SQL Server"
+            }
+        },
+        "suffix": {
+            "type": "string",
+            "defaultValue": "001"
+        },
+        "sql_AzureADGroupName": {
+            "type": "string"
+        },
+        "sql_AzureADGroupID": {
+            "type": "string"
+        },
+        "azureTenantID": {
+            "type": "string"
+        },
+        "tagObject": {
+            "type": "object"
+        },
+        "subnetName": {
+            "type": "string"
+        },
+        "vnetName": {
+            "type": "string"
+        },
+        "networkResourceGroupName": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "sqlSRVName": "[toLower(concat(parameters('companyCode'),parameters('delimeter'),parameters('environmentCode'),parameters('delimeter'),parameters('departmentCode'),parameters('delimeter'),parameters('resourceCode'),parameters('delimeter'),parameters('suffix')))]",
+        "virtualNetworkSubnetId": "[resourceId(parameters('networkResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnetName'))]"
+    },
+    "resources": [
+        {
+            "name": "[variables('sqlSRVName')]",
+            "type": "Microsoft.Sql/servers",
+            "location": "[parameters('azureLocation')]",
+            "tags": "[parameters('tagObject')]",
+            "apiVersion": "2014-04-01",
+            "properties": {
+                "administratorLogin": "[parameters('sqlAdministratorLoginUsername')]",
+                "administratorLoginPassword": "[parameters('sqlAdministratorLoginPassword')]",
+                "version": "12.0"
+            },
+            "resources": [
+                {
+                    "type": "administrators",
+                    "name": "activeDirectory",
+                    "apiVersion": "2014-04-01",
+                    "dependsOn": [
+                        "[variables('sqlSRVName')]"
+                    ],
+                    "location": "[parameters('azureLocation')]",
+                    "properties": {
+                        "administratorType": "ActiveDirectory",
+                        "login": "[parameters('sql_AzureADGroupName')]",
+                        "sid": "[parameters('sql_AzureADGroupID')]",
+                        "tenantId": "[parameters('azureTenantID')]"
+                    }
+                },
+                {
+                    "name": "[concat(variables('sqlSRVName'),'/','VirtualMachineSubnet')]",
+                    "type": "Microsoft.Sql/servers/virtualNetworkRules",
+                    "apiVersion": "2015-05-01-preview",
+                    "properties": {
+                        "virtualNetworkSubnetId": "[variables('virtualNetworkSubnetId')]",
+                        "ignoreMissingVnetServiceEndpoint": true
+                    },
+                    "dependsOn": [
+                        "[variables('sqlSRVName')]"
+                    ]
+                }
+            ]
+        }
+    ],
+    "outputs": {
+        "sqlServerName": {
+            "type": "string",
+            "value": "[variables('sqlSRVName')]"
+        }
+    }
+}

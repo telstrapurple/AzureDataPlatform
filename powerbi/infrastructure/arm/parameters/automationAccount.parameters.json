@@ -1,0 +1,45 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "companyCode": {
+            "value": "TP"
+        },
+        "companyName": {
+            "value": "Telstra Purple"
+        },
+        "departmentCode": {
+            "value": "BI"
+        },
+        "resourceType": {
+            "value": "Automation Account"
+        },
+        "resourceCode": {
+            "value": "AAA"
+        },
+        "azureLocation": {
+            "value": "australiasoutheast"
+        },
+        "environmentCode": {
+            "value": "DEV"
+        },
+        "environmentLongName": {
+            "value": "Development"
+        },
+        "delimeter": {
+            "value": "-"
+        },
+        "sku": {
+            "value": "Basic"
+        },
+        "suffix": {
+            "value": "001"
+        },
+        "tagObject": {
+            "value": {
+                "Application": "ADS",
+                "Environment": "Dev"
+            }
+        }
+    }
+}

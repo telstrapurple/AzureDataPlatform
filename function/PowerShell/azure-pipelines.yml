@@ -1,0 +1,95 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - function/PowerShell/*
+
+pr:
+  autoCancel: false
+  paths:
+    include:
+      - function/PowerShell/*
+
+stages:
+  - stage: build
+    displayName: Build
+    jobs:
+      - job: build
+        displayName: Build
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: CopyFiles@2
+            displayName: Copy files to the artifacts directory
+            inputs:
+              SourceFolder: function/PowerShell
+              TargetFolder: $(Build.ArtifactStagingDirectory)
+              Contents: |
+                **/*
+                !.funcignore
+                !.vscode/**/*
+                !azure-pipelines.yml
+                !deployment-steps.yml
+                !local.settings.json
+                !PowerShell.csproj
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish artifacts
+            inputs:
+              artifact: function
+              targetPath: $(Build.ArtifactStagingDirectory)
+
+      - job: infrastructureScripts
+        displayName: Infrastructure scripts
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: CopyFiles@2
+            displayName: Copy common infrastructure files to the artifacts directory
+            inputs:
+              TargetFolder: $(Build.ArtifactStagingDirectory)/infrastructure
+              SourceFolder: infrastructure/scripts
+              Contents: "**/*"
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish infrastructure artifacts
+            inputs:
+              artifact: infrastructure
+              targetPath: $(Build.ArtifactStagingDirectory)/infrastructure
+
+  - ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
+      - stage: deployToDev
+        displayName: Deploy to Dev
+        jobs:
+          - deployment: deployToDev
+            displayName: Deploy to Dev
+            environment: ads-dev
+            pool:
+              vmImage: windows-latest
+            variables:
+              #
+              # Has the following variables:
+              #  - configFile
+              #  - environmentCode
+              #  - environmentName
+              #  - location
+              #  - locationCode
+              #  - subscriptionId
+              #  - tenantId
+              #
+              - group: ads-platform-dev
+            strategy:
+              runOnce:
+                deploy:
+                  steps:
+                    - template: deployment-steps.yml
+                      parameters:
+                        adosServiceConnectionName: Purple - Development - Azure Data Platform
+                        environmentCode: $(environmentCode)
+                        location: $(location)
+                        locationCode: $(locationCode)
+                        configFileName: $(configFile)
+                        tenantId: $(tenantId)
+                        subscriptionId: $(subscriptionId)

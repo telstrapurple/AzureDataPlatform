@@ -1,0 +1,223 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    },
+    // Specific params
+    "storageAccountResourceGroup": {
+      "type": "string"
+    },
+    "storageAccountName": {
+      "type": "string"
+    },
+    "appInsightsInstrumentationKey": {
+      "type": "string"
+    },
+    "servicePlanId": {
+      "type": "string"
+    },
+    "appName": {
+      "type": "string"
+    },
+    "alwaysOn": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "functionsExtensionVersion": {
+      "type": "string",
+      "defaultValue": "~3"
+    },
+    "functionsWorkerRuntime": {
+      "type": "string",
+      "defaultValue": "powershell"
+    },
+    "functionsWorkerProcessCount": {
+      "type": "string",
+      "defaultValue": "10"
+    },
+    "powerShellVersion": {
+      "type": "string",
+      "defaultValue": "~7"
+    },
+    "subnetWebAppResourceId": {
+      "type": "string",
+      "defaultValue": ""
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]",
+    "functionAppStorageAccountId": "[resourceId(parameters('storageAccountResourceGroup'), 'Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]",
+    "functionAppId": "[resourceId('Microsoft.Web/sites', parameters('appName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2020-06-01",
+      "name": "[parameters('appName')]",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "kind": "functionapp",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "name": "[parameters('appName')]",
+        "serverFarmId": "[parameters('servicePlanId')]",
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('functionAppStorageAccountId'),'2019-06-01').keys[0].value)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('functionAppStorageAccountId'),'2019-06-01').keys[0].value)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTSHARE",
+              "value": "[toLower(parameters('appName'))]"
+            },
+            {
+              "name": "WEBSITE_RUN_FROM_PACKAGE",
+              "value": "1",
+              "slotSetting": false
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "[parameters('functionsExtensionVersion')]"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "[parameters('functionsWorkerRuntime')]"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_PROCESS_COUNT",
+              "value": "[parameters('functionsWorkerProcessCount')]"
+            },
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[parameters('appInsightsInstrumentationKey')]",
+              "slotSetting": false
+            },
+            {
+              "name": "ApplicationInsightsAgent_EXTENSION_VERSION",
+              "value": "~2",
+              "slotSetting": false
+            },
+            {
+              "name": "XDT_MicrosoftApplicationInsights_Mode",
+              "value": "default",
+              "slotSetting": false
+            },
+            {
+              "name": "XDT_MicrosoftApplicationInsights_BaseExtensions",
+              "value": "disabled",
+              "slotSetting": false
+            }
+          ],
+          "powerShellVersion": "[parameters('powerShellVersion')]",
+          "alwaysOn": "[parameters('alwaysOn')]"
+        },
+        "clientAffinityEnabled": true
+      },
+      "resources": [
+        {
+          "condition": "[not(empty(parameters('subnetWebAppResourceId')))]",
+          "name": "virtualNetwork",
+          "type": "config",
+          "apiVersion": "2019-08-01",
+          "dependsOn": [ "[variables('functionAppId')]" ],
+          "properties": {
+            "subnetResourceId": "[parameters('subnetWebAppResourceId')]",
+            "swiftSupported": true
+          }
+        },
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "Microsoft.Web/sites/providers/diagnosticSettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "[concat(parameters('appName'), '/', 'Microsoft.Insights/', 'diagnostics')]",
+          "dependsOn": ["[parameters('appName')]"],
+          "properties": {
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "metrics": [
+              {
+                "category": "AllMetrics",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                },
+                "timeGrain": null
+              }
+            ],
+            "logs": [
+              {
+                "category": "FunctionAppLogs",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "functionAppName": {
+      "type": "string",
+      "value": "[parameters('appName')]"
+    },
+    "functionAppResourceId": {
+      "type": "string",
+      "value": "[variables('functionAppId')]"
+    },
+    "functionAppServicePrincipalId": {
+      "type": "string",
+      "value": "[reference(variables('functionAppId'), '2020-06-01', 'Full').identity.principalId]"
+    },
+    "functionAppKeys": {
+      "type": "object",
+      "value": "[listkeys(concat(variables('functionAppId'), '/host/default'), '2018-11-01')]"
+    },
+    "functionAppMasterKey": {
+      "type": "string",
+      "value": "[listkeys(concat(variables('functionAppId'), '/host/default'), '2018-11-01').masterKey]"
+    },
+    "functionAppURL": {
+      "type": "string",
+      "value": "[reference(variables('functionAppId'), '2020-06-01').defaultHostName]"
+    }
+  }
+}

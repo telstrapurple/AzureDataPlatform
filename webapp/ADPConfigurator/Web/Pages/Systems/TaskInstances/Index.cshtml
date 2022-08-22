@@ -1,0 +1,186 @@
+﻿@page
+@model Web.Pages.Systems.TaskInstances.IndexModel
+
+@{
+    string forTitle; 
+    @if (ViewBag.ListTitle != null)
+    {
+        forTitle = ViewBag.ListTitle;
+    }
+    else if (ViewBag.TaskId != 0)
+    {
+        forTitle = Model.TaskInstance[0].Task.TaskName;
+    }
+    else
+    {
+        forTitle = Model.TaskInstance[0].Task.System.SystemName;
+    }
+
+    ViewData["Title"] = "Task Instances for " + forTitle;
+}
+
+<h1>
+    <i class="float-right fas fa-cog"></i>
+    Task Instances for @forTitle
+</h1>
+
+<form asp-page="./Index" method="get">
+    <div class="form-actions no-color pb-2">
+        <div class="form-group row">
+            <label for="SearchString" class="col-2 col-form-label">Search text:</label>
+            <div class="col-3">
+                <input type="text" id="SearchString" name="SearchString" class="form-control" value="@ViewData["CurrentFilter"]" />
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label for="startDateFilter" class="col-2 col-form-label">Start date:</label>
+            <div class="col-3">
+                <input type="date" id="startDateFilter" name="startDateFilter" class="form-control" value="@ViewData["CurrentStartDate"]" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="endDateFilter" class="col-2 col-form-label">End date:</label>
+            <div class="col-3">
+                <input type="date" id="endDateFilter" name="endDateFilter" class="form-control" value="@ViewData["CurrentEndDate"]" />
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-search"></i>
+            Search
+        </button>
+        @Html.Hidden("TaskId", ViewData["TaskId"])
+        @Html.Hidden("SystemId", ViewData["SystemId"])
+
+        <a role="button" class="btn btn-secondary" asp-page="./Index" asp-route-taskid="@ViewBag.TaskId" asp-route-systemid="@ViewBag.SystemId">
+            <i class="fas fa-search-minus"></i>
+            Clear
+        </a>
+    </div>
+</form>
+
+@if (Model.TaskInstance.Count > 0)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    Run Date
+                </th>
+                @if (ViewBag.TaskId == 0)
+                {
+                    <th>
+                        Task
+                    </th>
+                }
+                <th>
+                    Schedule
+                </th>
+                <th>
+                    Result
+                </th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.TaskInstance)
+            {
+                <tr>
+                    <td>
+                        @*@Html.DisplayFor(modelItem => item.RunDate)*@
+                        @item.RunDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss tt")
+                    </td>
+                    @if (ViewBag.TaskId == 0)
+                    {
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Task.TaskName)
+                        </td>
+                    }
+                    <td>
+                        @Html.DisplayFor(modelItem => item.ScheduleInstance.Schedule.ScheduleName)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.TaskResult.TaskResultName)
+                    </td>
+                    <td>
+                        @if (item.TaskResultId != 3)
+                        {
+                            <a asp-page="./DataFactoryLogs/Index" asp-route-taskid="@ViewBag.TaskId" asp-route-systemid="@ViewBag.SystemId" asp-route-taskinstanceid="@item.TaskInstanceId">
+                                <i class="fas fa-database fa-sm"></i>
+                                Logs
+                            </a>
+                        }
+                    </td>
+                    <td class="text-right">
+                        @if (item.TaskResultId == 1)
+                        {
+                            <!-- Only allow retry for success state -->
+                            <a asp-route-taskid="@ViewBag.TaskId" asp-route-systemid="@ViewBag.SystemId" asp-route-taskinstanceid="@item.TaskInstanceId" class="btn btn-outline-secondary">
+                                <i class="fas fa-undo fa-sm"></i>
+                                Reset
+                            </a>
+                        }                        
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-warning" role="alert">
+        <i class="fas fa-exclamation-triangle"></i>
+        No task instances were found for @forTitle
+    </div>
+}
+
+@{
+    var prevDisabled = !Model.TaskInstance.HasPreviousPage ? "disabled" : "";
+    var nextDisabled = !Model.TaskInstance.HasNextPage ? "disabled" : "";
+}
+
+<div class="alert alert-secondary">
+    <a asp-page="./Index"
+       asp-route-pageIndex="@(Model.TaskInstance.PageIndex - 1)"
+       asp-route-taskid="@ViewData["TaskId"]"
+       asp-route-systemid="@ViewData["SystemId"]"
+       asp-route-currentStartDate="@ViewData["CurrentStartDate"]"
+       asp-route-currentEndDate="@ViewData["CurrentEndDate"]"
+       asp-route-currentFilter="@ViewData["CurrentFilter"]"
+       class="btn btn-primary @prevDisabled">
+        <i class="fas fa-chevron-left"></i>
+        Previous
+    </a>
+    <a asp-page="./Index"
+       asp-route-pageIndex="@(Model.TaskInstance.PageIndex + 1)"
+       asp-route-taskid="@ViewData["TaskId"]"
+       asp-route-systemid="@ViewData["SystemId"]"
+       asp-route-currentStartDate="@ViewData["CurrentStartDate"]"
+       asp-route-currentEndDate="@ViewData["CurrentEndDate"]"
+       asp-route-currentFilter="@ViewData["CurrentFilter"]"
+       class="btn btn-primary @nextDisabled">
+        Next
+        <i class="fas fa-chevron-right"></i>
+    </a>
+</div>
+
+@if (ViewBag.TaskId != 0)
+{
+    <div>
+        <a asp-page="../Tasks/Index" asp-route-systemid="@ViewBag.SystemId" class="small">
+            <i class="fas fa-arrow-left"></i>
+            Back to Tasks
+        </a>
+    </div>
+}
+else
+{
+    <div>
+        <a asp-page="../Index" asp-route-systemid="@ViewBag.SystemId" class="small">
+            <i class="fas fa-arrow-left"></i>
+            Back to Systems
+        </a>
+    </div>
+}
+

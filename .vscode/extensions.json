@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "ms-vscode.powershell",
+    "ms-azure-devops.azure-pipelines",
+    "ms-azuretools.vscode-azurefunctions",
+    "ms-dotnettools.csharp",
+    "fernandoescolar.vscode-solution-explorer",
+    "hediet.vscode-drawio"
+  ]
+}

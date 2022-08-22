@@ -1,0 +1,106 @@
+parameters:
+  - name: adosServiceConnectionName
+    type: string
+  - name: environmentCode
+    type: string
+  - name: location
+    type: string
+  - name: locationCode
+    type: string
+  - name: configFileName
+    type: string
+  - name: tenantId
+    type: string
+  - name: subscriptionId
+    type: string
+  - name: appSetting.aspnetcoreEnvironment
+    type: string
+
+steps:
+  - task: AzurePowerShell@5
+    displayName: Get the App Service name
+    env:
+      CONFIG_FILE_NAME: ${{ parameters.configFileName }}
+      ENVIRONMENT_CODE: ${{ parameters.environmentCode }}
+      INFRASTRUCTURE_SCRIPTS_LOCATION: $(Pipeline.Workspace)/infrastructure
+      LOCATION: ${{ parameters.location }}
+      LOCATION_CODE: ${{ parameters.locationCode }}
+      TENANT_ID: ${{ parameters.tenantId }}
+      SUBSCRIPTION_ID: ${{ parameters.subscriptionId }}
+    inputs:
+      azureSubscription: ${{ parameters.adosServiceConnectionName}}
+      pwsh: true
+      azurePowerShellVersion: LatestVersion
+      ScriptType: InlineScript
+      Inline: |
+        $adpContextParameters = @{
+          EnvironmentCode = $env:ENVIRONMENT_CODE
+          Location        = $env:LOCATION
+          LocationCode    = $env:LOCATION_CODE
+          TenantId        = $env:TENANT_ID
+          SubscriptionId  = $env:SUBSCRIPTION_ID
+        }
+
+        $adpModuleFilePath = Join-Path -Path $env:INFRASTRUCTURE_SCRIPTS_LOCATION -ChildPath './functions/adp.psm1'
+        $configFilePath = Join-Path -Path $env:INFRASTRUCTURE_SCRIPTS_LOCATION -ChildPath $env:CONFIG_FILE_NAME
+
+        Import-Module -Name $adpModuleFilePath -Force -Verbose:$false
+        $adpContext = Initialize-ADPContext -parameters $adpContextParameters -configFilePath $configFilePath -outputTag:$false
+
+        $appServiceResourceName = Get-ResourceName -context $adpContext -resourceCode 'APP' -suffix '01'
+        Write-Host "Computed App Service resource name is '$appServiceResourceName'"
+
+        Write-Host "##vso[task.setvariable variable=appServiceName]$appServiceResourceName"
+
+  - task: AzureRmWebAppDeployment@4
+    displayName: Deploy App to App Service
+    inputs:
+      azureSubscription: ${{ parameters.adosServiceConnectionName }}
+      WebAppName: $(appServiceName)
+      packageForLinux: $(Pipeline.Workspace)/web/ADPConfigurator.Web
+      AppSettings: >-
+        -ASPNETCORE_ENVIRONMENT "${{ parameters['appSetting.aspnetcoreEnvironment'] }}"
+
+  - task: AzurePowerShell@5
+    displayName: Get the Api Service name
+    env:
+      CONFIG_FILE_NAME: ${{ parameters.configFileName }}
+      ENVIRONMENT_CODE: ${{ parameters.environmentCode }}
+      INFRASTRUCTURE_SCRIPTS_LOCATION: $(Pipeline.Workspace)/infrastructure
+      LOCATION: ${{ parameters.location }}
+      LOCATION_CODE: ${{ parameters.locationCode }}
+      TENANT_ID: ${{ parameters.tenantId }}
+      SUBSCRIPTION_ID: ${{ parameters.subscriptionId }}
+    inputs:
+      azureSubscription: ${{ parameters.adosServiceConnectionName}}
+      pwsh: true
+      azurePowerShellVersion: LatestVersion
+      ScriptType: InlineScript
+      Inline: |
+        $adpContextParameters = @{
+          EnvironmentCode = $env:ENVIRONMENT_CODE
+          Location        = $env:LOCATION
+          LocationCode    = $env:LOCATION_CODE
+          TenantId        = $env:TENANT_ID
+          SubscriptionId  = $env:SUBSCRIPTION_ID
+        }
+
+        $adpModuleFilePath = Join-Path -Path $env:INFRASTRUCTURE_SCRIPTS_LOCATION -ChildPath './functions/adp.psm1'
+        $configFilePath = Join-Path -Path $env:INFRASTRUCTURE_SCRIPTS_LOCATION -ChildPath $env:CONFIG_FILE_NAME
+
+        Import-Module -Name $adpModuleFilePath -Force -Verbose:$false
+        $adpContext = Initialize-ADPContext -parameters $adpContextParameters -configFilePath $configFilePath -outputTag:$false
+
+        $appServiceResourceName = Get-ResourceName -context $adpContext -resourceCode 'APP' -suffix '02'
+        Write-Host "Computed App Service resource name is '$appServiceResourceName'"
+
+        Write-Host "##vso[task.setvariable variable=appServiceName]$appServiceResourceName"
+
+  - task: AzureRmWebAppDeployment@4
+    displayName: Deploy Api to App Service
+    inputs:
+      azureSubscription: ${{ parameters.adosServiceConnectionName }}
+      WebAppName: $(appServiceName)
+      packageForLinux: $(Pipeline.Workspace)/api/ADPConfigurator.Api
+      AppSettings: >-
+        -ASPNETCORE_ENVIRONMENT "${{ parameters['appSetting.aspnetcoreEnvironment'] }}"

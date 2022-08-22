@@ -1,0 +1,11 @@
+﻿CREATE TABLE [pbi].[Dataflows] (
+    [Id]                    VARCHAR (50) NOT NULL,
+    [Name]                  NVARCHAR (MAX)   NULL,
+	[Description]			NVARCHAR (MAX)   NULL,
+	[ModelUrl]				VARCHAR (MAX)   NULL,
+	[ConfiguredBy]			VARCHAR(500) NULL,
+	ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START NOT NULL,
+	ValidTo DATETIME2 GENERATED ALWAYS AS ROW END NOT NULL,
+	PERIOD FOR SYSTEM_TIME (ValidFrom,ValidTo),
+	CONSTRAINT [PK_PBI_Dataflows] PRIMARY KEY CLUSTERED ([Id] ASC)
+) WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = pbi.Dataflows_History));

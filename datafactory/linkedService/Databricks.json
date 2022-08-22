@@ -1,0 +1,33 @@
+{
+	"name": "Databricks",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"description": "This is the generic Azure Databricks connection used for ETL",
+		"parameters": {
+			"databricksURL": {
+				"type": "string"
+			},
+			"databricksClusterID": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "@linkedService().databricksURL",
+			"accessToken": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "KeyVault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "databricksToken"
+			},
+			"existingClusterId": "@linkedService().databricksClusterID"
+		},
+		"connectVia": {
+			"referenceName": "IR-ADP",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

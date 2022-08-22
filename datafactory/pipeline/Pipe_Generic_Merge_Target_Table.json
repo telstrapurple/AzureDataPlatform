@@ -1,0 +1,220 @@
+{
+	"name": "Pipe_Generic_Merge_Target_Table",
+	"properties": {
+		"description": "This is a generic pipeline to ,merge the target table",
+		"activities": [
+			{
+				"name": "IF - Database or Parallel File Load",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@or(\n\n\t\tor(\n\t\t\tequals(coalesce(pipeline().parameters.FileLoadType, ''),'null'), \n\t\t\tequals(coalesce(pipeline().parameters.FileLoadType, ''),'')\n\t\t)\n\t\t,\n\t\tor(\n\t\t\tequals(pipeline().parameters.FileLoadType,'ParallelFileLoad'),\n\t\t\tequals(pipeline().parameters.LoadType, 'Full')\n\t\t)\n\n)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "SP - Merge the target table",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[ETL].[usp_StagingTable_Load]",
+								"storedProcedureParameters": {
+									"TaskConfig": {
+										"value": {
+											"value": "@pipeline().parameters.TaskConfig",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskSchema": {
+										"value": {
+											"value": "@pipeline().parameters.TaskSchema",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": {
+										"value": "@pipeline().parameters.SecretName",
+										"type": "Expression"
+									}
+								}
+							}
+						},
+						{
+							"name": "SP - Log the error - Merge target table - SQL DB",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "SP - Merge the target table",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "SP - Merge the target table",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": {
+											"value": "@{activity('SP - Merge the target table').error.message}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{activity('SP - Merge the target table').output}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@pipeline().parameters.PipelineName",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@pipeline().parameters.PipelineRunID",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@pipeline().parameters.PipelineTriggerID",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@pipeline().parameters.PipelineTriggerName",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@pipeline().parameters.PipelineTriggerTime",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@pipeline().parameters.PipelineTriggerType",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": {
+											"value": "@pipeline().parameters.TaskInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "Error",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"TaskConfig": {
+				"type": "string"
+			},
+			"TaskSchema": {
+				"type": "string"
+			},
+			"PipelineName": {
+				"type": "string"
+			},
+			"PipelineRunID": {
+				"type": "string"
+			},
+			"PipelineTriggerID": {
+				"type": "string"
+			},
+			"PipelineTriggerName": {
+				"type": "string"
+			},
+			"PipelineTriggerTime": {
+				"type": "string"
+			},
+			"PipelineTriggerType": {
+				"type": "string"
+			},
+			"TaskInstanceID": {
+				"type": "int"
+			},
+			"SecretName": {
+				"type": "string"
+			},
+			"FileLoadType": {
+				"type": "string"
+			},
+			"TaskType": {
+				"type": "string"
+			},
+			"LoadType": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "ETL/Generic"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

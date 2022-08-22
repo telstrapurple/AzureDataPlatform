@@ -1,0 +1,80 @@
+{
+	"name": "Pipe_Generic_Scale_Azure_VM",
+	"properties": {
+		"description": "This pipeline will scale a list of Azure VMs to the requested size",
+		"activities": [
+			{
+				"name": "LKP - Get the generic config values",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[DI].[usp_GenericConfig_Get]"
+					},
+					"dataset": {
+						"referenceName": "Generic_AzureSQL",
+						"type": "DatasetReference",
+						"parameters": {
+							"secretName": "sqlDatabaseConnectionStringConfig"
+						}
+					},
+					"firstRowOnly": true
+				}
+			},
+			{
+				"name": "WH - Scale the Azure VMs",
+				"type": "WebHook",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the generic config values",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "@activity('LKP - Get the generic config values').output.firstRow.LogicAppScaleAzureVMURL",
+						"type": "Expression"
+					},
+					"method": "POST",
+					"headers": {
+						"Content-Type": "application/json"
+					},
+					"body": {
+						"ResourceGroupName": "@pipeline().parameters.ResourceGroupName",
+						"VMList": "@pipeline().parameters.VMList",
+						"VMSize": "@pipeline().parameters.VMSize"
+					},
+					"timeout": "00:30:00"
+				}
+			}
+		],
+		"parameters": {
+			"ResourceGroupName": {
+				"type": "string"
+			},
+			"VMList": {
+				"type": "string"
+			},
+			"VMSize": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Maintenance"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

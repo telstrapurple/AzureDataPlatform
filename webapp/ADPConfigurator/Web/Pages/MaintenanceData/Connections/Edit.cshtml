@@ -1,0 +1,114 @@
+﻿@page
+@model Web.Pages.MaintenanceData.Connections.EditModel
+@using ADPConfigurator.Web.Services
+@inject SignedInUserProvider SignedInUserProvider
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>
+    <i class="float-right fas fa-plug"></i>
+    Edit Connection
+</h1>
+
+<form method="post">
+    <div class="row">
+        <div class="col-md-4 col-sm-12">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Connection.ConnectionId" />
+            <input type="hidden" asp-for="Connection.DeletedIndicator" />
+            <input type="hidden" asp-for="Connection.DateCreated" />
+            <input type="hidden" asp-for="Connection.CreatedBy" />
+            <input type="hidden" asp-for="Connection.DateModified" />
+            <input type="hidden" asp-for="Connection.ModifiedBy" />
+            <div class="form-group">
+                <label asp-for="Connection.ConnectionName" class="control-label">Connection Name</label>
+                <input asp-for="Connection.ConnectionName" class="form-control" />
+                <span asp-validation-for="Connection.ConnectionName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Connection.ConnectionDescription" class="control-label">Connection Description</label>
+                <input asp-for="Connection.ConnectionDescription" class="form-control" />
+                <span asp-validation-for="Connection.ConnectionDescription" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Connection.SystemCode" class="control-label">System Code (Limits who can use this connection)</label>
+                <select asp-for="Connection.SystemCode" class="form-control" asp-items="new SelectList(Model.SystemCodeOptions)"></select>
+                <span asp-validation-for="Connection.SystemCode" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Connection.ConnectionTypeId" class="control-label">Connection Type</label>
+                <select asp-for="Connection.ConnectionTypeId" class="form-control" asp-items="ViewBag.ConnectionTypeId"></select>
+                <span asp-validation-for="Connection.ConnectionTypeId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Connection.AuthenticationTypeId" class="control-label">Authentication Type</label>
+                <select asp-for="Connection.AuthenticationTypeId" class="form-control" asp-items="ViewBag.AuthenticationTypeList"></select>
+                <span asp-validation-for="Connection.AuthenticationTypeId" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="Connection.Enabled" /> @Html.DisplayNameFor(model => model.Connection.Enabled)
+                </label>
+            </div>
+            @if (SignedInUserProvider.IsGlobalAdmin)
+            {
+                <div class="form-group form-check">
+                    <label class="form-check-label">
+                        <input class="form-check-input" asp-for="Connection.Generic" /> Generic (All users can see and use this connection)
+                    </label>
+                </div>
+            }
+            else
+            {
+                <input type="hidden" asp-for="Connection.Generic" />
+            }
+        </div>
+
+        <div class="col-md-7 offset-md-1 col-sm-12 offset-sm-0">
+            <h2>Properties</h2>
+            @for (var i = 0; i < Model.CurrentConnectionProperties.Count; i++)
+            {
+                <div class="form-group" style="display: none;">
+                    @Html.HiddenFor(modelItem => Model.CurrentConnectionProperties[i].ConnectionPropertyId)
+                    @Html.HiddenFor(modelItem => Model.CurrentConnectionProperties[i].DeletedIndicator)
+                    @Html.HiddenFor(modelItem => Model.CurrentConnectionProperties[i].ConnectionPropertyTypeId)
+
+                    <label for="@("CurrentConnectionProperties_" + i + "__ConnectionPropertyValue")">
+                        @(Model.CurrentConnectionProperties[i].ConnectionPropertyType.ConnectionPropertyTypeName)
+                    </label>
+
+                    @if (Model.CurrentConnectionProperties[i].ConnectionPropertyType.ConnectionPropertyTypeValidation.ConnectionPropertyTypeValidationName == "DropDownList")
+                    {
+                        var itemList = new SelectList(Model.ConnectionPropertyTypeOptions.Where(t => t.ConnectionPropertyTypeId == Model.CurrentConnectionProperties[i].ConnectionPropertyType.ConnectionPropertyTypeId), "ConnectionPropertyTypeOptionName", "ConnectionPropertyTypeOptionName");
+                        <select asp-for="CurrentConnectionProperties[i].ConnectionPropertyValue" class="form-control" asp-items="itemList"></select>
+                        <span asp-validation-for="CurrentConnectionProperties[i].ConnectionPropertyValue" class="text-danger"></span>
+                    }
+                    else if (Model.CurrentConnectionProperties[i].ConnectionPropertyType.ConnectionPropertyTypeValidation.ConnectionPropertyTypeValidationName == "NumberBox")
+                    {
+                        @Html.TextBoxFor(modelItem => Model.CurrentConnectionProperties[i].ConnectionPropertyValue, new { style = "width:100%", @class = "form-control", @type = "number" })
+                    }
+                    else if (Model.CurrentConnectionProperties[i].ConnectionPropertyType.ConnectionPropertyTypeValidation.ConnectionPropertyTypeValidationName == "MultiLineTextBox")
+                    {
+                        @Html.TextAreaFor(modelItem => Model.CurrentConnectionProperties[i].ConnectionPropertyValue, new { style = "width:100%", @class = "form-control" })
+                    }
+                    else // else it is a TextBox
+                    {
+                        @Html.TextBoxFor(modelItem => Model.CurrentConnectionProperties[i].ConnectionPropertyValue, new { style = "width:100%", @class = "form-control" })
+                    }
+                    <div class="small text-muted">
+                        @Model.CurrentConnectionProperties[i].ConnectionPropertyType.ConnectionPropertyTypeDescription
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @{await Html.RenderPartialAsync("_FormControls");}
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{await Html.RenderPartialAsync("_DynamicConnectionPageFiltering");}
+}

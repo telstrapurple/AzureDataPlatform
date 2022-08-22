@@ -1,0 +1,35 @@
+{
+	"name": "Generic_Rest_Anonymous_Dataset_AzureIR",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "REST_Anonymous_AzureIR",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"restEndpoint": {
+					"value": "@dataset().restEndpoint",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"restEndpoint": {
+				"type": "string"
+			},
+			"relativeURL": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "REST"
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"typeProperties": {
+			"relativeUrl": {
+				"value": "@dataset().relativeURL",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	}
+}

@@ -1,0 +1,61 @@
+{
+	"name": "Pipe_Generic_CleanUp_DatalakeTempDir",
+	"properties": {
+		"description": "This is used to clean up a Data lake folder  ",
+		"activities": [
+			{
+				"name": "DEL - Delete Files in Folder",
+				"type": "Delete",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "Generic_DatalakeGen2",
+						"type": "DatasetReference",
+						"parameters": {
+							"dataLakeServiceEndPoint": {
+								"value": "@pipeline().parameters.ServiceEndPoint",
+								"type": "Expression"
+							},
+							"dataLakeFilePath": {
+								"value": "@pipeline().parameters.FilePath",
+								"type": "Expression"
+							},
+							"dataLakeFileName": {
+								"value": "@pipeline().parameters.FileName",
+								"type": "Expression"
+							}
+						}
+					},
+					"enableLogging": false,
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true
+					}
+				}
+			}
+		],
+		"parameters": {
+			"ServiceEndPoint": {
+				"type": "string"
+			},
+			"FilePath": {
+				"type": "string"
+			},
+			"FileName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Maintenance"
+		},
+		"annotations": []
+	}
+}

@@ -1,0 +1,49 @@
+{
+	"name": "Generic_Rest_Basic_Dataset_AzureIR",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "REST_Basic_AzureIR",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"username": {
+					"value": "@dataset().username",
+					"type": "Expression"
+				},
+				"passwordSecretName": {
+					"value": "@dataset().passwordSecretName",
+					"type": "Expression"
+				},
+				"restEndpoint": {
+					"value": "@dataset().restEndpoint",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"restEndpoint": {
+				"type": "string"
+			},
+			"username": {
+				"type": "string"
+			},
+			"passwordSecretName": {
+				"type": "string"
+			},
+			"relativeURL": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "REST"
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"typeProperties": {
+			"relativeUrl": {
+				"value": "@dataset().relativeURL",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	}
+}

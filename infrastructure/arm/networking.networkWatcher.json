@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "nwaName": {
+      "type": "string"
+    },
+    "tagObject": {
+      "type": "object"
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkWatchers",
+      "apiVersion": "2020-05-01",
+      "name": "[parameters('nwaName')]",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": {}
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+﻿<script type="text/javascript"  asp-add-nonce="true">
+        const tasks = @Html.Raw(ViewBag.Tasks);
+        $("#btnAddPassthrough").on('click', function () {
+            var maxId = @Html.Raw(ViewBag.TaskPropertyPassthroughMappingIndex);
+            var lastItemId = $("#tblTaskPropertyPassthroughMapping > tbody > tr:last-child").attr('id');
+            var tableRow = maxId;
+            if (tableRow < lastItemId)
+            {
+                tableRow = lastItemId;
+            }
+            tableRow++;
+            var itemCount = $('#tblTaskPropertyPassthroughMapping > tbody > tr').length;
+            var taskOptions = '';
+            // Get options
+            for (var i = 0; i < tasks.length; i++)
+            {
+                taskOptions = taskOptions + '<option value="' + tasks[i].taskId + '">' + tasks[i].taskName + '</option>';
+            }
+            $("#tblTaskPropertyPassthroughMapping > tbody").append($('<tr id="' + tableRow + '">')
+                .append($('<input name="TaskPropertyPassthroughMappings[' + itemCount + '].TaskPropertyPassthroughMappingId" type="hidden" value="' + tableRow + '">'))
+                .append($('<input name="TaskPropertyPassthroughMappings[' + itemCount + '].DeletedIndicator" type="hidden" value="False">'))
+                .append($('<input name="TaskPropertyPassthroughMappings[' + itemCount + '].TaskId" type="hidden" value="' + @Model.Task.TaskId + '">'))
+                .append($('<td>')
+                    .append($('<select class="form-control" data-val="true" name="TaskPropertyPassthroughMappings[' + itemCount + '].TaskPassthroughId" style="width:100%" type="text" value=""/>')
+                        .append($(taskOptions))))
+                .append($('<td>')
+                    .append($('<button id="btnDeletePassthrough-' + tableRow + '" type="button" class="btn btn-danger">')
+                        .append($('<i class="fas fa-trash"></i>'))
+                        .append(' Delete'))));
+        });
+        $("#tblTaskPropertyPassthroughMapping").on('click','[id*="btnDeletePassthrough"]', function () { 
+            var id = this.id.replace("btnDeletePassthrough-", "");
+            $('#tblTaskPropertyPassthroughMapping >tbody > tr[id|="' + id + '"]').hide('slow', function () {
+                $('#tblTaskPropertyPassthroughMapping >tbody > tr[id|="' + id + '"] > input[name*="DeletedIndicator"]').val("True");
+            });
+        });
+</script>

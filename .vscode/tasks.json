@@ -1,0 +1,57 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "buildMigrator",
+      "command": "dotnet",
+      "type": "shell",
+      "args": [
+        "build",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": "$msCompile",
+      "options": {
+        "cwd": "${workspaceFolder}/Databases/Migrator"
+      }
+    },
+    {
+      "label": "buildWebApp",
+      "command": "dotnet",
+      "type": "shell",
+      "args": [
+        "build",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": "$msCompile",
+      "options": {
+        "cwd": "${workspaceFolder}/webapp/ADPConfigurator"
+      }
+    },
+    {
+      "label": "startFunctionApp",
+      "type": "func",
+      "command": "host start --verbose",
+      "problemMatcher": "$func-watch",
+      "isBackground": true,
+      "options": {
+        "cwd": "${workspaceFolder}/function/PowerShell"
+      }
+    },
+    {
+      "label": "buildSolutions",
+      "type": "shell",
+      "command": "echo \"Building solution\"",
+      "dependsOn": ["buildWebApp", "buildMigrator"]
+    }
+  ]
+}

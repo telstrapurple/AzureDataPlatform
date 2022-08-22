@@ -1,0 +1,156 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - powerbi/
+
+variables:
+  - group: powerbi-vg
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: "Build"
+    displayName: "Build - Create build artifacts"
+    jobs:
+      - job: "copyAndPublishChangedFiles"
+        condition: eq(variables.DEPLOY_CHANGES_ONLY, true)
+        displayName: "Copy and Publish changed files"
+        steps:
+          - task: Bash@3
+            displayName: "Get changed files"
+            inputs:
+              targetType: "inline"
+              script: |
+                echo "pipelines/Deploy-PowerBIReport.ps1" >Artefact.txt
+                merges=($(git rev-list --first-parent --merges origin/master -2))
+                git diff --diff-filter=d --name-only ${merges[1]}..HEAD >>Artefact.txt #diff filter is deselecting deleted files
+                echo "---Files added to artefacts---"
+                cat Artefact.txt
+                mkdir -p "$(Build.ArtifactStagingDirectory)/Artefact"
+                while IFS= read -r Artefact; do
+                    cp --parents "./$Artefact" "$(Build.ArtifactStagingDirectory)/Artefact" #copy with complete path
+                    rootPath="${Artefact%/*}"
+                    if [[ $Artefact == *.pbix ]]; then
+                        echo "Also adding: " "$rootPath/config.json"
+                        cp --parents "./$rootPath/config.json" "$(Build.ArtifactStagingDirectory)/Artefact"
+                    fi
+                    if [[ $Artefact == */config.json ]]; then
+                        report=$(find "$rootPath" -name "*.pbix")
+                        echo "Also adding: " "$report"
+                        cp --parents "$report" "$(Build.ArtifactStagingDirectory)/Artefact"
+                    fi
+                done <Artefact.txt
+
+          - task: CopyFiles@2
+            displayName: "Copy files"
+            inputs:
+              SourceFolder: "$(Build.ArtifactStagingDirectory)/Artefact"
+              Contents: "**"
+              TargetFolder: "$(Build.ArtifactStagingDirectory)"
+
+          - task: PublishBuildArtifacts@1
+            displayName: "Publish files"
+            inputs:
+              PathtoPublish: "$(Build.ArtifactStagingDirectory)/Artefact"
+              ArtifactName: "drop"
+              publishLocation: "Container"
+
+      - job: "copyAndPublishAllFiles"
+        condition: eq(variables.DEPLOY_CHANGES_ONLY, false)
+        displayName: "Copy and Publish All files"
+        steps:
+          - task: CopyFiles@2
+            displayName: "Copy Files"
+            inputs:
+              Contents: "**"
+              TargetFolder: "$(Build.ArtifactStagingDirectory)"
+          - task: PublishBuildArtifacts@1
+            displayName: "Publish all files"
+            inputs:
+              PathtoPublish: "$(Build.ArtifactStagingDirectory)"
+              ArtifactName: "drop"
+              publishLocation: "Container"
+
+  - stage: "UAT"
+    displayName: "Deploy to UAT environment"
+    jobs:
+      - deployment: "deployUAT"
+        environment: "Power BI UAT"
+        displayName: "Deploy .pbix to UAT environment"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  displayName: "Download Build Artifacts"
+                  inputs:
+                    buildType: "current"
+                    downloadType: "single"
+                    artifactName: "drop"
+                    downloadPath: "$(System.ArtifactsDirectory)"
+
+                - task: AzurePowerShell@4
+                  displayName: "PowerShell - Install Modules"
+                  inputs:
+                    azureSubscription: "Telstra Purple ADS"
+                    ScriptType: "InlineScript"
+                    Inline: |
+                      Install-Module -Name MicrosoftPowerBIMgmt -Force -Verbose -Scope CurrentUser
+                    azurePowerShellVersion: "LatestVersion"
+                - task: AzurePowerShell@4
+                  displayName: "PowerShell - Deploy pbix"
+                  inputs:
+                    azureSubscription: "Telstra Purple ADS"
+                    scriptType: filePath
+                    scriptPath: $(System.ArtifactsDirectory)/drop/pipelines/Deploy-PowerBIReport.ps1
+                    scriptArguments: >-
+                      -path '$(System.ArtifactsDirectory)/drop/powerbi/'
+                      -tenantId $(TENANT_ID)
+                      -applicationId $(APPLICATION_ID)
+                      -applicationKey $(APPLICATION_KEY)
+                      -environment "UAT"
+                    azurePowerShellVersion: latestVersion
+
+  - stage: "Production"
+    displayName: "Deploy to Production environment"
+    jobs:
+      - deployment: "deployProduction"
+        environment: "Power BI Production"
+        displayName: "Deploy .pbix to Production environment"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  displayName: "Download Build Artifacts"
+                  inputs:
+                    buildType: "current"
+                    downloadType: "single"
+                    artifactName: "drop"
+                    downloadPath: "$(System.ArtifactsDirectory)"
+
+                - task: AzurePowerShell@4
+                  displayName: "PowerShell - Install Modules"
+                  inputs:
+                    azureSubscription: "Telstra Purple ADS"
+                    ScriptType: "InlineScript"
+                    Inline: |
+                      Install-Module -Name MicrosoftPowerBIMgmt -Force -Verbose -Scope CurrentUser
+                    azurePowerShellVersion: "LatestVersion"
+                - task: AzurePowerShell@4
+                  displayName: "PowerShell - Deploy pbix"
+                  inputs:
+                    azureSubscription: "Telstra Purple ADS"
+                    scriptType: filePath
+                    scriptPath: $(System.ArtifactsDirectory)/drop/pipelines/Deploy-PowerBIReport.ps1
+                    scriptArguments: >-
+                      -path '$(System.ArtifactsDirectory)/drop/powerbi/'
+                      -tenantId $(TENANT_ID)
+                      -applicationId $(APPLICATION_ID)
+                      -applicationKey $(APPLICATION_KEY)
+                      -environment "production"
+                    azurePowerShellVersion: latestVersion

@@ -1,0 +1,194 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "companyCode": {
+      "type": "string",
+      "maxLength": 16
+    },
+    "companyName": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "departmentCode": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "resourceType": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "resourceCode": {
+      "type": "string",
+      "maxLength": 4
+    },
+    "environmentCode": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "environmentLongName": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "azureLocation": {
+      "type": "string",
+      "defaultValue": "australiaeast",
+      "allowedValues": [
+        "australiaeast",
+        "australiasoutheast"
+      ]
+    },
+    "delimeter": {
+      "type": "string",
+      "defaultValue": "-",
+      "allowedValues": [
+        "-",
+        "_",
+        ""
+      ]
+    },
+    "sku": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "suffix": {
+      "type": "string",
+      "defaultValue": "001"
+    },
+    "tagObject": {
+      "type": "object"
+    }
+  },
+  "variables": {
+    "aaaName": "[toUpper(concat(parameters('companyCode'),parameters('delimeter'),parameters('environmentCode'),parameters('delimeter'),parameters('departmentCode'),parameters('delimeter'),parameters('resourceCode'),parameters('delimeter'),parameters('suffix')))]",
+    "modules": {
+      "module1": [
+        {
+          "name": "[concat(variables('aaaName'), '/Az.Accounts')]",
+          "url": "https://devopsgallerystorage.blob.core.windows.net/packages/az.accounts.1.9.2.nupkg"
+        },
+        {
+          "name": "[concat(variables('aaaName'), '/MicrosoftPowerBIMgmt.Profile')]",
+          "url": "https://devopsgallerystorage.blob.core.windows.net/packages/microsoftpowerbimgmt.profile.1.0.867.nupkg"
+        }
+      ],
+      "module2": [
+        {
+          "name": "[concat(variables('aaaName'), '/Az.KeyVault')]",
+          "url": "https://devopsgallerystorage.blob.core.windows.net/packages/az.keyvault.2.0.0.nupkg"
+        },
+        {
+          "name": "[concat(variables('aaaName'), '/Az.Resources')]",
+          "url": "https://devopsgallerystorage.blob.core.windows.net/packages/az.resources.4.1.0.nupkg"
+        },
+        {
+          "name": "[concat(variables('aaaName'), '/Az.Automation')]",
+          "url": "https://devopsgallerystorage.blob.core.windows.net/packages/az.automation.1.3.7.nupkg"
+        },
+        {
+          "name": "[concat(variables('aaaName'), '/Az.Compute')]",
+          "url": "https://devopsgallerystorage.blob.core.windows.net/packages/az.compute.4.2.1.nupkg"
+        },
+        {
+          "name": "[concat(variables('aaaName'), '/MicrosoftPowerBIMgmt.Admin')]",
+          "url": "https://devopsgallerystorage.blob.core.windows.net/packages/microsoftpowerbimgmt.admin.1.0.867.nupkg"
+        },
+        {
+          "name": "[concat(variables('aaaName'), '/MicrosoftPowerBIMgmt.Capacities')]",
+          "url": "https://devopsgallerystorage.blob.core.windows.net/packages/microsoftpowerbimgmt.capacities.1.0.867.nupkg"
+        },
+        {
+          "name": "[concat(variables('aaaName'), '/MicrosoftPowerBIMgmt.Data')]",
+          "url": "https://devopsgallerystorage.blob.core.windows.net/packages/microsoftpowerbimgmt.data.1.0.867.nupkg"
+        },
+        {
+          "name": "[concat(variables('aaaName'), '/MicrosoftPowerBIMgmt.Reports')]",
+          "url": "https://devopsgallerystorage.blob.core.windows.net/packages/microsoftpowerbimgmt.reports.1.0.867.nupkg"
+        },
+        {
+          "name": "[concat(variables('aaaName'), '/MicrosoftPowerBIMgmt.Workspaces')]",
+          "url": "https://devopsgallerystorage.blob.core.windows.net/packages/microsoftpowerbimgmt.workspaces.1.0.867.nupkg"
+        }
+      ],
+      "module3": [
+        {
+          "name": "[concat(variables('aaaName'), '/MicrosoftPowerBIMgmt')]",
+          "url": "https://devopsgallerystorage.blob.core.windows.net/packages/microsoftpowerbimgmt.1.0.867.nupkg"
+        }
+      ]
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Automation/automationAccounts",
+      "name": "[variables('aaaName')]",
+      "apiVersion": "2015-10-31",
+      "location": "[parameters('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": {
+        "sku": {
+          "name": "[parameters('sku')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Automation/automationAccounts/modules",
+      "apiVersion": "2015-10-31",
+      "name": "[variables('modules').module1[copyIndex()].name]",
+      "copy": {
+        "name": "modulesLoop1",
+        "count": "[length(variables('modules').module1)]"
+      },
+      "dependsOn": [
+        "[variables('aaaName')]"
+      ],
+      "properties": {
+        "contentLink": {
+          "uri": "[variables('modules').module1[copyIndex()].url]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Automation/automationAccounts/modules",
+      "apiVersion": "2015-10-31",
+      "name": "[variables('modules').module2[copyIndex()].name]",
+      "copy": {
+        "name": "modulesLoop2",
+        "count": "[length(variables('modules').module2)]"
+      },
+      "dependsOn": [
+        "modulesLoop1",
+        "[variables('aaaName')]"
+      ],
+      "properties": {
+        "contentLink": {
+          "uri": "[variables('modules').module2[copyIndex()].url]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Automation/automationAccounts/modules",
+      "apiVersion": "2015-10-31",
+      "name": "[variables('modules').module3[copyIndex()].name]",
+      "copy": {
+        "name": "modulesLoop3",
+        "count": "[length(variables('modules').module3)]"
+      },
+      "dependsOn": [
+        "modulesLoop2",
+        "[variables('aaaName')]"
+      ],
+      "properties": {
+        "contentLink": {
+          "uri": "[variables('modules').module3[copyIndex()].url]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "automationAccountName": {
+      "type": "string",
+      "value": "[variables('aaaName')]"
+    }
+  }
+}

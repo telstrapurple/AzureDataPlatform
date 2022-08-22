@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/config.common.schema.json",
+  "title": "Azure Data Platform Config - Common",
+  "description": "Common Schema types for Azure Data Platform configuration files",
+  "definitions": {
+    "StorageAccountSku": {
+      "description": "Storage SKUs supported by ARM template storageAccount.json",
+      "type": "string",
+      "enum": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Standard_ZRS",
+        "Premium_LRS",
+        "Premium_ZRS",
+        "Standard_GZRS",
+        "Standard_RAGZRS"
+      ]
+    },
+    "AutomationAccountSku": {
+      "type": "string",
+      "description": "Automation Account SKU's supported by ARM template automationAccount.json",
+      "enum": ["Free", "Basic"]
+    },
+    "AzureSecurityCentreTier": {
+      "description": "ASC monitoring tier's supported by ARM template securityCentre.json",
+      "enum": ["Standard", "Free"]
+    },
+    "resourceGroups": {
+      "type": "object",
+      "properties": {
+        "admin": {
+          "type": "string",
+          "description": "The name to use for the admin resource group (if pre-created) or 'auto' if it's being created according to the resource naming convention.",
+          "default": "auto",
+          "minLength": 1
+        },
+        "data": {
+          "type": "string",
+          "description": "The name to use for the data resource group (if pre-created) or 'auto' if it's being created according to the resource naming convention.",
+          "default": "auto",
+          "minLength": 1
+        },
+        "databricks": {
+          "type": "string",
+          "description": "The name to use for the databricks resource group (if pre-created) or 'auto' if it's being created according to the resource naming convention.",
+          "default": "auto",
+          "minLength": 1
+        },
+        "network": {
+          "type": "string",
+          "description": "The name to use for the network resource group (if pre-created) or 'auto' if it's being created according to the resource naming convention.",
+          "default": "auto",
+          "minLength": 1
+        },
+        "compute": {
+          "type": "string",
+          "description": "The name to use for the compute resource group (if pre-created) or 'auto' if it's being created according to the resource naming convention.",
+          "default": "auto",
+          "minLength": 1
+        },
+        "security": {
+          "type": "string",
+          "description": "The name to use for the security resource group (if pre-created) or 'auto' if it's being created according to the resource naming convention.",
+          "default": "auto",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "admin",
+        "data",
+        "databricks",
+        "network",
+        "compute",
+        "security"
+      ]
+    }
+  }
+}

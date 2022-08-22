@@ -1,0 +1,445 @@
+{
+	"name": "Pipe_Generic_Database_Load_Parallel",
+	"properties": {
+		"description": "This is the generic pipeline to copy Azure SQL, On prem SQL and Oracle server tables from source through Data Lake to SQL staging",
+		"activities": [
+			{
+				"name": "LKP - Get the tasks to run",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[DI].[usp_System_Run]",
+						"storedProcedureParameters": {
+							"System": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.System",
+									"type": "Expression"
+								}
+							},
+							"TaskType": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.TaskType",
+									"type": "Expression"
+								}
+							},
+							"Sequential": {
+								"type": "Int16",
+								"value": "0"
+							},
+							"Schedule": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.Schedule",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "Generic_AzureSQL",
+						"type": "DatasetReference",
+						"parameters": {
+							"secretName": "sqlDatabaseConnectionStringConfig"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "FEL - Loop through all the tasks to process",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the tasks to run",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LKP - Get the tasks to run').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"batchCount": 30,
+					"activities": [
+						{
+							"name": "LKP - Get Latest Task Instance Status",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderStoredProcedureName": "[DI].[usp_TaskInstanceStatus_Get]",
+									"storedProcedureParameters": {
+										"TaskInstanceID": {
+											"type": "Int64",
+											"value": {
+												"value": "@item().TaskInstanceID",
+												"type": "Expression"
+											}
+										}
+									},
+									"queryTimeout": "02:00:00"
+								},
+								"dataset": {
+									"referenceName": "Generic_AzureSQL",
+									"type": "DatasetReference",
+									"parameters": {
+										"secretName": "sqlDatabaseConnectionStringConfig"
+									}
+								},
+								"firstRowOnly": false
+							}
+						},
+						{
+							"name": "IF - Status Not Equals In Progress",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "FN - Get Pipeline Status",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@not(equals(activity('FN - Get Pipeline Status').output.response,'InProgress'))",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "EP - Pipe_Generic_Database_Load_Run",
+										"type": "ExecutePipeline",
+										"dependsOn": [],
+										"userProperties": [],
+										"typeProperties": {
+											"pipeline": {
+												"referenceName": "Pipe_Generic_Database_Load_Run",
+												"type": "PipelineReference"
+											},
+											"waitOnCompletion": true,
+											"parameters": {
+												"System": {
+													"value": "@pipeline().parameters.System",
+													"type": "Expression"
+												},
+												"TaskType": {
+													"value": "@pipeline().parameters.TaskType",
+													"type": "Expression"
+												},
+												"TaskInstanceID": {
+													"value": "@item().TaskInstanceID",
+													"type": "Expression"
+												},
+												"TaskID": {
+													"value": "@item().TaskID",
+													"type": "Expression"
+												}
+											}
+										}
+									}
+								]
+							}
+						},
+						{
+							"name": "FN - Get Pipeline Status",
+							"type": "AzureFunctionActivity",
+							"dependsOn": [
+								{
+									"activity": "LKP - Get Latest Task Instance Status",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"functionName": "GetPipelineRunStatus",
+								"method": "POST",
+								"body": {
+									"dataFactoryName": "@pipeline().DataFactory",
+									"pipelineRunId": "@activity('LKP - Get Latest Task Instance Status').output.value[0].PipelineRunID"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureFunction",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "SP - Log the error - Get Latest Task Instance Status",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "LKP - Get Latest Task Instance Status",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "LKP - Get the generic config values",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": {
+											"value": "@{activity('LKP - Get Latest Task Instance Status').error.message}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{activity('LKP - Get Latest Task Instance Status').output}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@{pipeline().Pipeline}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@{pipeline().RunId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@{pipeline().TriggerId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@{pipeline().TriggerName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@{pipeline().TriggerTime}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@{pipeline().TriggerType}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": {
+											"value": "@item().TaskInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "Error",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						},
+						{
+							"name": "SP - Log the error - Get Pipeline Status",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "FN - Get Pipeline Status",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "LKP - Get the generic config values",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": {
+											"value": "@{activity('FN - Get Pipeline Status').error.message}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{activity('FN - Get Pipeline Status').output}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@{pipeline().Pipeline}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@{pipeline().RunId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@{pipeline().TriggerId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@{pipeline().TriggerName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@{pipeline().TriggerTime}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@{pipeline().TriggerType}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": {
+											"value": "@item().TaskInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "Error",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"System": {
+				"type": "string",
+				"defaultValue": "ADS SQL Sample"
+			},
+			"TaskType": {
+				"type": "string",
+				"defaultValue": "Azure SQL to Synapse"
+			},
+			"Schedule": {
+				"type": "string",
+				"defaultValue": "Once a day"
+			}
+		},
+		"folder": {
+			"name": "ETL/Database Load"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

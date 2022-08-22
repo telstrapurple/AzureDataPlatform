@@ -1,0 +1,86 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Specific params
+    "dbrName": {
+      "type": "string"
+    },
+    "vNetResourceId": {
+      "type": "string"
+    },
+    "subNetName_DBRPublic": {
+      "type": "string"
+    },
+    "subNetName_DBRPrivate": {
+      "type": "string"
+    },
+    "pricingTier": {
+      "type": "string",
+      "defaultValue": "premium",
+      "allowedValues": ["trial", "standard", "premium"]
+    },
+    "enableNoPublicIp": {
+      "type": "bool",
+      "defaultValue": false
+    },
+    "managedResourceGroupName": {
+      "type": "string"
+    },
+    "authorizations": {
+      "type": "array"
+    }
+  },
+  "variables": {
+    "managedResourceGroupId": "[concat(subscription().id, '/resourceGroups/', parameters('managedResourceGroupName'))]",
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2018-04-01",
+      "type": "Microsoft.Databricks/workspaces",
+      "location": "[variables('azureLocation')]",
+      "name": "[parameters('dbrName')]",
+      "tags": "[parameters('tagObject')]",
+      "sku": {
+        "name": "[parameters('pricingTier')]"
+      },
+      "properties": {
+        "managedResourceGroupId": "[variables('managedResourceGroupId')]",
+        "authorizations": "[parameters('authorizations')]",
+        "parameters": {
+          "customVirtualNetworkId": {
+            "value": "[parameters('vNetResourceId')]"
+          },
+          "customPublicSubnetName": {
+            "value": "[parameters('subNetName_DBRPublic')]"
+          },
+          "customPrivateSubnetName": {
+            "value": "[parameters('subNetName_DBRPrivate')]"
+          },
+          "enableNoPublicIp": {
+            "value": "[parameters('enableNoPublicIp')]"
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "databricksWorkspaceName": {
+      "type": "string",
+      "value": "[parameters('dbrName')]"
+    },
+    "databricksResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Databricks/workspaces', parameters('dbrName'))]"
+    },
+    "databricksWorkspaceUrl": {
+      "type": "string",
+      "value": "[concat('https://', reference(resourceId('Microsoft.Databricks/workspaces', parameters('dbrName')), '2018-04-01').workspaceUrl)]"
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.1",
+  "parameters": {
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.operationalinsights/workspaces/tp-syd-dev-adp-law-001"
+    },
+    "autoProvisionSetting": {
+      "value": "On"
+    },
+    "ascOwnerEmail": {
+      "value": "noreply@purple.telstra.com"
+    },
+    "ascOwnerContact": {
+      "value": "+61404123123"
+    },
+    "highSeverityAlertNotification": {
+      "value": "On"
+    },
+    "subscriptionOwnerNotification": {
+      "value": "On"
+    },
+    "virtualMachineTier": {
+      "value": "Standard"
+    },
+    "appServiceTier": {
+      "value": "Standard"
+    },
+    "paasSQLServiceTier": {
+      "value": "Standard"
+    },
+    "sqlServerOnVmTier": {
+      "value": "Standard"
+    },
+    "storageAccountTier": {
+      "value": "Standard"
+    },
+    "kubernetesServiceTier": {
+      "value": "Standard"
+    },
+    "containerRegistryTier": {
+      "value": "Standard"
+    },
+    "keyvaultTier": {
+      "value": "Standard"
+    },
+    "integrationName": {
+      "value": "WDATP"
+    },
+    "integrationEnabled": {
+      "value": true
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    "subscriptionId": {
+      "value": "451b6b03-be52-48aa-9baf-e54c858fd485"
+    },
+    "notScopes": {
+      "value": []
+    },
+    "azureLocation": {
+      "value": "australiaeast"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-datafactory-app.schema.json",
+  "title": "Azure Data Platform Config - Data Factory App",
+  "description": "Data Factory App Configuration for the Azure Data Platform",
+  "type": "object"
+  //nothing needed in here.
+  //All properties needed are defined/declared in other schema files.
+}

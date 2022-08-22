@@ -1,0 +1,43 @@
+﻿<script type="text/javascript"  asp-add-nonce="true">
+        const fileInterimDataTypes = @Html.Raw(ViewBag.FileInterimDataTypeItems);
+        $("#btnAddMapping").on('click', function () {
+            var maxId = @Html.Raw(ViewBag.FileColumnMappingsIndex);
+            var lastItemId = $("#tblFileColumnMapping > tbody > tr:last-child").attr('id');
+            var tableRow = maxId;
+            if (tableRow < lastItemId)
+            {
+                tableRow = lastItemId;
+            }
+            tableRow++;
+            var itemCount = $('#tblFileColumnMapping > tbody > tr').length;
+            var fileInterimDataTypeOptions = '';
+            // Get options
+            for (var i = 0; i < fileInterimDataTypes.length; i++)
+            {
+                fileInterimDataTypeOptions = fileInterimDataTypeOptions + '<option value="' + fileInterimDataTypes[i].id + '">' + fileInterimDataTypes[i].name + '</option>';
+            }
+            $("#tblFileColumnMapping > tbody").append($('<tr id="' + tableRow + '">')
+                .append($('<input name="FileColumnMappings[' + itemCount + '].FileColumnMappingId" type="hidden" value="' + tableRow + '">'))
+                .append($('<input name="FileColumnMappings[' + itemCount + '].DeletedIndicator" type="hidden" value="False">'))
+                .append($('<input name="FileColumnMappings[' + itemCount + '].TaskId" type="hidden" value="' + @Model.Task.TaskId + '">'))
+                .append($('<td>')
+                    .append($('<input class="form-control" name="FileColumnMappings[' + itemCount + '].SourceColumnName" style="width:100%" type="text" value=""/>')))
+                .append($('<td>')
+                    .append($('<input class="form-control" name="FileColumnMappings[' + itemCount + '].TargetColumnName" style="width:100%" type="text" value=""/>')))
+                .append($('<td>')
+                    .append($('<select class="form-control" data-val="true" name="FileColumnMappings[' + itemCount + '].FileInterimDataTypeId" style="width:100%" type="text" value=""/>')
+                        .append($(fileInterimDataTypeOptions))))
+                .append($('<td>')
+                    .append($('<input class="form-control" name="FileColumnMappings[' + itemCount + '].DataLength" style="width:100%" type="text" value=""/>')))
+                .append($('<td>')
+                    .append($('<button id="btnDelete-' + tableRow + '" type="button" class="btn btn-danger text-nowrap"/>')
+                        .append($('<i class="fas fa-trash"></i>'))
+                        .append(' Delete'))));
+        });
+        $("#tblFileColumnMapping").on('click','[id*="btnDelete"]', function () { 
+            var id = this.id.replace("btnDelete-", "");
+            $('#tblFileColumnMapping >tbody > tr[id|="' + id + '"]').hide('slow', function () {
+                $('#tblFileColumnMapping >tbody > tr[id|="' + id + '"] > input[name*="DeletedIndicator"]').val("True");
+            });
+        });
+</script>

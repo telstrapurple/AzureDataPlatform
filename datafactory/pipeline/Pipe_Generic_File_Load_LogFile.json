@@ -1,0 +1,596 @@
+{
+  "name": "Pipe_Generic_File_Load_LogFile",
+  "properties": {
+    "activities": [
+      {
+        "name": "FEL - Log File",
+        "type": "ForEach",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@pipeline().parameters.ChildItems",
+            "type": "Expression"
+          },
+          "isSequential": false,
+          "batchCount": 30,
+          "activities": [
+            {
+              "name": "IF - Azure Data Lake",
+              "type": "IfCondition",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "expression": {
+                  "value": "@contains(pipeline().parameters.TaskType, 'Azure Data Lake File to')",
+                  "type": "Expression"
+                },
+                "ifTrueActivities": [
+                  {
+                    "name": "GM - Data Lake - Last Modified",
+                    "type": "GetMetadata",
+                    "dependsOn": [],
+                    "policy": {
+                      "timeout": "7.00:00:00",
+                      "retry": 0,
+                      "retryIntervalInSeconds": 30,
+                      "secureOutput": false,
+                      "secureInput": false
+                    },
+                    "userProperties": [],
+                    "typeProperties": {
+                      "dataset": {
+                        "referenceName": "Generic_DatalakeGen2_Csv",
+                        "type": "DatasetReference",
+                        "parameters": {
+                          "dataLakeServiceEndPoint": {
+                            "value": "@pipeline().parameters.ServiceEndpoint",
+                            "type": "Expression"
+                          },
+                          "dataLakeFilePath": {
+                            "value": "@pipeline().parameters.FilePath",
+                            "type": "Expression"
+                          },
+                          "dataLakeFileName": {
+                            "value": "@item().name",
+                            "type": "Expression"
+                          },
+                          "compressionType": " ",
+                          "columnDelimiter": " ",
+                          "rowDelimiter": " ",
+                          "escapeCharacter": " ",
+                          "quoteCharacter": " ",
+                          "firstRowAsHeader": " ",
+                          "nullValue": " ",
+                          "encoding": " "
+                        }
+                      },
+                      "fieldList": ["itemName", "itemType", "lastModified"],
+                      "storeSettings": {
+                        "type": "AzureBlobFSReadSettings",
+                        "recursive": true
+                      },
+                      "formatSettings": {
+                        "type": "DelimitedTextReadSettings"
+                      }
+                    }
+                  },
+                  {
+                    "name": "LKP - Log to ADS Config - Data Lake",
+                    "type": "Lookup",
+                    "dependsOn": [
+                      {
+                        "activity": "GM - Data Lake - Last Modified",
+                        "dependencyConditions": ["Succeeded"]
+                      }
+                    ],
+                    "policy": {
+                      "timeout": "7.00:00:00",
+                      "retry": 0,
+                      "retryIntervalInSeconds": 30,
+                      "secureOutput": false,
+                      "secureInput": false
+                    },
+                    "userProperties": [],
+                    "typeProperties": {
+                      "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[DI].[usp_FileLoadLog_Insert]",
+                        "storedProcedureParameters": {
+                          "FileName": {
+                            "type": "String",
+                            "value": {
+                              "value": "@activity('GM - Data Lake - Last Modified').output.itemName",
+                              "type": "Expression"
+                            }
+                          },
+                          "FilePath": {
+                            "type": "String",
+                            "value": {
+                              "value": "@pipeline().parameters.FilePath",
+                              "type": "Expression"
+                            }
+                          },
+                          "LastModified": {
+                            "type": "Datetimeoffset",
+                            "value": {
+                              "value": "@activity('GM - Data Lake - Last Modified').output.lastModified",
+                              "type": "Expression"
+                            }
+                          },
+                          "TaskInstanceID": {
+                            "type": "Int64",
+                            "value": {
+                              "value": "@pipeline().parameters.TaskInstanceID",
+                              "type": "Expression"
+                            }
+                          }
+                        },
+                        "queryTimeout": "00:30:00",
+                        "partitionOption": "None"
+                      },
+                      "dataset": {
+                        "referenceName": "Generic_AzureSQL",
+                        "type": "DatasetReference",
+                        "parameters": {
+                          "secretName": "sqlDatabaseConnectionStringConfig"
+                        }
+                      },
+                      "firstRowOnly": false
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "IF - Azure File Share",
+              "type": "IfCondition",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "expression": {
+                  "value": "@contains(pipeline().parameters.TaskType, 'Azure File Share to')",
+                  "type": "Expression"
+                },
+                "ifTrueActivities": [
+                  {
+                    "name": "GM - Azure File Share - Last Modified",
+                    "type": "GetMetadata",
+                    "dependsOn": [],
+                    "policy": {
+                      "timeout": "7.00:00:00",
+                      "retry": 0,
+                      "retryIntervalInSeconds": 30,
+                      "secureOutput": false,
+                      "secureInput": false
+                    },
+                    "userProperties": [],
+                    "typeProperties": {
+                      "dataset": {
+                        "referenceName": "Generic_AzureFileShare_Csv_AzureIR",
+                        "type": "DatasetReference",
+                        "parameters": {
+                          "storageAccountName": {
+                            "value": "@pipeline().parameters.storageAccountName",
+                            "type": "Expression"
+                          },
+                          "accountKeySecretName": {
+                            "value": "@pipeline().parameters.accountKeySecretName",
+                            "type": "Expression"
+                          },
+                          "fileShare": {
+                            "value": "@pipeline().parameters.fileShare",
+                            "type": "Expression"
+                          },
+                          "filePath": {
+                            "value": "@pipeline().parameters.FilePath",
+                            "type": "Expression"
+                          },
+                          "fileName": {
+                            "value": "@item().name",
+                            "type": "Expression"
+                          },
+                          "compressionType": " ",
+                          "columnDelimiter": " ",
+                          "rowDelimiter": " ",
+                          "escapeCharacter": " ",
+                          "quoteCharacter": " ",
+                          "firstRowAsHeader": " ",
+                          "nullValue": " ",
+                          "encoding": " "
+                        }
+                      },
+                      "fieldList": ["itemName", "itemType", "lastModified"],
+                      "storeSettings": {
+                        "type": "AzureFileStorageReadSettings",
+                        "recursive": true
+                      },
+                      "formatSettings": {
+                        "type": "DelimitedTextReadSettings"
+                      }
+                    }
+                  },
+                  {
+                    "name": "LKP - Log to ADS Config - Azure File Share",
+                    "type": "Lookup",
+                    "dependsOn": [
+                      {
+                        "activity": "GM - Azure File Share - Last Modified",
+                        "dependencyConditions": ["Succeeded"]
+                      }
+                    ],
+                    "policy": {
+                      "timeout": "7.00:00:00",
+                      "retry": 0,
+                      "retryIntervalInSeconds": 30,
+                      "secureOutput": false,
+                      "secureInput": false
+                    },
+                    "userProperties": [],
+                    "typeProperties": {
+                      "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[DI].[usp_FileLoadLog_Insert]",
+                        "storedProcedureParameters": {
+                          "FileName": {
+                            "type": "String",
+                            "value": {
+                              "value": "@activity('GM - Azure File Share - Last Modified').output.itemName",
+                              "type": "Expression"
+                            }
+                          },
+                          "FilePath": {
+                            "type": "String",
+                            "value": {
+                              "value": "@pipeline().parameters.FilePath",
+                              "type": "Expression"
+                            }
+                          },
+                          "LastModified": {
+                            "type": "Datetimeoffset",
+                            "value": {
+                              "value": "@activity('GM - Azure File Share - Last Modified').output.lastModified",
+                              "type": "Expression"
+                            }
+                          },
+                          "TaskInstanceID": {
+                            "type": "Int64",
+                            "value": {
+                              "value": "@pipeline().parameters.TaskInstanceID",
+                              "type": "Expression"
+                            }
+                          }
+                        },
+                        "queryTimeout": "00:30:00",
+                        "partitionOption": "None"
+                      },
+                      "dataset": {
+                        "referenceName": "Generic_AzureSQL",
+                        "type": "DatasetReference",
+                        "parameters": {
+                          "secretName": "sqlDatabaseConnectionStringConfig"
+                        }
+                      },
+                      "firstRowOnly": false
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "IF - Azure Blob",
+              "type": "IfCondition",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "expression": {
+                  "value": "@contains(pipeline().parameters.TaskType, 'Azure Blob File to')",
+                  "type": "Expression"
+                },
+                "ifTrueActivities": [
+                  {
+                    "name": "GM - Blob - Last Modified",
+                    "type": "GetMetadata",
+                    "dependsOn": [],
+                    "policy": {
+                      "timeout": "7.00:00:00",
+                      "retry": 0,
+                      "retryIntervalInSeconds": 30,
+                      "secureOutput": false,
+                      "secureInput": false
+                    },
+                    "userProperties": [],
+                    "typeProperties": {
+                      "dataset": {
+                        "referenceName": "Generic_Blob_Csv_AzureIR",
+                        "type": "DatasetReference",
+                        "parameters": {
+                          "serviceEndPoint": {
+                            "value": "@pipeline().parameters.ServiceEndpoint",
+                            "type": "Expression"
+                          },
+                          "filePath": {
+                            "value": "@pipeline().parameters.FilePath",
+                            "type": "Expression"
+                          },
+                          "fileName": {
+                            "value": "@item().name",
+                            "type": "Expression"
+                          },
+                          "compressionType": " ",
+                          "columnDelimiter": " ",
+                          "rowDelimiter": " ",
+                          "escapeCharacter": " ",
+                          "quoteCharacter": " ",
+                          "firstRowAsHeader": " ",
+                          "nullValue": " ",
+                          "encoding": " "
+                        }
+                      },
+                      "fieldList": ["itemName", "itemType", "lastModified"],
+                      "storeSettings": {
+                        "type": "AzureBlobStorageReadSettings",
+                        "recursive": true
+                      },
+                      "formatSettings": {
+                        "type": "DelimitedTextReadSettings"
+                      }
+                    }
+                  },
+                  {
+                    "name": "LKP - Log to ADS Config - Blob",
+                    "type": "Lookup",
+                    "dependsOn": [
+                      {
+                        "activity": "GM - Blob - Last Modified",
+                        "dependencyConditions": ["Succeeded"]
+                      }
+                    ],
+                    "policy": {
+                      "timeout": "7.00:00:00",
+                      "retry": 0,
+                      "retryIntervalInSeconds": 30,
+                      "secureOutput": false,
+                      "secureInput": false
+                    },
+                    "userProperties": [],
+                    "typeProperties": {
+                      "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[DI].[usp_FileLoadLog_Insert]",
+                        "storedProcedureParameters": {
+                          "FileName": {
+                            "type": "String",
+                            "value": {
+                              "value": "@activity('GM - Blob - Last Modified').output.itemName",
+                              "type": "Expression"
+                            }
+                          },
+                          "FilePath": {
+                            "type": "String",
+                            "value": {
+                              "value": "@pipeline().parameters.FilePath",
+                              "type": "Expression"
+                            }
+                          },
+                          "LastModified": {
+                            "type": "Datetimeoffset",
+                            "value": {
+                              "value": "@activity('GM - Blob - Last Modified').output.lastModified",
+                              "type": "Expression"
+                            }
+                          },
+                          "TaskInstanceID": {
+                            "type": "Int64",
+                            "value": {
+                              "value": "@pipeline().parameters.TaskInstanceID",
+                              "type": "Expression"
+                            }
+                          }
+                        },
+                        "queryTimeout": "00:30:00",
+                        "partitionOption": "None"
+                      },
+                      "dataset": {
+                        "referenceName": "Generic_AzureSQL",
+                        "type": "DatasetReference",
+                        "parameters": {
+                          "secretName": "sqlDatabaseConnectionStringConfig"
+                        }
+                      },
+                      "firstRowOnly": false
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "IF - File System",
+              "type": "IfCondition",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "expression": {
+                  "value": "@contains(pipeline().parameters.TaskType, 'File System File to')",
+                  "type": "Expression"
+                },
+                "ifTrueActivities": [
+                  {
+                    "name": "GM - File System - Last Modified",
+                    "type": "GetMetadata",
+                    "dependsOn": [],
+                    "policy": {
+                      "timeout": "7.00:00:00",
+                      "retry": 0,
+                      "retryIntervalInSeconds": 30,
+                      "secureOutput": false,
+                      "secureInput": false
+                    },
+                    "userProperties": [],
+                    "typeProperties": {
+                      "dataset": {
+                        "referenceName": "Generic_Local_Csv",
+                        "type": "DatasetReference",
+                        "parameters": {
+                          "host": {
+                            "value": "@pipeline().parameters.Host",
+                            "type": "Expression"
+                          },
+                          "filePath": {
+                            "value": "@pipeline().parameters.FilePath",
+                            "type": "Expression"
+                          },
+                          "fileName": {
+                            "value": "@item().name",
+                            "type": "Expression"
+                          },
+                          "compressionType": " ",
+                          "columnDelimiter": " ",
+                          "rowDelimiter": " ",
+                          "escapeCharacter": " ",
+                          "quoteCharacter": " ",
+                          "firstRowAsHeader": " ",
+                          "nullValue": " ",
+                          "encoding": " ",
+                          "userid": {
+                            "value": "@pipeline().parameters.onPremisesUserName",
+                            "type": "Expression"
+                          },
+                          "password": {
+                            "value": "@pipeline().parameters.onPremisesPassword",
+                            "type": "Expression"
+                          }
+                        }
+                      },
+                      "fieldList": ["itemName", "itemType", "lastModified"],
+                      "storeSettings": {
+                        "type": "FileServerReadSettings",
+                        "recursive": true
+                      },
+                      "formatSettings": {
+                        "type": "DelimitedTextReadSettings"
+                      }
+                    }
+                  },
+                  {
+                    "name": "LKP - Log to ADS Config - File System",
+                    "type": "Lookup",
+                    "dependsOn": [
+                      {
+                        "activity": "GM - File System - Last Modified",
+                        "dependencyConditions": ["Succeeded"]
+                      }
+                    ],
+                    "policy": {
+                      "timeout": "7.00:00:00",
+                      "retry": 0,
+                      "retryIntervalInSeconds": 30,
+                      "secureOutput": false,
+                      "secureInput": false
+                    },
+                    "userProperties": [],
+                    "typeProperties": {
+                      "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[DI].[usp_FileLoadLog_Insert]",
+                        "storedProcedureParameters": {
+                          "FileName": {
+                            "type": "String",
+                            "value": {
+                              "value": "@activity('GM - File System - Last Modified').output.itemName",
+                              "type": "Expression"
+                            }
+                          },
+                          "FilePath": {
+                            "type": "String",
+                            "value": {
+                              "value": "@pipeline().parameters.FilePath",
+                              "type": "Expression"
+                            }
+                          },
+                          "LastModified": {
+                            "type": "Datetimeoffset",
+                            "value": {
+                              "value": "@activity('GM - File System - Last Modified').output.lastModified",
+                              "type": "Expression"
+                            }
+                          },
+                          "TaskInstanceID": {
+                            "type": "Int64",
+                            "value": {
+                              "value": "@pipeline().parameters.TaskInstanceID",
+                              "type": "Expression"
+                            }
+                          }
+                        },
+                        "queryTimeout": "00:30:00",
+                        "partitionOption": "None"
+                      },
+                      "dataset": {
+                        "referenceName": "Generic_AzureSQL",
+                        "type": "DatasetReference",
+                        "parameters": {
+                          "secretName": "sqlDatabaseConnectionStringConfig"
+                        }
+                      },
+                      "firstRowOnly": false
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "parameters": {
+      "TaskConfig": {
+        "type": "object"
+      },
+      "TaskID": {
+        "type": "int"
+      },
+      "TaskInstanceID": {
+        "type": "int"
+      },
+      "TaskType": {
+        "type": "string"
+      },
+      "ChildItems": {
+        "type": "array"
+      },
+      "ServiceEndpoint": {
+        "type": "string"
+      },
+      "FilePath": {
+        "type": "string"
+      },
+      "FileName": {
+        "type": "string"
+      },
+      "Host": {
+        "type": "string"
+      },
+      "onPremisesUserName": {
+        "type": "securestring"
+      },
+      "onPremisesPassword": {
+        "type": "securestring"
+      },
+      "storageAccountName": {
+        "type": "string"
+      },
+      "accountKeySecretName": {
+        "type": "string"
+      },
+      "fileShare": {
+        "type": "string"
+      }
+    },
+    "folder": {
+      "name": "ETL/File Load/Get Metadata"
+    },
+    "annotations": []
+  },
+  "type": "Microsoft.DataFactory/factories/pipelines"
+}

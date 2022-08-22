@@ -1,0 +1,524 @@
+{
+  "name": "Pipe_Generic_Database_To_Target_Incremental_Load_Log",
+  "properties": {
+    "activities": [
+      {
+        "name": "IF- Check for Incremental load",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(pipeline().parameters.TargetConfig.value[0].LoadType,'Incremental')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "SP - Log the error - Incremental value lookup",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "DBN - Get the Incremental Column Latest value",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "DBN - Get the Incremental Column Latest value",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('DBN - Get the Incremental Column Latest value').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('DBN - Get the Incremental Column Latest value').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Update the Incremental Load log",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "DBN - Get the Incremental Column Latest value",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_IncrementalLoadLog_Update]",
+                "storedProcedureParameters": {
+                  "IncrementalColumn": {
+                    "value": {
+                      "value": "@pipeline().parameters.TargetConfig.value[0].IncrementalColumn",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "Latestvalue": {
+                    "value": {
+                      "value": "@activity('DBN - Get the Incremental Column Latest value').output.runOutput",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "SuccessIndicator": {
+                    "value": {
+                      "value": "@pipeline().parameters.SuccessIndicator",
+                      "type": "Expression"
+                    },
+                    "type": "Boolean"
+                  },
+                  "TaskID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskID",
+                      "type": "Expression"
+                    },
+                    "type": "Int32"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "SourceType": {
+                    "value": "SQL",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "DBN - Get the Incremental Column Latest value",
+              "type": "DatabricksNotebook",
+              "dependsOn": [
+                {
+                  "activity": "LKP - Get the Target Increment Column",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "notebookPath": "/Azure Data Platform/Generic/Parquet Incremental Column Max Value Fetch",
+                "baseParameters": {
+                  "columnName": {
+                    "value": "@activity('LKP - Get the Target Increment Column').output.firstRow.TargetColumnName",
+                    "type": "Expression"
+                  },
+                  "targetFilePath": {
+                    "value": "@pipeline().parameters.StagingConfig.value[0].TargetFilePath",
+                    "type": "Expression"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "Databricks",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "databricksURL": {
+                    "value": "@pipeline().parameters.ETLConfig.value[0].DatabricksURL",
+                    "type": "Expression"
+                  },
+                  "databricksClusterID": {
+                    "value": "@pipeline().parameters.ETLConfig.value[0].DatabricksClusterID",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "LKP - Get the Target Increment Column",
+              "type": "Lookup",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "AzureSqlSource",
+                  "sqlReaderStoredProcedureName": "[DI].[usp_TargetIncrementalColumnMapping_Get]",
+                  "storedProcedureParameters": {
+                    "TaskID": {
+                      "type": "Int32",
+                      "value": {
+                        "value": "@pipeline().parameters.TaskID",
+                        "type": "Expression"
+                      }
+                    },
+                    "SourceType": {
+                      "type": "String",
+                      "value": "SQL"
+                    }
+                  },
+                  "partitionOption": "None"
+                },
+                "dataset": {
+                  "referenceName": "Generic_AzureSQL",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "secretName": "sqlDatabaseConnectionStringConfig"
+                  }
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - Get the Target Increment Column",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "LKP - Get the Target Increment Column",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "LKP - Get the Target Increment Column",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('LKP - Get the Target Increment Column').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('LKP - Get the Target Increment Column').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - Update the Incremental Load log",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "SP - Update the Incremental Load log",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "SP - Update the Incremental Load log",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('SP - Update the Incremental Load log').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('SP - Update the Incremental Load log').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "parameters": {
+      "TaskID": {
+        "type": "int"
+      },
+      "TaskInstanceID": {
+        "type": "int"
+      },
+      "TargetConfig": {
+        "type": "object"
+      },
+      "SuccessIndicator": {
+        "type": "bool"
+      },
+      "StagingConfig": {
+        "type": "object"
+      },
+      "ETLConfig": {
+        "type": "object"
+      }
+    },
+    "folder": {
+      "name": "ETL/Database Load"
+    },
+    "annotations": []
+  },
+  "type": "Microsoft.DataFactory/factories/pipelines"
+}

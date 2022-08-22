@@ -1,0 +1,220 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    },
+    // Specific params
+    "staName": {
+      "type": "string"
+    },
+    "sku": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Standard_ZRS",
+        "Premium_LRS",
+        "Premium_ZRS",
+        "Standard_GZRS",
+        "Standard_RAGZRS"
+      ]
+    },
+    "isDataLake": {
+      "type": "bool",
+      "defaultValue": false
+    },
+    "defaultContainerName": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "subnetIdArray": {
+      "type": "array",
+      "defaultValue": null
+    },
+    "bypassNetworkDefaultAction": {
+      "type": "string",
+      "defaultValue": "None",
+      "allowedValues": [
+        "None",
+        "Logging",
+        "Metrics",
+        "AzureServices",
+        "Logging, Metrics",
+        "Logging, Metrics, AzureServices"
+      ]
+    },
+    "networkDefaultAction": {
+      "type": "string",
+      "defaultValue": "Allow",
+      "allowedValues": ["Allow", "Deny"]
+    }
+  },
+  "variables": {
+    "kind": "StorageV2",
+    "azureLocation": "[resourceGroup().location]",
+    "empty": ["blankArray"],
+    // ARM doesn't let you do a copy loop with a count of 0 so if the subnetIdArray is empty we actually use the "empty" array above instead
+    // We don't actually use the result from that empty array though since in that case the lookup below for the "subnetIdsInArray" variable will index into
+    //   the "false" value of this "subnetIdsInArrayCompose", which is an empty array.
+    "subnetIdsInArrayCompose": {
+      "true": {
+        "copy": [
+          {
+            "name": "virtualNetworkRuleObject",
+            "count": "[if(equals(length(parameters('subnetIdArray')),0), 1, length(parameters('subnetIdArray')))]",
+            "input": {
+              "id": "[if(equals(length(parameters('subnetIdArray')),0), variables('empty')[copyIndex('virtualNetworkRuleObject')], parameters('subnetIdArray')[copyIndex('virtualNetworkRuleObject')])]",
+              "action": "Allow"
+            }
+          }
+        ]
+      },
+      "false": {}
+    },
+    "subnetIdsInArray": "[variables('subnetIdsInArrayCompose')[string(greater(length(parameters('subnetIdArray')), 0))]]"
+  },
+  "resources": [
+    {
+      "name": "[parameters('staName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "apiVersion": "2020-08-01-preview",
+      "sku": {
+        "name": "[parameters('sku')]"
+      },
+      "kind": "[variables('kind')]",
+      "properties": {
+        "supportsHttpsTrafficOnly": true,
+        "isHnsEnabled": "[parameters('isDataLake')]",
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false,
+        "networkAcls": {
+          "virtualNetworkRules": "[if(equals(length(parameters('subnetIdArray')),0), null(), variables('subnetIdsInArray').virtualNetworkRuleObject)]",
+          "defaultAction": "[parameters('networkDefaultAction')]",
+          "bypass": "[parameters('bypassNetworkDefaultAction')]"
+        }
+      },
+      "resources": [
+        {
+          "condition": "[not(empty(parameters('defaultContainerName')))]",
+          "name": "[concat('default/', parameters('defaultContainerName'))]",
+          "type": "blobServices/containers",
+          "apiVersion": "2018-07-01",
+          "dependsOn": ["[parameters('staName')]"]
+        },
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "Microsoft.Storage/storageAccounts/providers/diagnosticsettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "[concat(parameters('staName'),'/Microsoft.Insights/', 'diagnostics')]",
+          "dependsOn": ["[parameters('staName')]"],
+          "properties": {
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "metrics": [
+              {
+                "category": "Transaction",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "Microsoft.Storage/storageAccounts/blobServices/providers/diagnosticsettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "[concat(parameters('staName'),'/default/Microsoft.Insights/', 'diagnostics')]",
+          "dependsOn": ["[parameters('staName')]"],
+          "properties": {
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "logs": [
+              {
+                "category": "StorageRead",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "StorageWrite",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "StorageDelete",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ],
+            "metrics": [
+              {
+                "category": "Transaction",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "storageAccountName": {
+      "type": "string",
+      "value": "[parameters('staName')]"
+    },
+    "storageAccountId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('staName'))]"
+    },
+    "storageAccountPrimaryEndpoints": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', parameters('staName'))).primaryEndpoints.blob]"
+    }
+  }
+}

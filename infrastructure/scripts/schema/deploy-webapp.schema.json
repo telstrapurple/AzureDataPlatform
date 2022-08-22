@@ -1,0 +1,169 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-webapp.schema.json",
+  "title": "Azure Data Platform Config - WebApp",
+  "description": "WebApp Configuration for the Azure Data Platform",
+  "type": "object",
+  "properties": {
+    //adminServicePlan
+    //                .servicePlanKind
+    //                .servicePlanLevel
+    //                .servicePlanCapacity
+    //webAppAADAppRegistration
+    //                        .displayName
+    //webAppSettings
+    //              .azureADDomainName
+    //              .azureADTenantId             //can be left empty when deployAzureADResources == true
+    //              .azureADApplicationClientId  //can be left empty when deployAzureADResources == true
+    //              .azureADApplicationClientSecret  //can be left empty when deployAzureADResources == true
+    //              .websiteTimeZone
+    //webApp.alwaysOn
+    //functionAppStorage.sku
+    //functionApp
+    //           .alwaysOn
+    //           functionsWorkerProcessCount
+    //           functionsExtensionVersion
+    //           functionsWorkerRuntime
+    //           powerShellVersion
+    "adminServicePlan": {
+      "$ref": "#/definitions/adminServicePlan",
+      "description": "Parameters for configuring the admin app service plan. Passed to ARM template appServicePlan.json"
+    },
+    "webAppAADAppRegistration": {
+      "$ref": "#/definitions/webAppAADAppRegistration",
+      "description": "Details for app registration used by the admin web app"
+    },
+    "webAppSettings": {
+      "$ref": "#/definitions/webAppSettings",
+      "description": "COnfigurable parameters for deploying the admin web app"
+    },
+    "functionAppStorage": {
+      "$ref": "#/definitions/functionAppStorage",
+      "description": "Additional ARM parameters passed to storageAccount.json to build function app storage."
+    },
+    "functionApp": {
+      "$ref": "#/definitions/functionApp",
+      "description": "Additional ARM parameters passed to functionApp.json."
+    },
+    "webApp": {
+      "$ref": "#/definitions/webApp",
+      "description": "Additional ARM parameters passed to webApp.json"
+    }
+  },
+  "required": [
+    "adminServicePlan",
+    "webAppAADAppRegistration",
+    "webAppSettings",
+    "functionAppStorage",
+    "functionApp",
+    "webApp"
+  ],
+  "definitions": {
+    "adminServicePlan": {
+      "type": "object",
+      "description": "See kind in the ARM documentation for resource provider Microsoft.Web/serverfarms: https://docs.microsoft.com/en-us/azure/templates/microsoft.web/serverfarms#microsoftwebserverfarms-object",
+      "properties": {
+        "servicePlanKind": {
+          "type": "string",
+          "enum": ["app", "linux", "functionapp"]
+        },
+        "servicePlanLevel": {
+          "type": "string",
+          "description": "See sku.name in the ARM documentation for resource provider Microsoft.Web/serverfarms: https://docs.microsoft.com/en-us/azure/templates/microsoft.web/serverfarms#skudescription-object"
+        },
+        "servicePlanCapacity": {
+          "type": "number",
+          "description": "See sku.capacity in the ARM documentation for resource provider Microsoft.Web/serverfarms: https://docs.microsoft.com/en-us/azure/templates/microsoft.web/serverfarms#skudescription-object"
+        }
+      },
+      "required": ["servicePlanKind", "servicePlanLevel", "servicePlanCapacity"]
+    },
+    "webAppAADAppRegistration": {
+      "type": "object",
+      "properties": {
+        "displayname": {
+          "type": "string",
+          "description": "If specified, overrides default naming convention for admin web app. May be left blank or unspecified"
+        },
+        "enableLocalhostRedirectUrl": {
+          "type": "boolean",
+          "description": "If set to true, adds the following localhost URLs as allowed authentication reply URLs: [\"https://localhost:44399/signin-oidc\", \"http://localhost:44399/signin-oidc\"]. Do NOT set this to true for customer or production workloads."
+        }
+      }
+    },
+    "webAppSettings": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "azureADDomainName": {
+          "type": "string",
+          "description": "Value to set for App Setting AzureAd:Domain"
+        },
+        "azureADTenantId": {
+          "type": "string",
+          "description": "Value to set for App Setting azureAd:TenantId. Required if deployAzureADResources is false, can be left blank otherwise."
+        },
+        "azureADApplicationClientId": {
+          "type": "string",
+          "description": "Value to set for App Setting azureAd:ClientId. Required if deployAzureADResources is false, can be left blank otherwise."
+        },
+        "azureADApplicationClientSecret": {
+          "type": "string",
+          "description": "Value to set for App Setting azureAd:ClientSecret. Required if deployAzureADResources is false, can be left blank otherwise."
+        },
+        "websiteTimeZone": {
+          "type": "string",
+          "description": "System timezone to set for the admin web app. To get allowed names: [System.TimeZoneInfo]::GetSystemTimeZones()|select -ExpandProperty Id | Sort"
+        }
+      },
+      "required": ["azureADDomainName", "websiteTimeZone"]
+    },
+    "functionAppStorage": {
+      "type": "object",
+      "properties": {
+        "sku": {
+          "$ref": "./config.common.schema.json#/definitions/StorageAccountSku"
+        }
+      },
+      "required": ["sku"]
+    },
+    "functionApp": {
+      "type": "object",
+      "properties": {
+        "alwaysOn": {
+          "type": "boolean",
+          "description": "The value of the function app `alwaysOn` flag",
+          "default": true
+        },
+        "functionsWorkerProcessCount": {
+          "type": "string",
+          "description": "The value of the App Setting `FUNCTIONS_WORKER_PROCESS_COUNT`",
+          "default": "10"
+        },
+        "functionsExtensionVersion": {
+          "type": "string",
+          "description": "The value of the App Setting `FUNCTIONS_EXTENSION_VERSION`",
+          "default": "~3"
+        },
+        "functionsWorkerRuntime": {
+          "type": "string",
+          "description": "The value of the App Setting `FUNCTIONS_WORKER_RUNTIME`",
+          "default": "powershell"
+        },
+        "powerShellVersion": {
+          "type": "string",
+          "description": "The value of the function app `powerShellVersion` property",
+          "default": "~7"
+        }
+      }
+    },
+    "webApp": {
+      "type": "object",
+      "properties": {
+        "alwaysOn": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

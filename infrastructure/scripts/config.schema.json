@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/config.schema.json",
+  "title": "Azure Data Platform Config",
+  "description": "Configuration file for the Azure Data Platform",
+  "type": "object",
+  "properties": {
+    "CompanyName": {
+      "type": "string",
+      "description": "The full name of the company this solution will be deployed for e.g. Telstra Purple",
+      "minLength": 1
+    },
+    "CompanyCode": {
+      "type": "string",
+      "description": "The abbreviated code of the company this solution will be deployed for e.g. TP",
+      "maxLength": 10,
+      "minLength": 1
+    },
+    "AppName": {
+      "type": "string",
+      "description": "The full name of the application being deployed e.g. Azure Data Platform",
+      "minLength": 1
+    },
+    "AppCode": {
+      "type": "string",
+      "description": "The abbreviated code of the application being deployed e.g. ADP",
+      "maxLength": 10,
+      "minLength": 1
+    },
+    "Delimiter": {
+      "type": "string",
+      "description": "The delimiter to use between the different parts of resource names",
+      "enum": ["", "-", "_"]
+    },
+    "resourceGroupNames": {
+      //Declare resourceGroups here instead of in the core module schema.
+      //Even though they're deployed _by_ the core module, they're used by every deploy script
+      "$ref": "./schema/config.common.schema.json#/definitions/resourceGroups"
+    },
+    "deployAzureADResources": {
+      "type": "boolean",
+      "description": "Whether or not we have permission to deploy resources (e.g. groups, service principals) into Azure AD."
+    },
+    "deploySubscriptionResources": {
+      "type": "boolean",
+      "description": "Whether or not we have permission to deploy resources (e.g. resource groups, Azure Policy) into the Azure subscription."
+    },
+    "create": {
+      "description": "Flags to control optionally deployed components.",
+      "type": "object"
+      //Don't declare any specific properties of the "create" property".
+      //Config.schema.json declares the required existence of the "create" property.
+      //Sub-schemas declare the required properties _inside_ it.
+    }
+  },
+  "allOf": [
+    { "$ref": "./schema/deploy-core.schema.json" },
+    { "$ref": "./schema/deploy-identities.schema.json" },
+    { "$ref": "./schema/deploy-policy.schema.json" },
+    { "$ref": "./schema/deploy-network.schema.json" },
+    { "$ref": "./schema/deploy-automation.schema.json" },
+    { "$ref": "./schema/deploy-data.schema.json" },
+    { "$ref": "./schema/deploy-databricks.schema.json" },
+    { "$ref": "./schema/deploy-datafactory.schema.json" },
+    { "$ref": "./schema/deploy-webapp.schema.json" },
+    { "$ref": "./schema/deploy-keyvault.schema.json" },
+    { "$ref": "./schema/deploy-sqlaccess.schema.json" },
+    { "$ref": "./schema/databases/deploy-databases.schema.json" },
+    { "$ref": "./schema/datafactory/deploy-datafactory-app.schema.json" },
+    { "$ref": "./schema/databricks/deploy-databricks-app.schema.json" }
+  ],
+  "required": [
+    "CompanyName",
+    "CompanyCode",
+    "AppName",
+    "AppCode",
+    "Delimiter",
+    "resourceGroupNames",
+    "deployAzureADResources",
+    "deploySubscriptionResources",
+    "create"
+  ]
+}

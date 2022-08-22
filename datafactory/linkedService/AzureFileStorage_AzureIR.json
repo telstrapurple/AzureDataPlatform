@@ -1,0 +1,35 @@
+{
+    "name": "AzureFileStorage_AzureIR",
+    "type": "Microsoft.DataFactory/factories/linkedservices",
+    "properties": {
+        "type": "AzureFileStorage",
+        "annotations": [],
+        "typeProperties": {
+            "connectionString": "DefaultEndpointsProtocol=https;AccountName=@{linkedService().storageAccountName}",
+            "accountKey": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "KeyVault",
+                    "type": "LinkedServiceReference"
+                },
+                "secretName": "@linkedService().accountKeySecretName"
+            },
+            "fileShare": "@linkedService().fileShare"
+        },
+        "parameters": {
+            "storageAccountName": {
+                "type": "string"
+            },
+            "accountKeySecretName": {
+                "type": "string"
+            },
+            "fileShare": {
+                "type": "string"
+            }
+        },
+        "connectVia": {
+            "referenceName": "IR-ADP",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

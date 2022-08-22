@@ -1,0 +1,57 @@
+﻿<script type="text/javascript"  asp-add-nonce="true">
+    const connectionTypeConnectionPropertyTypeMapping = @Html.Raw(ViewBag.ConnectionTypeConnectionPropertyTypeMapping);
+    const connectionTypeAuthenticationTypeMapping = @Html.Raw(ViewBag.ConnectionTypeAuthenticationTypeMapping);
+    const selectedAuthenticationTypeId = @Html.Raw(ViewBag.SelectedAuthenticationTypeId);
+
+    const updateAuthenticationTypeOptions = ($connectionType, $authenticationType) => {
+        $authenticationType.empty();
+        if (!$connectionType.val()) return;
+        
+        connectionTypeAuthenticationTypeMapping
+            .filter(mapping => mapping.connectionTypeId === Number($connectionType.val()))
+            .map(mapping => $('<option>')
+                .attr({ value: mapping.authenticationTypeId })
+                .text(mapping.authenticationTypeName))
+            .forEach($option => $authenticationType.append($option));
+    }
+
+    const updateConnectionProperties = ($connectionType, $authenticationType, useAnimation) => {
+        $('input[name*="ConnectionPropertyTypeId"]').each((index, input) => {
+            const $input = $(input);
+            if (!$input.val()) return;
+            
+            const connectionTypeId = Number($connectionType.val());
+            const authenticationTypeId = Number($authenticationType.val());
+            
+            const isMatching = !!connectionTypeConnectionPropertyTypeMapping.find(mapping =>
+                mapping.connectionTypeId === connectionTypeId &&
+                    mapping.authenticationTypeId === authenticationTypeId &&
+                    mapping.connectionPropertyTypeId === Number($input.val()));
+            
+            $input.parent()[isMatching ? 'show' : 'hide'](...useAnimation ? ['slow'] : []);
+        });
+    }
+
+    $(() => {
+        const $connectionType = $('#Connection_ConnectionTypeId');
+        const $authenticationType = $('#Connection_AuthenticationTypeId');
+    
+        // First, work out which authentication type options apply to our initially selected connection type
+        updateAuthenticationTypeOptions($connectionType, $authenticationType);
+
+        // Now, select the currently selected authentication type (which should be present due to the previous line)
+        $authenticationType.find('option[value="' + selectedAuthenticationTypeId + '"]').attr('selected', 'selected');
+
+        // Update visibility of connection properties based on our now-selected connection type and authentication type
+        updateConnectionProperties($connectionType, $authenticationType, false);
+
+        // Finally, attach event handlers to update the page based on user selections
+        $connectionType.on('change', function () {
+            updateAuthenticationTypeOptions($connectionType, $authenticationType);
+            updateConnectionProperties($connectionType, $authenticationType, true);
+        });
+        $authenticationType.on('change', function () {
+            updateConnectionProperties($connectionType, $authenticationType, true);
+        });
+    });
+</script>

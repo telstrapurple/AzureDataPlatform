@@ -1,0 +1,81 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "companyName": {
+            "value": "Telstra Purple"
+        },
+        "resourceType": {
+            "value": "Virtual Machine"
+        },
+        "environmentCode": {
+            "value": "DEV"
+        },
+        "environmentLongName": {
+            "value": "Development"
+        },
+        "azureLocation": {
+            "value": "australiaeast"
+        },
+        "virtualNetworkResourceGroup": {
+            "value": "TP-DEV-ARG-Network"
+        },
+        "virtualNetworkName": {
+            "value": "TP-SYD-DEV-VNT-10.2.0.0"
+        },
+        "subNetName": {
+            "value": "TP-SYD-DEV-SUB-Data"
+        },
+        "adminUsername": {
+            "value": "TP_Administrator"
+        },
+        "adminPassword": {
+            "value": "SecretPassword"
+        },
+        "osDiskType": {
+            "value": "Premium_LRS"
+        },
+        "OSPublisher": {
+            "value": "MicrosoftWindowsServer"
+        },
+        "OSOffer": {
+            "value": "WindowsServer"
+        },
+        "OSVersion": {
+            "value": "2019-Datacenter"
+        },
+        "vmSize": {
+            "value": "standard_d2s_v3"
+        },
+        "sizeOfDataDisk": {
+            "value": 64
+        },
+        "dataDiskType": {
+            "value": "Premium_LRS"
+        },
+        "applyHUB": {
+            "value": true
+        },
+        "deployDSC": {
+            "value": true
+        },
+        "dscScript": {
+            "value": "Set-DSCAzureSelfHostedIntegration.zip"
+        },
+        "dscPackageUri": {
+            "value": "https://tpdevitsta002.dfs.core.windows.net/code/dsc/"
+        },
+        "_sasToken": {
+            "value": "?sv=2018-03-28&ss=bfqt&srt=sco&sp=rl&st=2020-02-10T07%3A00%3A48Z&se=2020-02-11T07%3A00%3A48Z&sig=kVJqLKBRdMP33IVugX7bY%2BWkkYtUUSA2lmoEneyqEqs%3D"
+        },
+        "vmName": {
+            "value": "tpdevbi001"
+        },
+        "tagObject": {
+            "value": {
+                "Application": "ADS",
+                "Environment": "Dev"
+            }
+        }
+    }
+}

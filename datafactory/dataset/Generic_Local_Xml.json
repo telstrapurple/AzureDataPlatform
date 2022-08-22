@@ -1,0 +1,69 @@
+{
+	"name": "Generic_Local_Xml",
+	"properties": {
+		"description": "This is the generic local file store data set for XML files",
+		"linkedServiceName": {
+			"referenceName": "LocalFileStorage",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"host": {
+					"value": "@dataset().host",
+					"type": "Expression"
+				},
+				"userid": {
+					"value": "@dataset().userid",
+					"type": "Expression"
+				},
+				"password": {
+					"value": "@dataset().password",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"filePath": {
+				"type": "string"
+			},
+			"fileName": {
+				"type": "string"
+			},
+			"compressionType": {
+				"type": "string"
+			},
+			"encoding": {
+				"type": "string"
+			},
+			"host": {
+				"type": "string"
+			},
+			"userid": {
+				"type": "string"
+			},
+			"password": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Blob"
+		},
+		"annotations": [],
+		"type": "Xml",
+		"typeProperties": {
+			"location": {
+				"type": "FileServerLocation",
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().filePath",
+					"type": "Expression"
+				}
+			},
+			"encodingName": {
+				"value": "@dataset().encoding",
+				"type": "Expression"
+			}
+		}
+	}
+}

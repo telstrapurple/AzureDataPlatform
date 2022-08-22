@@ -1,0 +1,39 @@
+{
+	"name": "DynamicsCRM",
+	"properties": {
+		"type": "DynamicsCrm",
+		"parameters": {
+			"passwordSecretName": {
+				"type": "string"
+			},
+			"serviceURI": {
+				"type": "string"
+			},
+			"userName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"typeProperties": {
+			"deploymentType": "Online",
+			"serviceUri": "@linkedService().serviceURI",
+			"authenticationType": "Office365",
+			"username": "@linkedService().userName",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "KeyVault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": {
+					"value": "@linkedService().passwordSecretName",
+					"type": "Expression"
+				}
+			}
+		},
+		"connectVia": {
+			"referenceName": "IR-ADP",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

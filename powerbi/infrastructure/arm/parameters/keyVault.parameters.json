@@ -1,0 +1,74 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "companyCode": {
+            "value": "TP"
+        },
+        "companyName": {
+            "value": "Telstra Purple"
+        },
+        "departmentCode": {
+            "value": "BI"
+        },
+        "resourceType": {
+            "value": "Key Vault"
+        },
+        "resourceCode": {
+            "value": "AKV"
+        },
+        "azureLocation": {
+            "value": "australiaeast"
+        },
+        "environmentCode": {
+            "value": "DEV"
+        },
+        "environmentLongName": {
+            "value": "Development"
+        },
+        "delimeter": {
+            "value": "-"
+        },
+        "suffix": {
+            "value": "001"
+        },
+        "accessPolicy_AzureDevOps": {
+            "value": ""
+        },
+        "accessPolicy_Administrators": {
+            "value": ""
+        },
+        "accessPolicy_hybridWorkerMSI": {
+            "value": ""
+        },
+        "secretsObject": {
+            "value": {
+                "secrets": [
+                    {
+                        "secretName": "exampleSecret1",
+                        "secretValue": "secretVaule1"
+                    },
+                    {
+                        "secretName": "exampleSecret2",
+                        "secretValue": "secretValue2"
+                    }
+                ]
+            }
+        },
+        "tagObject": {
+            "value": {
+                "Application": "ADS",
+                "Environment": "Dev"
+            }
+        },
+        "subnetName": {
+            "value": ""
+        },
+        "vnetName": {
+            "value": ""
+        },
+        "networkResourceGroupName": {
+            "value": ""
+        }
+    }
+}

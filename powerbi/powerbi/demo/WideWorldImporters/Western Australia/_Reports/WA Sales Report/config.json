@@ -1,0 +1,18 @@
+{
+    "environment": {
+        "UAT": {
+            "workspaceId": "c7b50224-34bd-49cc-8a07-f8797d183be5",
+            "deploy": true,
+            "datasetOnly": false,
+            "rebindReportToDataset": true,
+            "datasetId": "13fcc5d3-9156-4fdd-ad4d-29623426c756"
+        },
+        "production": {
+            "workspaceId": "87d33c2a-e417-4f8f-921c-0866e3836e7f",
+            "deploy": true,
+            "datasetOnly": false,
+            "rebindReportToDataset": true,
+            "datasetId": "45b0b4ca-0938-4be5-84a9-f2c46e9b9172"
+        }
+    }
+}

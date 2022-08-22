@@ -1,0 +1,718 @@
+{
+  "name": "Pipe_Generic_Script_Execute",
+  "properties": {
+    "activities": [
+      {
+        "name": "If - SQL stored procedure",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(pipeline().parameters.TaskType,'SQL Stored Procedure')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "SP - Log the error - SQL DB stored procedure",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "LKP - Execute the stored procedure",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Write the data to the lake - Azure SQL to SQL",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@activity('LKP - Execute the stored procedure').Error.message",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('LKP - Execute the stored procedure').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Log the end of the data extract - StoredProc",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "LKP - Execute the stored procedure",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": null,
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{pipeline().parameters.TaskConfig.value}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().parameters.StartPipeline[0].Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().parameters.StartPipeline[0].RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().parameters.StartPipeline[0].TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().parameters.StartPipeline[0].TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().parameters.StartPipeline[0].TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().parameters.StartPipeline[0].TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "End",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "LKP - Execute the stored procedure",
+              "type": "Lookup",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "AzureSqlSource",
+                  "sqlReaderQuery": {
+                    "value": "@concat(pipeline().parameters.SourceConfig.value[0].StoredProcedureName, ';SELECT 1 AS Message')",
+                    "type": "Expression"
+                  },
+                  "queryTimeout": "02:00:00",
+                  "partitionOption": "None"
+                },
+                "dataset": {
+                  "referenceName": "Generic_AzureSQL",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "secretName": {
+                      "value": "@pipeline().parameters.SourceConfig.value[0].SecretName",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "If - Databricks notebook",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(pipeline().parameters.TaskType,'Databricks notebook')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "LKP - Get Task Property Passthrough Mapping",
+              "type": "Lookup",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "AzureSqlSource",
+                  "sqlReaderStoredProcedureName": "[DI].[usp_TaskPropertyPassthroughMapping_Get]",
+                  "storedProcedureParameters": {
+                    "TaskID": {
+                      "type": "Int16",
+                      "value": {
+                        "value": "@pipeline().parameters.TaskID",
+                        "type": "Expression"
+                      }
+                    }
+                  },
+                  "queryTimeout": "02:00:00",
+                  "partitionOption": "None"
+                },
+                "dataset": {
+                  "referenceName": "Generic_AzureSQL",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "secretName": "sqlDatabaseConnectionStringConfig"
+                  }
+                },
+                "firstRowOnly": false
+              }
+            },
+            {
+              "name": "DBR - Execute generic notebook",
+              "type": "DatabricksNotebook",
+              "dependsOn": [
+                {
+                  "activity": "LKP - Get Task Property Passthrough Mapping",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "notebookPath": {
+                  "value": "@pipeline().parameters.SourceConfig.value[0].DatabricksNotebook",
+                  "type": "Expression"
+                },
+                "baseParameters": {
+                  "TaskInput": {
+                    "value": "@string(activity('LKP - Get Task Property Passthrough Mapping').output.value[0].output)",
+                    "type": "Expression"
+                  },
+                  "ScriptConfig": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].ScriptConfig",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@{pipeline().parameters.TaskConfig}",
+                    "type": "Expression"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "Databricks",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "databricksURL": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].DatabricksURL",
+                    "type": "Expression"
+                  },
+                  "databricksClusterID": {
+                    "value": "@pipeline().parameters.SourceConfig.value[0].DatabricksClusterID",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - Databricks notebook",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "DBR - Execute generic notebook",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Write the data to the lake - Azure SQL to SQL",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@activity('DBR - Execute generic notebook').Error.message",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('DBR - Execute generic notebook').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - Get TaskPropertyPassthrough",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "LKP - Get Task Property Passthrough Mapping",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Write the data to the lake - Azure SQL to SQL",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@activity('LKP - Get Task Property Passthrough Mapping').Error.message",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('LKP - Get Task Property Passthrough Mapping').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Log the end of the data extract - Databricks",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "DBR - Execute generic notebook",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": null,
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{pipeline().parameters.TaskConfig.value}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().parameters.StartPipeline[0].Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().parameters.StartPipeline[0].RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().parameters.StartPipeline[0].TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().parameters.StartPipeline[0].TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().parameters.StartPipeline[0].TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().parameters.StartPipeline[0].TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "End",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "parameters": {
+      "TaskID": {
+        "type": "int"
+      },
+      "TaskInstanceID": {
+        "type": "int"
+      },
+      "TaskType": {
+        "type": "string"
+      },
+      "TaskConfig": {
+        "type": "object"
+      },
+      "SourceConfig": {
+        "type": "object"
+      },
+      "StartPipeline": {
+        "type": "array"
+      }
+    },
+    "folder": {
+      "name": "ETL/Script Run"
+    },
+    "annotations": []
+  },
+  "type": "Microsoft.DataFactory/factories/pipelines"
+}

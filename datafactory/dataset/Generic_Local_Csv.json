@@ -1,0 +1,113 @@
+{
+	"name": "Generic_Local_Csv",
+	"properties": {
+		"description": "This is the generic local data set for csv files",
+		"linkedServiceName": {
+			"referenceName": "LocalFileStorage",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"host": {
+					"value": "@dataset().host",
+					"type": "Expression"
+				},
+				"userid": {
+					"value": "@dataset().userid",
+					"type": "Expression"
+				},
+				"password": {
+					"value": "@dataset().password",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"host": {
+				"type": "string"
+			},
+			"filePath": {
+				"type": "string"
+			},
+			"fileName": {
+				"type": "string"
+			},
+			"compressionType": {
+				"type": "string"
+			},
+			"columnDelimiter": {
+				"type": "string"
+			},
+			"rowDelimiter": {
+				"type": "string"
+			},
+			"escapeCharacter": {
+				"type": "string"
+			},
+			"quoteCharacter": {
+				"type": "string"
+			},
+			"firstRowAsHeader": {
+				"type": "bool"
+			},
+			"nullValue": {
+				"type": "string"
+			},
+			"encoding": {
+				"type": "string"
+			},
+			"userid": {
+				"type": "string"
+			},
+			"password": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Blob"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "FileServerLocation",
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().filePath",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": {
+				"value": "@dataset().columnDelimiter",
+				"type": "Expression"
+			},
+			"compressionCodec": {
+				"value": "@dataset().compressionType",
+				"type": "Expression"
+			},
+			"encodingName": {
+				"value": "@dataset().encoding",
+				"type": "Expression"
+			},
+			"escapeChar": {
+				"value": "@dataset().escapeCharacter",
+				"type": "Expression"
+			},
+			"firstRowAsHeader": {
+				"value": "@dataset().firstRowAsHeader",
+				"type": "Expression"
+			},
+			"nullValue": {
+				"value": "@dataset().nullValue",
+				"type": "Expression"
+			},
+			"quoteChar": {
+				"value": "@dataset().quoteCharacter",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,16 @@
+{
+	"name": "REST_Anonymous_AzureIR",
+	"properties": {
+		"type": "RestService",
+		"typeProperties": {
+			"authenticationType": "Anonymous",
+			"url": "@linkedService().restEndpoint"
+		},
+		"parameters": {
+			"restEndpoint": {
+				"type": "string"
+			}
+		},
+		"annotations": []
+	}
+}

@@ -1,0 +1,86 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "vNetName": {
+            "defaultValue": "TP-SYD-DEV-VNT-10.1.0.0",
+            "type": "String"
+        },
+        "subNetName": {
+            "defaultValue": "TP-SYD-DEV-SUB-Data",
+            "type": "String"
+        },
+        "vNetCIDR": {
+            "defaultValue": "10.1.0.0/23",
+            "type": "String"
+        },
+        "subNetCIDR": {
+            "defaultValue": "10.1.0.0/24",
+            "type": "String"
+        },
+        "azureLocation": {
+            "defaultValue": "australiaeast",
+            "type": "String"
+        },
+        "companyName": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "environmentCode": {
+            "type": "string",
+            "maxLength": 50
+        },
+        "environmentLongName": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "resourceType": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "tagObject": {
+            "type": "object"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2019-11-01",
+            "name": "[parameters('vNetName')]",
+            "tags": "[parameters('tagObject')]",
+            "location": "[parameters('azureLocation')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('vNetCIDR')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('subNetName')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('subNetCIDR')]",
+                            "serviceEndpoints": [
+                                {
+                                    "service": "Microsoft.Storage"
+                                },
+                                {
+                                    "service": "Microsoft.KeyVault"
+                                },
+                                {
+                                    "service": "Microsoft.Sql"
+                                }
+                            ],
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    }
+                ],
+                "virtualNetworkPeerings": [
+                ],
+                "enableDdosProtection": false,
+                "enableVmProtection": false
+            }
+        }
+    ]
+}

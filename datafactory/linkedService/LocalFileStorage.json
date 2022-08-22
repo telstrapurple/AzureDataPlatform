@@ -1,0 +1,32 @@
+{
+  "name": "LocalFileStorage",
+  "type": "Microsoft.DataFactory/factories/linkedservices",
+  "properties": {
+    "type": "FileServer",
+    "annotations": [],
+    "parameters": {
+      "host": {
+        "type": "string"
+      },
+      "userid": {
+        "type": "string"
+      },
+      "password": {
+        "type": "string"
+      }
+    },
+    "typeProperties": {
+      "host": "@linkedService().host",
+      "userId": "@linkedService().userid",
+      "password": {
+        "type": "SecureString",
+        "value": "@linkedService().password"
+      }
+    },
+    "connectVia": {
+      "referenceName": "IR-ADP",
+      "type": "IntegrationRuntimeReference"
+    },
+    "description": "Local File Storage"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    "ddosPlanId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Network/providers/Microsoft.Network/ddosProtectionPlans/tp-syd-dev-adp-dds-001"
+    },
+    "vNetName": {
+      "value": "TP-SYD-DEV-ADP-VNT-10.23.0.0"
+    },
+    "vNetCIDR": {
+      "value": "10.23.0.0/21"
+    },
+    "subNetName_VM": {
+      "value": "VirtualMachines"
+    },
+    "subNetCIDR_VM": {
+      "value": "10.23.1.0/24"
+    },
+    "subNetName_WebApp": {
+      "value": "WebApp"
+    },
+    "subNetCIDR_WebApp": {
+      "value": "10.23.2.0/24"
+    },
+    "nsgResourceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Network/providers/Microsoft.Network/networkSecurityGroups/NSG-General"
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.operationalinsights/workspaces/tp-syd-dev-adp-law-001"
+    },
+    "diagnosticsStorageAccountId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.storage/storageAccount/tpsyddevadpsta001"
+    },
+    "diagnosticsRetentionInDays": {
+      "value": 30
+    }
+  }
+}

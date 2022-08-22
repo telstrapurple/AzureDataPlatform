@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.operationalinsights/workspaces/tp-syd-dev-adp-law-001"
+    },
+    "diagnosticsStorageAccountId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.storage/storageAccount/tpsyddevadpsta001"
+    },
+    "diagnosticsRetentionInDays": {
+      "value": 30
+    },
+    "ddosPlanId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Network/providers/Microsoft.Network/ddosProtectionPlans/tp-syd-dev-adp-dds-001"
+    },
+    "vNetName": {
+      "value": "TP-SYD-DEV-ADP-VNT-10.22.0.0"
+    },
+    "vNetCIDR": {
+      "value": "10.22.0.0/21"
+    },
+    "subNetName_DBRPublic": {
+      "value": "Public"
+    },
+    "subNetCIDR_DBRPublic": {
+      "value": "10.22.1.0/24"
+    },
+    "subNetName_DBRPrivate": {
+      "value": "Private"
+    },
+    "subNetCIDR_DBRPrivate": {
+      "value": "10.22.2.0/24"
+    },
+    "nsgResourceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Network/providers/Microsoft.Network/networkSecurityGroups/NSG-Databricks"
+    },
+    "natGatewayResourceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Network/providers/Microsoft.Network/natGateways/TP-SYD-DEV-ADP-NAT-001"
+    },
+    "udrResourceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Network/providers/Microsoft.Network/routes/TP-SYD-DEV-ADP-UDR-001"
+    }
+  }
+}

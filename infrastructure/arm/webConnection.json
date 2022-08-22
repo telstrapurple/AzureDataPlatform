@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Specific params
+    "serviceAccountUPN": {
+      "type": "string"
+    },
+    "connectionTypes": {
+      "type": "array",
+      "allowedValues": [
+        "arm",
+        "azureautomation",
+        "azureblob",
+        "azuredatafactory",
+        "azuredatalake",
+        "excelonlinebusiness",
+        "office365",
+        "onedriveforbusiness",
+        "sharepointonline",
+        "sql"
+      ]
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "[parameters('connectionTypes')[copyIndex()]]",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": {
+        "displayName": "[parameters('serviceAccountUPN')]",
+        "customParameterValues": {},
+        "api": {
+          "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', variables('azureLocation'),'/managedApis/', parameters('connectionTypes')[copyIndex()])]"
+        }
+      },
+      "copy": {
+        "name": "WebConnectionCopy",
+        "count": "[length(parameters('connectionTypes'))]"
+      }
+    }
+  ]
+}

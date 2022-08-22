@@ -1,0 +1,113 @@
+{
+  "name": "Generic_AzureFileShare_Csv_AzureIR",
+  "properties": {
+    "description": "This is the generic Azure File Share data set for csv files",
+    "linkedServiceName": {
+      "referenceName": "AzureFileStorage_AzureIR",
+      "type": "LinkedServiceReference",
+      "parameters": {
+        "storageAccountName": {
+          "value": "@dataset().storageAccountName",
+          "type": "Expression"
+        },
+        "accountKeySecretName": {
+          "value": "@dataset().accountKeySecretName",
+          "type": "Expression"
+        },
+        "fileShare": {
+          "value": "@dataset().fileShare",
+          "type": "Expression"
+        }
+      }
+    },
+    "parameters": {
+      "storageAccountName": {
+        "type": "string"
+      },
+      "filePath": {
+        "type": "string"
+      },
+      "fileName": {
+        "type": "string"
+      },
+      "compressionType": {
+        "type": "string"
+      },
+      "columnDelimiter": {
+        "type": "string"
+      },
+      "rowDelimiter": {
+        "type": "string"
+      },
+      "escapeCharacter": {
+        "type": "string"
+      },
+      "quoteCharacter": {
+        "type": "string"
+      },
+      "firstRowAsHeader": {
+        "type": "bool"
+      },
+      "nullValue": {
+        "type": "string"
+      },
+      "encoding": {
+        "type": "string"
+      },
+      "accountKeySecretName": {
+        "type": "string"
+      },
+      "fileShare": {
+        "type": "string"
+      }
+    },
+    "folder": {
+      "name": "Blob"
+    },
+    "annotations": [],
+    "type": "DelimitedText",
+    "typeProperties": {
+      "location": {
+        "type": "AzureFileStorageLocation",
+        "fileName": {
+          "value": "@dataset().fileName",
+          "type": "Expression"
+        },
+        "folderPath": {
+          "value": "@dataset().filePath",
+          "type": "Expression"
+        }
+      },
+      "columnDelimiter": {
+        "value": "@dataset().columnDelimiter",
+        "type": "Expression"
+      },
+      "compressionCodec": {
+        "value": "@dataset().compressionType",
+        "type": "Expression"
+      },
+      "encodingName": {
+        "value": "@dataset().encoding",
+        "type": "Expression"
+      },
+      "escapeChar": {
+        "value": "@dataset().escapeCharacter",
+        "type": "Expression"
+      },
+      "firstRowAsHeader": {
+        "value": "@dataset().firstRowAsHeader",
+        "type": "Expression"
+      },
+      "nullValue": {
+        "value": "@dataset().nullValue",
+        "type": "Expression"
+      },
+      "quoteChar": {
+        "value": "@dataset().quoteCharacter",
+        "type": "Expression"
+      }
+    },
+    "schema": []
+  },
+  "type": "Microsoft.DataFactory/factories/datasets"
+}

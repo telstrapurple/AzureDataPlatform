@@ -1,0 +1,54 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "companyCode": {
+      "value": "TP"
+    },
+    "companyName": {
+      "value": "Telstra Purple"
+    },
+    "departmentCode": {
+      "value": "BI"
+    },
+    "resourceType": {
+      "value": "Log Analytics"
+    },
+    "resourceCode": {
+      "value": "LGA"
+    },
+    "azureLocation": {
+      "value": "australiasoutheast"
+    },
+    "environmentCode": {
+      "value": "DEV"
+    },
+    "environmentLongName": {
+      "value": "Development"
+    },
+    "delimeter": {
+      "value": "-"
+    },
+    "serviceTier": {
+      "value": "Standalone"
+    },
+    "solutionTypes": {
+      "value": [
+        "SQLAssessment",
+        "Updates"
+      ]
+    },
+    "suffix": {
+      "value": "001"
+    },
+    "tagObject": {
+      "value": {
+        "Application": "ADS",
+        "Environment": "Dev"
+      }
+    },
+    "automationAccountName": {
+      "value": ""
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "lgaName": {
+      "value": "Scale_SQL"
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.operationalinsights/workspaces/tp-syd-dev-adp-law-001"
+    },
+    "diagnosticsStorageAccountId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.storage/storageAccount/tpsyddevadpsta001"
+    },
+    "diagnosticsRetentionInDays": {
+      "value": 30
+    },
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    }
+  }
+}

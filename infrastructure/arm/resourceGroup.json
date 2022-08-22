@@ -1,0 +1,129 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Specific params
+    "argName": {
+      "type": "string"
+    },
+    "argPermissions": {
+      "type": "array"
+    },
+    "resourceLock": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "azureLocation": {
+      "type": "string"
+    },
+    "subscriptionId": {
+      "type": "string"
+    },
+    "utcOutput": {
+      "type": "string",
+      "defaultValue": "[utcNow()]"
+    }
+  },
+  "variables": {
+    "AuthorizationPrefix": "[concat('/subscriptions/', parameters('subscriptionId'), '/providers/Microsoft.Authorization/roleDefinitions/')]",
+    "Owner": "[concat(variables('AuthorizationPrefix'), '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')]",
+    "Contributor": "[concat(variables('AuthorizationPrefix'), 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+    "Reader": "[concat(variables('AuthorizationPrefix'), 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]",
+    "Data Factory Contributor": "[concat(variables('AuthorizationPrefix'), '673868aa-7521-48a0-acc6-0f60742d39f5')]",
+    "Storage Blob Data Contributor": "[concat(variables('AuthorizationPrefix'), 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+    "Storage Blob Data Owner": "[concat(variables('AuthorizationPrefix'), 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')]",
+    "SQL DB Contributor": "[concat(variables('AuthorizationPrefix'), '9b7fa17d-e63e-47b0-bb0a-15c516ac86ec')]",
+    "User Access Administrator": "[concat(variables('AuthorizationPrefix'), '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9')]",
+    "argPermissionsEmpty": [
+      {
+        "builtInRoleType": "empty",
+        "principalId": "empty",
+        "roleGuid": "empty"
+      }
+    ],
+    // ARM doesn't let you do a copy loop with a count of 0 so if the argPermissions is empty we actually use the "argPermissionsEmpty" array above instead
+    // We don't actually use the result from that empty array though since the condition below will not run that resource block with the array length in
+    //   the provided parameter is empty.
+    "argPermissions": "[if(equals(length(parameters('argPermissions')), 0), variables('argPermissionsEmpty'),  parameters('argPermissions'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2020-06-01",
+      "location": "[parameters('azureLocation')]",
+      "name": "[parameters('argName')]",
+      "properties": {},
+      "tags": "[parameters('tagObject')]"
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "condition": "[parameters('resourceLock')]",
+      "apiVersion": "2020-06-01",
+      "name": "[concat(if(greater(length(concat(parameters('argName'),'-locks-')),40), substring(concat(parameters('argName'),'-locks-'),0,40), concat(parameters('argName'),'-locks-')), parameters('utcOutput'))]",
+      "resourceGroup": "[parameters('argName')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/resourceGroups/', parameters('argName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "variables": {},
+          "resources": [
+            {
+              "type": "Microsoft.Authorization/locks",
+              "apiVersion": "2017-04-01",
+              "name": "Cannot delete resource group and resources",
+              "location": "[parameters('azureLocation')]",
+              "properties": {
+                "level": "CanNotDelete",
+                "notes": "This resource group and its resources should not be deleted."
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "condition": "[not(equals(length(parameters('argPermissions')), 0))]",
+      "apiVersion": "2020-06-01",
+      "name": "[concat(if(greater(length(concat(parameters('argName'),'-roleAssignment',copyIndex(1),'-')),40), substring(concat(parameters('argName'),'-roleAssignment',copyIndex(1),'-'),0,40), concat(parameters('argName'),'-roleAssignment',copyIndex(1),'-')),parameters('utcOutput'))]",
+      "resourceGroup": "[parameters('argName')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/resourceGroups/', parameters('argName'))]"
+      ],
+      "copy": {
+        "name": "loopRBAC",
+        "count": "[length(variables('argPermissions'))]"
+      },
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "variables": {},
+          "resources": [
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2017-05-01",
+              "name": "[guid(concat('/subscriptions/', parameters('subscriptionId') , '/resourcegroups/', parameters('argName'), parameters('argPermissions')[copyIndex()].principalId))]",
+              "properties": {
+                "roleDefinitionId": "[variables(variables('argPermissions')[copyIndex()].builtInRoleType)]",
+                "principalId": "[variables('argPermissions')[copyIndex()].principalId]",
+                "scope": "[concat('/subscriptions/', parameters('subscriptionId') , '/resourcegroups/', parameters('argName'))]"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

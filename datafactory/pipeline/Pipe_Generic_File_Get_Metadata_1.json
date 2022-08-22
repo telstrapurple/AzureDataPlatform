@@ -1,0 +1,1414 @@
+{
+  "name": "Pipe_Generic_File_Get_Metadata_1",
+  "properties": {
+    "activities": [
+      {
+        "name": "IF - Azure Data Lake",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@contains(pipeline().parameters.TaskType, 'Azure Data Lake File to')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "GM - Data Lake",
+              "type": "GetMetadata",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "dataset": {
+                  "referenceName": "Generic_DatalakeGen2_Csv",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "dataLakeServiceEndPoint": {
+                      "value": "@pipeline().parameters.ServiceEndpoint",
+                      "type": "Expression"
+                    },
+                    "dataLakeFilePath": {
+                      "value": "@pipeline().parameters.FilePath",
+                      "type": "Expression"
+                    },
+                    "dataLakeFileName": {
+                      "value": "@pipeline().parameters.FileName",
+                      "type": "Expression"
+                    },
+                    "compressionType": " ",
+                    "columnDelimiter": " ",
+                    "rowDelimiter": " ",
+                    "escapeCharacter": " ",
+                    "quoteCharacter": " ",
+                    "firstRowAsHeader": " ",
+                    "nullValue": " ",
+                    "encoding": " "
+                  }
+                },
+                "fieldList": ["childItems", "itemName", "itemType"],
+                "storeSettings": {
+                  "type": "AzureBlobFSReadSettings",
+                  "recursive": true
+                },
+                "formatSettings": {
+                  "type": "DelimitedTextReadSettings"
+                }
+              }
+            },
+            {
+              "name": "FLT - Data Lake - Get Files",
+              "type": "Filter",
+              "dependsOn": [
+                {
+                  "activity": "GM - Data Lake",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "items": {
+                  "value": "@activity('GM - Data Lake').output.childItems",
+                  "type": "Expression"
+                },
+                "condition": {
+                  "value": "@equals(item().type, 'File')",
+                  "type": "Expression"
+                }
+              }
+            },
+            {
+              "name": "FLT - Data Lake - Get Folder",
+              "type": "Filter",
+              "dependsOn": [
+                {
+                  "activity": "GM - Data Lake",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "items": {
+                  "value": "@activity('GM - Data Lake').output.childItems",
+                  "type": "Expression"
+                },
+                "condition": {
+                  "value": "@equals(item().type, 'Folder')",
+                  "type": "Expression"
+                }
+              }
+            },
+            {
+              "name": "EP - Log File - Lake",
+              "type": "ExecutePipeline",
+              "dependsOn": [
+                {
+                  "activity": "FLT - Data Lake - Get Files",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_Load_LogFile",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "ChildItems": {
+                    "value": "@activity('FLT - Data Lake - Get Files').output.Value",
+                    "type": "Expression"
+                  },
+                  "ServiceEndpoint": {
+                    "value": "@pipeline().parameters.ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "FilePath": {
+                    "value": "@pipeline().parameters.FilePath",
+                    "type": "Expression"
+                  },
+                  "FileName": {
+                    "value": "@pipeline().parameters.FileName",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.Host",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "EP - ForEach - Get Metadata - Lake",
+              "type": "ExecutePipeline",
+              "dependsOn": [
+                {
+                  "activity": "FLT - Data Lake - Get Folder",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_Load_ForEach_Get_Metadata_1",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "ChildItems": {
+                    "value": "@activity('FLT - Data Lake - Get Folder').output.Value",
+                    "type": "Expression"
+                  },
+                  "ServiceEndpoint": {
+                    "value": "@pipeline().parameters.ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "FilePath": {
+                    "value": "@pipeline().parameters.FilePath",
+                    "type": "Expression"
+                  },
+                  "FileName": {
+                    "value": "@pipeline().parameters.FileName",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.Host",
+                    "type": "Expression"
+                  },
+                  "onPremisesUserName": "\"\"",
+                  "onPremisesPassword": "\"\""
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - Get metadata data lake",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "GM - Data Lake",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "GM - Data Lake",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('GM - Data Lake').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('GM - Data Lake').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "IF - Azure File Share",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@contains(pipeline().parameters.TaskType, 'Azure File Share to')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "GM - Azure File Share",
+              "type": "GetMetadata",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "dataset": {
+                  "referenceName": "Generic_AzureFileShare_Csv_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "storageAccountName": {
+                      "value": "@pipeline().parameters.storageAccountName",
+                      "type": "Expression"
+                    },
+                    "accountKeySecretName": {
+                      "value": "@pipeline().parameters.accountKeySecretName",
+                      "type": "Expression"
+                    },
+                    "fileShare": {
+                      "value": "@pipeline().parameters.fileShare",
+                      "type": "Expression"
+                    },
+                    "filePath": {
+                      "value": "@pipeline().parameters.FilePath",
+                      "type": "Expression"
+                    },
+                    "fileName": {
+                      "value": "@pipeline().parameters.FileName",
+                      "type": "Expression"
+                    },
+                    "compressionType": " ",
+                    "columnDelimiter": " ",
+                    "rowDelimiter": " ",
+                    "escapeCharacter": " ",
+                    "quoteCharacter": " ",
+                    "firstRowAsHeader": " ",
+                    "nullValue": " ",
+                    "encoding": " "
+                  }
+                },
+                "fieldList": ["childItems", "itemName", "itemType"],
+                "storeSettings": {
+                  "type": "AzureFileStorageReadSettings",
+                  "recursive": true
+                },
+                "formatSettings": {
+                  "type": "DelimitedTextReadSettings"
+                }
+              }
+            },
+            {
+              "name": "FLT - Azure File Share - Get Files",
+              "type": "Filter",
+              "dependsOn": [
+                {
+                  "activity": "GM - Azure File Share",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "items": {
+                  "value": "@activity('GM - Azure File Share').output.childItems",
+                  "type": "Expression"
+                },
+                "condition": {
+                  "value": "@equals(item().type, 'File')",
+                  "type": "Expression"
+                }
+              }
+            },
+            {
+              "name": "FLT - Azure File Share - Get Folder",
+              "type": "Filter",
+              "dependsOn": [
+                {
+                  "activity": "GM - Azure File Share",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "items": {
+                  "value": "@activity('GM - Azure File Share').output.childItems",
+                  "type": "Expression"
+                },
+                "condition": {
+                  "value": "@equals(item().type, 'Folder')",
+                  "type": "Expression"
+                }
+              }
+            },
+            {
+              "name": "EP - Log File - File Share",
+              "type": "ExecutePipeline",
+              "dependsOn": [
+                {
+                  "activity": "FLT - Azure File Share - Get Files",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_Load_LogFile",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "ChildItems": {
+                    "value": "@activity('FLT - Azure File Share - Get Files').output.Value",
+                    "type": "Expression"
+                  },
+                  "ServiceEndpoint": {
+                    "value": "@pipeline().parameters.ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "FilePath": {
+                    "value": "@pipeline().parameters.FilePath",
+                    "type": "Expression"
+                  },
+                  "FileName": {
+                    "value": "@pipeline().parameters.FileName",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.Host",
+                    "type": "Expression"
+                  },
+                  "storageAccountName": {
+                    "value": "@pipeline().parameters.storageAccountName",
+                    "type": "Expression"
+                  },
+                  "accountKeySecretName": {
+                    "value": "@pipeline().parameters.accountKeySecretName",
+                    "type": "Expression"
+                  },
+                  "fileShare": {
+                    "value": "@pipeline().parameters.fileShare",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "EP - ForEach - Get Metadata - Azure File Share",
+              "type": "ExecutePipeline",
+              "dependsOn": [
+                {
+                  "activity": "FLT - Azure File Share - Get Folder",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_Load_ForEach_Get_Metadata_1",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "ChildItems": {
+                    "value": "@activity('FLT - Azure File Share - Get Folder').output.Value",
+                    "type": "Expression"
+                  },
+                  "ServiceEndpoint": {
+                    "value": "@pipeline().parameters.ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "FilePath": {
+                    "value": "@pipeline().parameters.FilePath",
+                    "type": "Expression"
+                  },
+                  "FileName": {
+                    "value": "@pipeline().parameters.FileName",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.Host",
+                    "type": "Expression"
+                  },
+                  "onPremisesUserName": "\"\"",
+                  "onPremisesPassword": "\"\"",
+                  "storageAccountName": {
+                    "value": "@pipeline().parameters.storageAccountName",
+                    "type": "Expression"
+                  },
+                  "accountKeySecretName": {
+                    "value": "@pipeline().parameters.accountKeySecretName",
+                    "type": "Expression"
+                  },
+                  "fileShare": {
+                    "value": "@pipeline().parameters.fileShare",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - Get metadata azfileshare",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "GM - Azure File Share",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "GM - Azure File Share",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('GM - Azure File Share').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('GM - Azure File Share').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "IF - Azure Blob",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@contains(pipeline().parameters.TaskType, 'Azure Blob File to')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "GM - Blob",
+              "type": "GetMetadata",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "dataset": {
+                  "referenceName": "Generic_Blob_Csv_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "serviceEndPoint": {
+                      "value": "@pipeline().parameters.ServiceEndpoint",
+                      "type": "Expression"
+                    },
+                    "filePath": {
+                      "value": "@pipeline().parameters.FilePath",
+                      "type": "Expression"
+                    },
+                    "fileName": {
+                      "value": "@pipeline().parameters.FileName",
+                      "type": "Expression"
+                    },
+                    "compressionType": " ",
+                    "columnDelimiter": " ",
+                    "rowDelimiter": " ",
+                    "escapeCharacter": " ",
+                    "quoteCharacter": " ",
+                    "firstRowAsHeader": " ",
+                    "nullValue": " ",
+                    "encoding": " "
+                  }
+                },
+                "fieldList": ["childItems", "itemName", "itemType"],
+                "storeSettings": {
+                  "type": "AzureBlobStorageReadSettings",
+                  "recursive": true
+                },
+                "formatSettings": {
+                  "type": "DelimitedTextReadSettings"
+                }
+              }
+            },
+            {
+              "name": "FLT - Blob - Get Files",
+              "type": "Filter",
+              "dependsOn": [
+                {
+                  "activity": "GM - Blob",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "items": {
+                  "value": "@activity('GM - Blob').output.childItems",
+                  "type": "Expression"
+                },
+                "condition": {
+                  "value": "@equals(item().type, 'File')",
+                  "type": "Expression"
+                }
+              }
+            },
+            {
+              "name": "FLT - Blob - Get Folder",
+              "type": "Filter",
+              "dependsOn": [
+                {
+                  "activity": "GM - Blob",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "items": {
+                  "value": "@activity('GM - Blob').output.childItems",
+                  "type": "Expression"
+                },
+                "condition": {
+                  "value": "@equals(item().type, 'Folder')",
+                  "type": "Expression"
+                }
+              }
+            },
+            {
+              "name": "EP - Log File - Blob",
+              "type": "ExecutePipeline",
+              "dependsOn": [
+                {
+                  "activity": "FLT - Blob - Get Files",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_Load_LogFile",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "ChildItems": {
+                    "value": "@activity('FLT - Blob - Get Files').output.Value",
+                    "type": "Expression"
+                  },
+                  "ServiceEndpoint": {
+                    "value": "@pipeline().parameters.ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "FilePath": {
+                    "value": "@pipeline().parameters.FilePath",
+                    "type": "Expression"
+                  },
+                  "FileName": {
+                    "value": "@pipeline().parameters.FileName",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.Host",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "EP - ForEach - Get Metadata - Blob",
+              "type": "ExecutePipeline",
+              "dependsOn": [
+                {
+                  "activity": "FLT - Blob - Get Folder",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_Load_ForEach_Get_Metadata_1",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "ChildItems": {
+                    "value": "@activity('FLT - Blob - Get Folder').output.Value",
+                    "type": "Expression"
+                  },
+                  "ServiceEndpoint": {
+                    "value": "@pipeline().parameters.ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "FilePath": {
+                    "value": "@pipeline().parameters.FilePath",
+                    "type": "Expression"
+                  },
+                  "FileName": {
+                    "value": "@pipeline().parameters.FileName",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.Host",
+                    "type": "Expression"
+                  },
+                  "onPremisesUserName": "\"\"",
+                  "onPremisesPassword": "\"\""
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - Get metadata blob",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "GM - Blob",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "GM - Blob",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('GM - Blob').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('GM - Blob').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "IF - File System",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@contains(pipeline().parameters.TaskType, 'File System File to')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "GM - File System",
+              "type": "GetMetadata",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": true
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "dataset": {
+                  "referenceName": "Generic_Local_Csv",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "host": {
+                      "value": "@pipeline().parameters.Host",
+                      "type": "Expression"
+                    },
+                    "filePath": {
+                      "value": "@pipeline().parameters.FilePath",
+                      "type": "Expression"
+                    },
+                    "fileName": {
+                      "value": "@pipeline().parameters.FileName",
+                      "type": "Expression"
+                    },
+                    "compressionType": " ",
+                    "columnDelimiter": " ",
+                    "rowDelimiter": " ",
+                    "escapeCharacter": " ",
+                    "quoteCharacter": " ",
+                    "firstRowAsHeader": " ",
+                    "nullValue": " ",
+                    "encoding": " ",
+                    "userid": {
+                      "value": "@pipeline().parameters.onPremisesUserName",
+                      "type": "Expression"
+                    },
+                    "password": {
+                      "value": "@pipeline().parameters.onPremisesPassword",
+                      "type": "Expression"
+                    }
+                  }
+                },
+                "fieldList": ["childItems", "itemName", "itemType"],
+                "storeSettings": {
+                  "type": "FileServerReadSettings",
+                  "recursive": true
+                },
+                "formatSettings": {
+                  "type": "DelimitedTextReadSettings"
+                }
+              }
+            },
+            {
+              "name": "FLT - File System - Get Files",
+              "type": "Filter",
+              "dependsOn": [
+                {
+                  "activity": "GM - File System",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "items": {
+                  "value": "@activity('GM - File System').output.childItems",
+                  "type": "Expression"
+                },
+                "condition": {
+                  "value": "@equals(item().type, 'File')",
+                  "type": "Expression"
+                }
+              }
+            },
+            {
+              "name": "FLT - File System - Get Folder",
+              "type": "Filter",
+              "dependsOn": [
+                {
+                  "activity": "GM - File System",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "items": {
+                  "value": "@activity('GM - File System').output.childItems",
+                  "type": "Expression"
+                },
+                "condition": {
+                  "value": "@equals(item().type, 'Folder')",
+                  "type": "Expression"
+                }
+              }
+            },
+            {
+              "name": "EP - Log File - File System",
+              "type": "ExecutePipeline",
+              "dependsOn": [
+                {
+                  "activity": "FLT - File System - Get Files",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_Load_LogFile",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "ChildItems": {
+                    "value": "@activity('FLT - File System - Get Files').output.Value",
+                    "type": "Expression"
+                  },
+                  "ServiceEndpoint": {
+                    "value": "@pipeline().parameters.ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "FilePath": {
+                    "value": "@pipeline().parameters.FilePath",
+                    "type": "Expression"
+                  },
+                  "FileName": {
+                    "value": "@pipeline().parameters.FileName",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.Host",
+                    "type": "Expression"
+                  },
+                  "onPremisesUserName": {
+                    "value": "@pipeline().parameters.onPremisesUserName",
+                    "type": "Expression"
+                  },
+                  "onPremisesPassword": {
+                    "value": "@pipeline().parameters.onPremisesPassword",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "EP - ForEach - Get Metadata - File System",
+              "type": "ExecutePipeline",
+              "dependsOn": [
+                {
+                  "activity": "FLT - File System - Get Folder",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_File_Load_ForEach_Get_Metadata_1",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskConfig": {
+                    "value": "@pipeline().parameters.TaskConfig",
+                    "type": "Expression"
+                  },
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "ChildItems": {
+                    "value": "@activity('FLT - File System - Get Folder').output.Value",
+                    "type": "Expression"
+                  },
+                  "ServiceEndpoint": {
+                    "value": "@pipeline().parameters.ServiceEndpoint",
+                    "type": "Expression"
+                  },
+                  "FilePath": {
+                    "value": "@pipeline().parameters.FilePath",
+                    "type": "Expression"
+                  },
+                  "FileName": {
+                    "value": "@pipeline().parameters.FileName",
+                    "type": "Expression"
+                  },
+                  "Host": {
+                    "value": "@pipeline().parameters.Host",
+                    "type": "Expression"
+                  },
+                  "onPremisesUserName": {
+                    "value": "@pipeline().parameters.onPremisesUserName",
+                    "type": "Expression"
+                  },
+                  "onPremisesPassword": {
+                    "value": "@pipeline().parameters.onPremisesPassword",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - Get metadata file system",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "GM - File System",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "GM - File System",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('GM - File System').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('GM - File System').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "parameters": {
+      "TaskConfig": {
+        "type": "object"
+      },
+      "TaskID": {
+        "type": "int"
+      },
+      "TaskInstanceID": {
+        "type": "int"
+      },
+      "TaskType": {
+        "type": "string"
+      },
+      "ServiceEndpoint": {
+        "type": "string"
+      },
+      "FilePath": {
+        "type": "string"
+      },
+      "FileName": {
+        "type": "string"
+      },
+      "Host": {
+        "type": "string"
+      },
+      "onPremisesUserName": {
+        "type": "securestring"
+      },
+      "onPremisesPassword": {
+        "type": "securestring"
+      },
+      "storageAccountName": {
+        "type": "string"
+      },
+      "accountKeySecretName": {
+        "type": "string"
+      },
+      "fileShare": {
+        "type": "string"
+      }
+    },
+    "folder": {
+      "name": "ETL/File Load/Get Metadata"
+    },
+    "annotations": []
+  }
+}

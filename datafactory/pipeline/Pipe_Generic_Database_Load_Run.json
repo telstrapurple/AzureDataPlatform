@@ -1,0 +1,540 @@
+{
+  "name": "Pipe_Generic_Database_Load_Run",
+  "properties": {
+    "description": "This is the generic pipeline to copy Azure SQL, On prem SQL and Oracle server tables from source through Data Lake to SQL staging",
+    "activities": [
+      {
+        "name": "FLT - Get the Source config",
+        "type": "Filter",
+        "dependsOn": [
+          {
+            "activity": "SP - Log the start of the extract",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('LKP - Get the task instance config').output.value",
+            "type": "Expression"
+          },
+          "condition": {
+            "value": "@equals(item().ConnectionStage, 'Source')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "FLT - Get the ETL config",
+        "type": "Filter",
+        "dependsOn": [
+          {
+            "activity": "SP - Log the start of the extract",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('LKP - Get the task instance config').output.value",
+            "type": "Expression"
+          },
+          "condition": {
+            "value": "@equals(item().ConnectionStage, 'ETL')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "FLT - Get the Staging config",
+        "type": "Filter",
+        "dependsOn": [
+          {
+            "activity": "SP - Log the start of the extract",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('LKP - Get the task instance config').output.value",
+            "type": "Expression"
+          },
+          "condition": {
+            "value": "@equals(item().ConnectionStage, 'Staging')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "FLT - Get the Target config",
+        "type": "Filter",
+        "dependsOn": [
+          {
+            "activity": "SP - Log the start of the extract",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('LKP - Get the task instance config').output.value",
+            "type": "Expression"
+          },
+          "condition": {
+            "value": "@equals(item().ConnectionStage, 'Target')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "LKP - Get the task instance config",
+        "type": "Lookup",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "AzureSqlSource",
+            "sqlReaderStoredProcedureName": "[DI].[usp_TaskInstanceConfig_Get]",
+            "storedProcedureParameters": {
+              "TaskInstanceID": {
+                "type": "Int64",
+                "value": {
+                  "value": "@pipeline().parameters.TaskInstanceID",
+                  "type": "Expression"
+                }
+              }
+            }
+          },
+          "dataset": {
+            "referenceName": "Generic_AzureSQL",
+            "type": "DatasetReference",
+            "parameters": {
+              "secretName": "sqlDatabaseConnectionStringConfig"
+            }
+          },
+          "firstRowOnly": false
+        }
+      },
+      {
+        "name": "SP - Log the start of the extract",
+        "type": "SqlServerStoredProcedure",
+        "dependsOn": [
+          {
+            "activity": "LKP - Get the task instance config",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+          "storedProcedureParameters": {
+            "ActivityName": {
+              "value": "",
+              "type": "String"
+            },
+            "DataFactoryName": {
+              "value": {
+                "value": "@{pipeline().DataFactory}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "ErrorMessage": {
+              "value": null,
+              "type": "String"
+            },
+            "OutputMessage": {
+              "value": {
+                "value": "@{activity('LKP - Get the task instance config').output.value}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineName": {
+              "value": {
+                "value": "@{pipeline().Pipeline}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineRunID": {
+              "value": {
+                "value": "@{pipeline().RunId}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerID": {
+              "value": {
+                "value": "@{pipeline().TriggerId}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerName": {
+              "value": {
+                "value": "@{pipeline().TriggerName}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerTime": {
+              "value": {
+                "value": "@{pipeline().TriggerTime}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerType": {
+              "value": {
+                "value": "@{pipeline().TriggerType}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "TaskInstanceID": {
+              "value": {
+                "value": "@pipeline().parameters.TaskInstanceID",
+                "type": "Expression"
+              },
+              "type": "Int64"
+            },
+            "LogType": {
+              "value": "Start",
+              "type": "String"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "AzureSQL",
+          "type": "LinkedServiceReference",
+          "parameters": {
+            "secretName": "sqlDatabaseConnectionStringConfig"
+          }
+        }
+      },
+      {
+        "name": "IF - Use CDC or not",
+        "type": "IfCondition",
+        "dependsOn": [
+          {
+            "activity": "FLT - Get the Source config",
+            "dependencyConditions": ["Succeeded"]
+          },
+          {
+            "activity": "FLT - Get the ETL config",
+            "dependencyConditions": ["Succeeded"]
+          },
+          {
+            "activity": "FLT - Get the Staging config",
+            "dependencyConditions": ["Succeeded"]
+          },
+          {
+            "activity": "FLT - Get the Target config",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(activity('FLT - Get the Source config').output.value[0].UseSQLCDC,'True')",
+            "type": "Expression"
+          },
+          "ifFalseActivities": [
+            {
+              "name": "EP - Non CDC",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_Database_Load_Run_NonCDC",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "System": {
+                    "value": "@pipeline().parameters.System",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@activity('LKP - Get the task instance config').output",
+                    "type": "Expression"
+                  },
+                  "SourceConfig": {
+                    "value": "@activity('FLT - Get the Source config').output",
+                    "type": "Expression"
+                  },
+                  "TargetConfig": {
+                    "value": "@activity('FLT - Get the Target config').output",
+                    "type": "Expression"
+                  },
+                  "ETLConfig": {
+                    "value": "@activity('FLT - Get the ETL config').output",
+                    "type": "Expression"
+                  },
+                  "StagingConfig": {
+                    "value": "@activity('FLT - Get the Staging config').output",
+                    "type": "Expression"
+                  }
+                }
+              }
+            }
+          ],
+          "ifTrueActivities": [
+            {
+              "name": "EP - CDC",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_Database_Load_Run_CDC",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "System": {
+                    "value": "@pipeline().parameters.System",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@activity('LKP - Get the task instance config').output",
+                    "type": "Expression"
+                  },
+                  "SourceConfig": {
+                    "value": "@activity('FLT - Get the Source config').output",
+                    "type": "Expression"
+                  },
+                  "TargetConfig": {
+                    "value": "@activity('FLT - Get the Target config').output",
+                    "type": "Expression"
+                  },
+                  "ETLConfig": {
+                    "value": "@activity('FLT - Get the ETL config').output",
+                    "type": "Expression"
+                  },
+                  "StagingConfig": {
+                    "value": "@activity('FLT - Get the Staging config').output",
+                    "type": "Expression"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "SP - Log the error - Get the task instance config",
+        "type": "SqlServerStoredProcedure",
+        "dependsOn": [
+          {
+            "activity": "LKP - Get the task instance config",
+            "dependencyConditions": ["Failed"]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+          "storedProcedureParameters": {
+            "ActivityName": {
+              "value": "LKP - Get the generic config values",
+              "type": "String"
+            },
+            "DataFactoryName": {
+              "value": {
+                "value": "@{pipeline().DataFactory}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "ErrorMessage": {
+              "value": {
+                "value": "@{activity('LKP - Get the task instance config').error.message}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "OutputMessage": {
+              "value": {
+                "value": "@{activity('LKP - Get the task instance config').output}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineName": {
+              "value": {
+                "value": "@{pipeline().Pipeline}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineRunID": {
+              "value": {
+                "value": "@{pipeline().RunId}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerID": {
+              "value": {
+                "value": "@{pipeline().TriggerId}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerName": {
+              "value": {
+                "value": "@{pipeline().TriggerName}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerTime": {
+              "value": {
+                "value": "@{pipeline().TriggerTime}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerType": {
+              "value": {
+                "value": "@{pipeline().TriggerType}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "TaskInstanceID": {
+              "value": {
+                "value": "@pipeline().parameters.TaskInstanceID",
+                "type": "Expression"
+              },
+              "type": "Int64"
+            },
+            "LogType": {
+              "value": "Error",
+              "type": "String"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "AzureSQL",
+          "type": "LinkedServiceReference",
+          "parameters": {
+            "secretName": "sqlDatabaseConnectionStringConfig"
+          }
+        }
+      },
+      {
+        "name": "IF - Check for ACL permissions",
+        "type": "IfCondition",
+        "dependsOn": [
+          {
+            "activity": "IF - Use CDC or not",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@greater(length(activity('FLT - Get the Staging config').output.value[0].ACLPermissions), 0)",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "EP - Apply data lake ACLs",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_Lake_ACL",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "StagingConfig": {
+                    "value": "@activity('FLT - Get the Staging config').output",
+                    "type": "Expression"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "parameters": {
+      "System": {
+        "type": "string",
+        "defaultValue": "UNITTEST"
+      },
+      "TaskType": {
+        "type": "string",
+        "defaultValue": "Azure SQL to SQL"
+      },
+      "TaskInstanceID": {
+        "type": "int"
+      },
+      "TaskID": {
+        "type": "int"
+      }
+    },
+    "variables": {
+      "Start": {
+        "type": "String"
+      }
+    },
+    "folder": {
+      "name": "ETL/Database Load"
+    },
+    "annotations": []
+  },
+  "type": "Microsoft.DataFactory/factories/pipelines"
+}

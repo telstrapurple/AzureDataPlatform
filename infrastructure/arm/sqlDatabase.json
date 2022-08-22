@@ -1,0 +1,269 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    },
+    // Specific params
+    "sqlServerName": {
+      "type": "string"
+    },
+    "databaseName": {
+      "type": "string"
+    },
+    // allowedValues from "Get-AzSqlServerServiceObjective -Location AustraliaEast"
+    "serviceLevelObjective": {
+      "type": "string",
+      "allowedValues": [
+        "System",
+        "Free",
+        "Basic",
+        "Standard",
+        "Premium",
+        "DataWarehouse",
+        "Stretch",
+        "GP_S_Gen5",
+        "GP_Gen5",
+        "GP_Fsv2",
+        "BC_Gen5",
+        "HS_Gen5"
+      ]
+    },
+    "edition": {
+      "type": "string",
+      "allowedValues": [
+        "Standard",
+        "Free",
+        "Premium",
+        "DataWarehouse",
+        "Stetch",
+        "GeneralPurpose",
+        "BusinessCritical",
+        "Hyperscale"
+      ]
+    },
+    "capacity": {
+      "type": "int",
+      "defaultValue": 0
+    },
+    "licenceType": {
+      "type": "string",
+      "defaultValue": "LicenseIncluded",
+      "allowedValues": [ "LicenseIncluded", "BasePrice" ]
+    },
+    "collation": {
+      "type": "string",
+      "defaultValue": "SQL_Latin1_General_CP1_CI_AS"
+    },
+    "readScale": {
+      "type": "string",
+      "defaultValue": "Disabled"
+    },
+    "readReplicaCount": {
+      "type": "int",
+      "defaultValue": 0
+    },
+    "highAvailabilityReplicaCount": {
+      "type": "int",
+      "defaultValue": 0
+    },
+    "zoneRedundant": {
+      "type": "bool",
+      "defaultValue": false
+    },
+    "elasticPoolId": {
+      "type": "string",
+      "defaultValue": ""
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]",
+    "storageAccountType": "GRS"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('sqlServerName'), '/', parameters('databaseName'))]",
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2020-08-01-preview",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "sku": {
+        "name": "[parameters('serviceLevelObjective')]",
+        "tier": "[parameters('edition')]",
+        "capacity": "[if(equals(parameters('capacity'), 0), null(), parameters('capacity'))]"
+      },
+      "properties": {
+        "licenseType": "[parameters('licenceType')]",
+        "collation": "[parameters('collation')]",
+        "readScale": "[parameters('readScale')]",
+        "highAvailabilityReplicaCount": "[parameters('highAvailabilityReplicaCount')]",
+        "storageAccountType": "[variables('storageAccountType')]",
+        "zoneRedundant": "[parameters('zoneRedundant')]",
+        "readReplicaCount": "[parameters('readReplicaCount')]",
+        "elasticPoolId": "[if(empty(parameters('elasticPoolId')), null(), parameters('elasticPoolId'))]"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/auditingSettings",
+      "apiVersion": "2017-03-01-preview",
+      "name": "[concat(parameters('sqlServerName'), '/', parameters('databaseName'), '/Default')]",
+      "properties": {
+        "state": "Enabled",
+        "isAzureMonitorTargetEnabled": true,
+        "retentionDays": 0
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('sqlServerName'), parameters('databaseName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.sql/servers/databases/providers/diagnosticSettings",
+      "apiVersion": "2017-05-01-preview",
+      "name": "[concat(parameters('sqlServerName'),'/',parameters('databaseName'),'/microsoft.insights/','DefaultAuditingSettings')]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+        "logAnalyticsDestinationType": "Dedicated",
+        "logs": [
+          {
+            "category": "SQLInsights",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "AutomaticTuning",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "QueryStoreRuntimeStatistics",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "QueryStoreWaitStatistics",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "Errors",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "DatabaseWaitStatistics",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "Timeouts",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "Blocks",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "Deadlocks",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          }
+        ],
+        "metrics": [
+          {
+            "category": "Basic",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "InstanceAndAppAdvanced",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "WorkloadManagement",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('sqlServerName'), parameters('databaseName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "databaseName": {
+      "type": "string",
+      "value": "[parameters('databaseName')]"
+    },
+    "databaseResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Sql/servers/databases', parameters('sqlServerName'), parameters('databaseName'))]"
+    }
+  }
+}

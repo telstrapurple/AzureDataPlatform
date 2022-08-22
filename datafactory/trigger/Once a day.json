@@ -1,0 +1,17 @@
+{
+	"name": "Once a day",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2020-07-27T00:00:00.000Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

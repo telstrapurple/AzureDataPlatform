@@ -1,0 +1,30 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-08-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "azureLocation": {
+            "value": "australiasoutheast"
+        },
+        "sqlSRVName": {
+            "value": "dev-tlp-bi-001"
+        },
+        "databaseName": {
+            "value": ""
+        },
+        "databaseEdition": {
+            "value": "Standard"
+        },
+        "databaseServiceLevelObjective": {
+            "value": "S2"
+        },
+        "licenceType": {
+            "value": "BasePrice"
+        },
+        "tagObject": {
+            "value": {
+                "Application": "ADS",
+                "Environment": "Dev"
+            }
+        }
+    }
+}

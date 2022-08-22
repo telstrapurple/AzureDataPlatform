@@ -1,0 +1,99 @@
+{
+	"name": "Pipe_Generic_Lake_ACL",
+	"properties": {
+		"description": "This is a generic pipeline to apply ACL permissions to a data lake storage account",
+		"activities": [
+			{
+				"name": "IF - Check if system ACLs are required",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(length(coalesce(pipeline().parameters.SystemACL, '')), 0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "FN - Set the system ACL permissions",
+							"type": "AzureFunctionActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"functionName": "SetDataLakeACL",
+								"method": "POST",
+								"body": {
+									"value": "@pipeline().parameters.SystemACL",
+									"type": "Expression"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureFunction",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "IF - Check if task ACLs are required",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(length(coalesce(string(pipeline().parameters.StagingConfig), '')), 0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "FN - Set the task ACL permissions",
+							"type": "AzureFunctionActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"functionName": "SetDataLakeACL",
+								"method": "POST",
+								"body": {
+									"value": "@pipeline().parameters.StagingConfig.value[0].ACLPermissions",
+									"type": "Expression"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureFunction",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"StagingConfig": {
+				"type": "object"
+			},
+			"SystemACL": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "ETL/Generic"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

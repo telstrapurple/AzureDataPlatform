@@ -1,0 +1,254 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-data.schema.json",
+  "title": "Azure Data Platform Config - Data",
+  "description": "Data Configuration for the Azure Data Platform",
+  "type": "object",
+  "properties": {
+    //dataLake.sku
+    //sqlUsernames.admin
+    //stageDatabase
+    //configDatabase
+    "dataLake": {
+      "$ref": "#/definitions/dataLake"
+    },
+    "sqlUsernames": {
+      "$ref": "#/definitions/sqlUsernames"
+    },
+    "stageDatabase": {
+      "$ref": "#/definitions/SqlDatabaseArmConfig",
+      "description": "Additional ARM parameters passed to sqlDatabase.json to configure the staging database"
+    },
+    "configDatabase": {
+      "$ref": "#/definitions/SqlDatabaseArmConfig",
+      "description": "Additional ARM parameters passed to sqlDatabase.json to configure the config database"
+    },
+    "synapse": {
+      "$ref": "#/definitions/SynapseArmConfig",
+      "description": "Additional ARM parameters passed to synapse.json to configure the synapse workspace"
+    },
+    "create": {
+      "$ref": "#/definitions/create"
+    }
+  },
+  "required": [
+    "dataLake",
+    "sqlUsernames",
+    "stageDatabase",
+    "configDatabase",
+    "create"
+  ],
+  "definitions": {
+    "create": {
+      "type": "object",
+      "properties": {
+        "synapse": {
+          "type": "boolean",
+          "description": "Whether or not to create Azure Synapse."
+        }
+      },
+      "required": ["synapse"]
+    },
+    "dataLake": {
+      "type": "object",
+      "description": "Additional ARM parameters passed to storageAccount.json to build data lake storage.",
+      "properties": {
+        "sku": {
+          "$ref": "./config.common.schema.json#/definitions/StorageAccountSku"
+        }
+      },
+      "required": ["sku"]
+    },
+    "sqlUsernames": {
+      "type": "object",
+      "description": "Usernames for SQL deployments",
+      "properties": {
+        "admin": {
+          "type": "string",
+          "description": "Name of the SQL admin username"
+        },
+        "synapseAdmin": {
+          "type": "string",
+          "description": "Name of the Synapse admin username"
+        }
+      },
+      "required": ["admin", "synapseAdmin"]
+    },
+    "SqlDatabaseArmConfig": {
+      "type": "object",
+      "properties": {
+        "databaseName": {
+          "type": "string",
+          "description": "Name of the database"
+        },
+        "serviceLevelObjective": {
+          "type": "string",
+          "description": "sku.name: https://docs.microsoft.com/en-us/azure/templates/microsoft.sql/servers/databases#sku-object",
+          "enum": [
+            "System",
+            "Free",
+            "Basic",
+            "Standard",
+            "Premium",
+            "DataWarehouse",
+            "Stretch",
+            "GP_S_Gen5",
+            "GP_Gen5",
+            "GP_Fsv2",
+            "BC_Gen5",
+            "HS_Gen5"
+          ]
+        },
+        "edition": {
+          "type": "string",
+          "description": "sku.tier: https://docs.microsoft.com/en-us/azure/templates/microsoft.sql/servers/databases#sku-object",
+          "enum": [
+            "Standard",
+            "Free",
+            "Premium",
+            "DataWarehouse",
+            "Stetch",
+            "GeneralPurpose",
+            "BusinessCritical",
+            "Hyperscale"
+          ]
+        },
+        "capacity": {
+          "type": "integer",
+          "description": "sku.capacity: https://docs.microsoft.com/en-us/azure/templates/microsoft.sql/servers/databases#sku-object",
+          "default": 0
+        },
+        "licenceType": {
+          "type": "string",
+          "description": "properties.licenseType: https://docs.microsoft.com/en-us/azure/templates/microsoft.sql/servers/databases#databaseproperties-object",
+          "enum": ["LicenseIncluded", "BasePrice"]
+        }
+      },
+      "required": [
+        "databaseName",
+        "serviceLevelObjective",
+        "edition",
+        "capacity",
+        "licenceType"
+      ]
+    },
+    "SynapseArmConfig": {
+      "type": "object",
+      "properties": {
+        "setWorkspaceIdentityRbacOnStorageAccount": {
+          "type": "boolean",
+          "description": "Sets Workspace Identity RBAC on the Storage Account.",
+          "default": true
+        },
+        "allowAllConnections": {
+          "type": "boolean",
+          "description": "Allows connection from all IP ranges to the Synapse Workspace and underlying resources (SQL Pools, Spark Clusters, etc).",
+          "default": true
+        },
+        "grantWorkspaceIdentityControlForSql": {
+          "type": "string",
+          "description": "Allow Synpase Workspace Identity RBAC to the built-in SQL pool.",
+          "enum": ["Enabled", "Disabled"],
+          "default": "Enabled"
+        },
+        "managedVirtualNetwork": {
+          "type": "string",
+          "description": "Set `default` to allow Synapse to create a managed virtual network: https://docs.microsoft.com/en-us/azure/synapse-analytics/security/synapse-workspace-managed-vnet",
+          "enum": ["default", ""],
+          "default": "default"
+        },
+        "isNewStorageAccount": {
+          "type": "boolean",
+          "description": "Deploy a new storage account",
+          "default": true
+        },
+        "isNewFileSystemOnly": {
+          "type": "boolean",
+          "description": "Use an existing storage account, and deploy the file system only.",
+          "default": false
+        },
+        "storageAccessTier": {
+          "type": "string",
+          "description": "The storage account access tier.",
+          "enum": ["Hot", "Cold"],
+          "default": "Hot"
+        },
+        "storageAccountSku": {
+          "$ref": "./config.common.schema.json#/definitions/StorageAccountSku"
+        },
+        "storageSupportsHttpsTrafficOnly": {
+          "type": "boolean",
+          "description": "Support HTTPS traffic only for the storage account.",
+          "default": true
+        },
+        "storageKind": {
+          "type": "string",
+          "description": "The storage account kind.",
+          "enum": ["StorageV2", "BlobStorage", "Storage"],
+          "default": "StorageV2"
+        },
+        "storageIsHnsEnabled": {
+          "type": "boolean",
+          "description": "Enable Hierarchical Namespace (HNS) feature on the storage account.",
+          "default": true
+        },
+        "storageBypassNetworkDefaultAction": {
+          "type": "string",
+          "description": "Allow certain services to bypass the Storage Account network rules.",
+          "enum": [
+            "None",
+            "Logging",
+            "Metrics",
+            "AzureServices",
+            "Logging, Metrics",
+            "Logging, Metrics, AzureServices"
+          ],
+          "default": "AzureServices"
+        },
+        "storageNetworkDefaultAction": {
+          "type": "string",
+          "description": "Default action to inbound traffic that are not present in the storage account's network rules.",
+          "enum": ["Allow", "Deny"],
+          "default": "Deny"
+        },
+        "setSbdcRbacOnStorageAccount": {
+          "type": "boolean",
+          "description": "Set Storage Blob Data Contributor role assignments on the Storage Account.",
+          "default": true
+        },
+        "setStorageNetwork": {
+          "type": "boolean",
+          "description": "Set Storage Account Network Rules to allow traffic from specified subnets, or IP ranges, or services.",
+          "default": true
+        },
+        "sqlPoolName": {
+          "type": "string",
+          "description": "Name of the Enterprise Data Warehouse SQL Pool."
+        },
+        "sqlPoolSku": {
+          "type": "string",
+          "description": "Name of the Enterprise Data Warehouse SQL Pool.",
+          "enum": [
+            "DW100c",
+            "DW200c",
+            "DW300c",
+            "DW400c",
+            "DW500c",
+            "DW1000c",
+            "DW1500c",
+            "DW2000c",
+            "DW2500c",
+            "DW3000c",
+            "DW5000c",
+            "DW6000c",
+            "DW7500c",
+            "DW10000c",
+            "DW15000c",
+            "DW30000c"
+          ],
+          "default": "DW100c"
+        }
+      }
+    }
+  }
+}

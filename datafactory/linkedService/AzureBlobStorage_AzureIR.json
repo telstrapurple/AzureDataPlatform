@@ -1,0 +1,21 @@
+{
+	"name": "AzureBlobStorage_AzureIR",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"type": "AzureBlobStorage",
+		"description": "This is the generic Azure Blob Storage connection using the Azure integration runtime",
+		"annotations": [],
+		"typeProperties": {
+			"serviceEndpoint": "@linkedService().serviceEndPoint"
+		},
+		"parameters": {
+			"serviceEndPoint": {
+				"type": "string"
+			}
+		},
+		"connectVia": {
+			"referenceName": "IR-ADP",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

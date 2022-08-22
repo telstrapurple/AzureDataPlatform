@@ -1,0 +1,316 @@
+{
+  "$schema": "./config.schema.json",
+  "CompanyName": "Telstra Purple",
+  "CompanyCode": "TP",
+  "AppName": "Azure Data Platform",
+  "AppCode": "ADP",
+  "Delimiter": "-",
+  "resourceGroupNames": {
+    "admin": "auto",
+    "data": "auto",
+    "databricks": "auto",
+    "network": "auto",
+    "compute": "auto",
+    "security": "auto",
+    "synapse": "auto"
+  },
+  "deployAzureADResources": true,
+  "deploySubscriptionResources": true,
+  "create": {
+    "resourceGroups": true,
+    "azureADGroups": true,
+    "asc": false,
+    "ddosPlan": false,
+    "diagnostics": true,
+    "virtualNetwork": true,
+    "virtualMachine": true,
+    "virtualMachinePowerBiGateway": true,
+    "virtualMachinePurview": true,
+    "networkWatcher": false,
+    "policyBasic": true,
+    "policyISMAustralia": false,
+    "purview": true,
+    "sentinel": false,
+    "synapse": true,
+    "natGateway": false,
+    "udr": false,
+    "webApi": true
+  },
+  "purview": {
+    "managedResourceGroupName": "Purview-RGGroup"
+  },
+  "azureADGroups": {
+    "resourceGroupContributor": "ADP-AzureResourceGroup-Contributor",
+    "dataFactoryContributor": "ADP-DataFactory-Contributor",
+    "databricksContributor": "ADP-Databricks-Contributor",
+    "keyVaultAdministrator": "ADP-KeyVault-Administrator",
+    "sqlAdministrator": "ADP-SQL-Administrator",
+    "sqlAdministratorGroupName": "ADP-SQL-Administrator",
+    "configuratorAdministrator": "ADP-Configurator-Administrator",
+    "dataLakeAdministrator": "ADP-DataLake-Administrator",
+    "purviewCollectionAdministratorName": "ADP-Purview-Administrator"
+  },
+  "deploymentSecretsKeyVault": {
+    "enabledForDeployment": true,
+    "additionalAccessPolicies": []
+  },
+  "operationalSecretsKeyVault": {
+    "subnetIdArray": []
+  },
+  "sqlAccess": {
+    "azureADDirectoryReadersRoleADGroup": ""
+  },
+  "automationAccountPrincipalId": "",
+  "webAppAdminUPN": "",
+  "dataLakeDateMask": "yyyy/MM/dd",
+  "diagnosticsRetentionInDays": 30,
+  "logAnalytics": {
+    "serviceTier": "PerGB2018",
+    "capacityReservationLevel": 0,
+    "retentionInDays": 31,
+    "dailyQuotaGb": 5,
+    "publicIngestion": true,
+    "publicQuery": true
+  },
+  "logAnalyticsSolutions": [
+    "SQLAssessment",
+    "KeyVault",
+    "AzureNetworking",
+    "NetworkMonitoring",
+    "AzureAutomation",
+    "ChangeTracking",
+    "CapacityPerformance",
+    "KeyVaultAnalytics",
+    "AzureSQLAnalytics",
+    "AzureNSGAnalytics",
+    "AzureActivity",
+    "VMInsights"
+  ],
+  "dataLake": {
+    "sku": "Standard_LRS",
+    "subnetIdArray": []
+  },
+  "codeStorage": {
+    "sku": "Standard_LRS"
+  },
+  "diagnosticsStorage": {
+    "sku": "Standard_LRS"
+  },
+  "azureSecurityCentre": {
+    "ascOwnerEmail": "noreply@purple.telstra.com",
+    "ascOwnerContact": "+61404123123",
+    "autoProvisionSetting": "On",
+    "highSeverityAlertNotification": "On",
+    "subscriptionOwnerNotification": "On",
+    "virtualMachineTier": "Free",
+    "appServiceTier": "Free",
+    "paasSQLServiceTier": "Free",
+    "sqlServerOnVmTier": "Free",
+    "storageAccountTier": "Free",
+    "kubernetesServiceTier": "Free",
+    "containerRegistryTier": "Free",
+    "keyvaultTier": "Free",
+    "integrationEnabled": true
+  },
+  "generalNetwork": {
+    "vNetCIDR": "10.24.0.0/21",
+    "subNetCIDR_VM": "10.24.1.0/24",
+    "subNetCIDR_WebApp": "10.24.2.0/24",
+    "subNetName_VM": "VirtualMachines",
+    "subNetName_WebApp": "WebApp"
+  },
+  "datafactory": {
+    "repoConfiguration": {
+      "accountName": "teamtelstra",
+      "collaborationBranch": "main",
+      "projectName": "Azure Data Platform",
+      "repositoryName": "datafactory",
+      "rootFolder": "/",
+      "tenantId": "413504eb-8622-47d2-aa72-ddbba4584471",
+      "type": "FactoryVSTSConfiguration"
+    }
+  },
+  "natGateway": {
+    "gatewaySKU": "Standard",
+    "publicIPSKU": "Standard",
+    "publicIPAddressVersion": "IPv4",
+    "publicIPAllocationMethod": "Static",
+    "idleTimeoutGatewayMinutes": 4,
+    "idleTimeoutPIPMinutes": 4
+  },
+  "userDefinedRoute": {
+    "disableBgpRoutePropagation": true,
+    "routes": [
+      {
+        "name": "Route 1",
+        "addressPrefix": "0.0.0.0/0",
+        "nextHopType": "Internet",
+        "nextHopIpAddress": null
+      }
+    ]
+  },
+  "databricksNetwork": {
+    "vNetCIDR": "10.25.0.0/21",
+    "subNetCIDR_DBRPublic": "10.25.1.0/24",
+    "subNetCIDR_DBRPrivate": "10.25.2.0/24",
+    "subNetName_DBRPublic": "Public",
+    "subNetName_DBRPrivate": "Private"
+  },
+  "databricks": {
+    "pricingTier": "trial",
+    "enableNoPublicIp": false,
+    "authorizations": [
+      {
+        "roleDefinitionId": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635",
+        "principalId": "9a74af6f-d153-4348-988a-e2672920bee9"
+      }
+    ]
+  },
+  "databricksClusters": {
+    "deployHighConcurrencySku": false,
+    "deployStandardSku": "Standard_DS3_v2",
+    "maxWorkers": 2,
+    "minWorkers": 1,
+    "terminationDurationMinutes": 10,
+    "sparkVersion": "8.3.x-scala2.12",
+    "standardClusterSparkConfig": {
+      "spark.databricks.delta.retentionDurationCheck.enabled": "false",
+      "spark.databricks.delta.preview.enabled": "true"
+    },
+    "highConcurrencyClusterSparkConfig": {
+      "spark.databricks.cluster.profile": "serverless",
+      "spark.databricks.passthrough.enabled": "true",
+      "spark.databricks.delta.preview.enabled": "true",
+      "spark.databricks.pyspark.enableProcessIsolation": "true",
+      "spark.databricks.repl.allowedLanguages": "python,sql"
+    }
+  },
+  "webAppAADAppRegistration": {
+    "displayName": "",
+    "enableLocalhostRedirectUrl": true,
+    "minCredentialExpiryInMonths": 3,
+    "maxCredentialExpiryInMonths": 24
+  },
+  "databricksAADAppRegistration": {
+    "minCredentialExpiryInMonths": 3,
+    "maxCredentialExpiryInMonths": 24
+  },
+  "sqlUsernames": {
+    "databricks": "sql_DatabricksUser",
+    "admin": "sql_ADPAdmin",
+    "synapseAdmin": "sql_ADPAdmin"
+  },
+  "configDatabase": {
+    "databaseName": "ADP_Config",
+    "serviceLevelObjective": "Standard",
+    "edition": "Standard",
+    "capacity": 10,
+    "licenceType": "BasePrice"
+  },
+  "stageDatabase": {
+    "databaseName": "ADP_Stage",
+    "serviceLevelObjective": "Standard",
+    "edition": "Standard",
+    "capacity": 10,
+    "licenceType": "BasePrice"
+  },
+  "synapse": {
+    "setWorkspaceIdentityRbacOnStorageAccount": true,
+    "allowAllConnections": true,
+    "grantWorkspaceIdentityControlForSql": "Disabled",
+    "managedVirtualNetwork": "default",
+    "isNewFileSystemOnly": false,
+    "storageAccessTier": "Hot",
+    "storageAccountSku": "Standard_LRS",
+    "storageBypassNetworkDefaultAction": "AzureServices",
+    "storageNetworkDefaultAction": "Deny",
+    "setStorageNetwork": true,
+    "sqlPoolName": "sqlPool001",
+    "sqlPoolSku": "DW100c",
+    "useManagedPrivateEndpoints": true
+  },
+  "virtualMachine": {
+    "vmNamePrefix": "tpsyddevadpvm",
+    "vmCount": 2,
+    "applyHUB": true,
+    "vmSize": "Standard_D1_v2",
+    "diskType": "Standard_LRS",
+    "OSPublisher": "MicrosoftWindowsServer",
+    "OSOffer": "WindowsServer",
+    "OSVersion": "2019-Datacenter",
+    "TimeZone": "W. Australia Standard Time"
+  },
+  "virtualMachinePowerBiGateway": {
+    "vmNamePrefix": "tpsyddevadpbi",
+    "vmCount": 2,
+    "applyHUB": true,
+    "vmSize": "Standard_D1_v2",
+    "diskType": "Standard_LRS",
+    "OSPublisher": "MicrosoftWindowsServer",
+    "OSOffer": "WindowsServer",
+    "OSVersion": "2019-Datacenter",
+    "TimeZone": "W. Australia Standard Time"
+  },
+  "virtualMachinePurview": {
+    "vmNamePrefix": "tpsyddevadppu",
+    "vmCount": 2,
+    "applyHUB": true,
+    "vmSize": "Standard_D1_v2",
+    "diskType": "Standard_LRS",
+    "OSPublisher": "MicrosoftWindowsServer",
+    "OSOffer": "WindowsServer",
+    "OSVersion": "2019-Datacenter",
+    "TimeZone": "W. Australia Standard Time"
+  },
+  "automationAccount": {
+    "sku": "Free"
+  },
+  "automationRunAs": {
+    "minCertificateExpiryInMonths": 3,
+    "maxCertificateExpiryInMonths": 24
+  },
+  "webConnection": {
+    "serviceAccountUPN": "adp@purple.telstra.com"
+  },
+  "adminServicePlan": {
+    "servicePlanKind": "app",
+    "servicePlanLevel": "S1",
+    "servicePlanCapacity": 1
+  },
+  "webApp": {
+    "alwaysOn": false,
+    "addAppServiceFileAuditLogs": false
+  },
+  "webAppSettings": {
+    "aspNetCore_environment": "Development",
+    "websiteTimeZone": "W. Australia Standard Time",
+    "azureADDomainName": "readify.onmicrosoft.com",
+    "azureADTenantId": "413504eb-8622-47d2-aa72-ddbba4584471",
+    "azureADApplicationClientId": "4bb99f14-f24c-4cdb-b824-543f6dc2a387",
+    "azureADApplicationObjectId": "a342ded7-972a-4276-a2f3-3f80980157cd"
+  },
+  "webApi": {
+    "alwaysOn": false,
+    "addAppServiceFileAuditLogs": false
+  },
+  "webApiSettings": {
+    "aspNetCore_environment": "Development",
+    "websiteTimeZone": "W. Australia Standard Time",
+    "azureADDomainName": "readify.onmicrosoft.com"
+  },
+  "functionAppStorage": {
+    "sku": "Standard_LRS"
+  },
+  "adminConsumptionServicePlan": {
+    "servicePlanKind": "functionapp",
+    "servicePlanLevel": "Y1",
+    "servicePlanCapacity": 0
+  },
+  "functionApp": {
+    "alwaysOn": false,
+    "functionsWorkerProcessCount": "10",
+    "functionsExtensionVersion": "~3",
+    "functionsWorkerRuntime": "powershell",
+    "powerShellVersion": "~7"
+  }
+}

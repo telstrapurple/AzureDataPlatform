@@ -1,0 +1,28 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    // Specific params
+    "servicePlanName": {
+      "value": "TP-SYD-DEV-ADP-ASP-001"
+    },
+    "servicePlanKind": {
+      "value": "app"
+    },
+    "servicePlanLevel": {
+      "value": "F1"
+    },
+    "servicePlanCapacity": {
+      "value": 1
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+	"name": "DataLakeGen2_AzureIR",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"type": "AzureBlobFS",
+		"description": "This is the generic Azure Data Lake Gen 2 connection using the Azure integration runtime",
+		"annotations": [],
+		"typeProperties": {
+			"url": "@linkedService().dataLakeServiceEndPoint"
+		},
+		"parameters": {
+			"dataLakeServiceEndPoint": {
+				"type": "string"
+			}
+		},
+		"connectVia": {
+			"referenceName": "IR-ADP",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

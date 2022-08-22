@@ -1,0 +1,52 @@
+{
+	"name": "Generic_Blob_Parquet_AzureIR",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureBlobStorage_AzureIR",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"serviceEndPoint": {
+					"value": "@dataset().serviceEndPoint",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"serviceEndPoint": {
+				"type": "string"
+			},
+			"filePath": {
+				"type": "string"
+			},
+			"fileName": {
+				"type": "string"
+			},
+			"compressionType": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Blob"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				},
+				"container": {
+					"value": "@dataset().filePath",
+					"type": "Expression"
+				}
+			},
+			"compressionCodec": {
+				"value": "@dataset().compressionType",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	}
+}

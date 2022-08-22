@@ -1,0 +1,28 @@
+{
+	"name": "Generic_SQLServer",
+	"properties": {
+		"description": "This is the generic SQL Server data set",
+		"linkedServiceName": {
+			"referenceName": "SQLServer",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"secretName": {
+					"value": "@dataset().secretName",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"secretName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "SQL Server"
+		},
+		"annotations": [],
+		"type": "SqlServerTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

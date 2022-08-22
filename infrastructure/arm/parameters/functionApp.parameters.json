@@ -1,0 +1,56 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.operationalinsights/workspaces/tp-syd-dev-adp-law-001"
+    },
+    "diagnosticsStorageAccountId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.storage/storageAccount/tpsyddevadpsta001"
+    },
+    // Application Insights pramas
+    "appInsightsInstrumentationKey": {
+      "value": ""
+    },
+    // Storage Account params
+    "storageAccountResourceGroup": {
+      "value": ""
+    },
+    "storageAccountName": {
+      "value": ""
+    },
+    "diagnosticsRetentionInDays": {
+      "value": 30
+    },
+    // Specific params
+    "servicePlanId": {
+      "value": ""
+    },
+    "appName": {
+      "value": "TP-SYD-DEV-ADP-APP-001"
+    },
+    "functionsExtensionVersion": {
+      "value": "~3"
+    },
+    "functionsWorkerRuntime": {
+      "value": "powershell"
+    },
+    "functionsWorkerProcessCount": {
+      "value": "10"
+    },
+    "powerShellVersion": {
+      "value": "~7"
+    },
+    "subnetWebAppResourceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourceGroups/TP-SYD-DEV-ADP-ARG-Network/providers/Microsoft.Network/virtualNetworks/TP-SYD-DEV-ADP-VNT-10.23.0.0/subnets/WebApp"
+    }
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    },
+    // Specific params
+    "adfName": {
+      "type": "string"
+    },
+    "repoConfiguration": {
+      "type": "object",
+      "defaultValue": {}
+    },
+    "integrationRuntimes": {
+      "type": "array"
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]",
+    // The repoConfiguration property has to either exist with valid values, or not appear in the template at all.  It can't just be set to empty or null
+    // So we build up an object for the properties of the Factory resource on-the-fly
+    "defaultfactoryProperties": {},
+    "factoryProperties": "[union(variables('defaultfactoryProperties'), if(empty(parameters('repoConfiguration')), createObject(), createObject('repoConfiguration',parameters('repoConfiguration'))))]"
+  },
+  "resources": [
+    {
+      "name": "[parameters('adfName')]",
+      "type": "Microsoft.DataFactory/factories",
+      "apiVersion": "2018-06-01",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": "[variables('factoryProperties')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "resources": [
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "Microsoft.DataFactory/factories/providers/diagnosticSettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "[concat(parameters('adfName'), '/', 'Microsoft.Insights/', 'diagnostics')]",
+          "dependsOn": ["[parameters('adfName')]"],
+          "properties": {
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "logAnalyticsDestinationType": "Dedicated",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "metrics": [
+              {
+                "category": "AllMetrics",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                },
+                "timeGrain": null
+              }
+            ],
+            "logs": [
+              {
+                "category": "ActivityRuns",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "PipelineRuns",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "TriggerRuns",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "condition": "[not(equals(length(parameters('integrationRuntimes')), 0))]",
+      "type": "Microsoft.DataFactory/factories/integrationruntimes",
+      "apiVersion": "2018-06-01",
+      "name": "[concat(parameters('adfName'), '/IR-', parameters('integrationRuntimes')[copyIndex()])]",
+      "dependsOn": ["[parameters('adfName')]"],
+      "copy": {
+        "name": "irLoop",
+        "count": "[length(parameters('integrationRuntimes'))]"
+      },
+      "properties": {
+        "type": "SelfHosted",
+        "description": "Self-hosted Integration runtime created using ARM template"
+      }
+    }
+  ],
+  "outputs": {
+    "dataFactoryName": {
+      "type": "string",
+      "value": "[parameters('adfName')]"
+    },
+    "dataFactoryResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.DataFactory/factories', parameters('adfName'))]"
+    },
+    "integrationRuntimesResourceIdArray": {
+      "type": "array",
+      "copy": {
+        "count": "[length(parameters('integrationRuntimes'))]",
+        "input": {
+          "resourceId": "[resourceId('Microsoft.DataFactory/factories/integrationruntimes', parameters('adfName'), concat('IR-', parameters('integrationRuntimes')[copyIndex()]))]"
+        }
+      }
+    },
+    "dataFactoryPrincipalId": {
+      "type": "string",
+      "value": "[reference(concat('Microsoft.DataFactory/factories/', parameters('adfName')), '2018-06-01', 'Full').identity.principalId]"
+    }
+  }
+}

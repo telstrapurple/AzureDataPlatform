@@ -1,0 +1,269 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "companyName": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "resourceType": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "environmentCode": {
+            "type": "string",
+            "maxLength": 50
+        },
+        "environmentLongName": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "azureLocation": {
+            "type": "string",
+            "defaultValue": "australiaeast",
+            "allowedValues": [
+                "australiaeast",
+                "australiasoutheast"
+            ]
+        },
+        "virtualNetworkResourceGroup": {
+            "type": "string",
+            "metadata": {
+                "description": "The Resource Group in the same subscription for the Virtual Network that will be used for the Virtual Machine."
+            }
+        },
+        "virtualNetworkName": {
+            "type": "string",
+            "metadata": {
+                "description": "The Virtual Network in the Virtual Network Resoure Group that will be used for the for the Virtual Machine."
+            }
+        },
+        "subNetName": {
+            "type": "string",
+            "metadata": {
+                "description": "The Subnet in the Virtual Network that will be used for the for the Virtual Machine."
+            }
+        },
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Username for the Virtual Machine."
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for the Virtual Machine."
+            }
+        },
+        "osDiskType": {
+            "type": "string",
+            "metadata": {
+                "description": "The Managed Disk sku to use fot the OS Disk."
+            },
+            "allowedValues": [
+                "Premium_LRS",
+                "Stanard_LRS"
+            ]
+        },
+        "OSPublisher": {
+            "type": "string",
+            "metadata": {
+                "description": "The OS publisher for the VM."
+            }
+        },
+        "OSOffer": {
+            "type": "string",
+            "metadata": {
+                "description": "The OS offer for the VM."
+            }
+        },
+        "OSVersion": {
+            "type": "string",
+            "metadata": {
+                "description": "The OS version for the VM. This will pick a fully patched image of this given OS version."
+            }
+        },
+        "vmSize": {
+            "type": "string",
+            "metadata": {
+                "description": "The size of VM sku."
+            }
+        },
+        "sizeOfDataDisk": {
+            "type": "int",
+            "allowedValues": [
+                32,
+                64,
+                128,
+                256,
+                512,
+                1024,
+                2048
+            ],
+            "metadata": {
+                "description": "The size in GB you want the data disk to be."
+            }
+        },
+        "dataDiskType": {
+            "type": "string",
+            "allowedValues": [
+                "Standard_LRS",
+                "Premium_LRS"
+            ],
+            "metadata": {
+                "description": "The type of data disk wanted."
+            }
+        },
+        "applyHUB": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Apply HUB licensing or not."
+            }
+        },
+        "deployDSC": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Boolean to decide whether to deploy DSC or not."
+            }
+        },
+        "dscScript": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of DSC script."
+            }
+        },
+        "dscPackageUri": {
+            "type": "string",
+            "metadata": {
+                "description": "URI to zip file for DSC package"
+            }
+        },
+        "_sasToken": {
+            "type": "string",
+            "metadata": {
+                "description": "The secure SAS token to the linked templates and DSC if used."
+            }
+        },
+        "vmName": {
+            "type": "string"
+        },
+        "tagObject": {
+            "type": "object"
+        }
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('vmName'), '-nic')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2019-07-01",
+            "location": "[parameters('azureLocation')]",
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[concat(resourceId(parameters('virtualNetworkResourceGroup'),'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName')), '/subnets/', parameters('subNetName'))]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2019-07-01",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[parameters('vmName')]",
+            "tags": "[parameters('tagObject')]",
+            "location": "[parameters('azureLocation')]",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "dependsOn": [
+                "[concat(parameters('vmName'), '-nic')]"
+            ],
+            "properties": {
+                "licenseType": "[if(bool(parameters('applyHUB')),'Windows_Server', json('null'))]",
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('vmName')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[parameters('OSPublisher')]",
+                        "offer": "[parameters('OSOffer')]",
+                        "sku": "[parameters('OSVersion')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "[concat(parameters('vmName'),'-os')]",
+                        "createOption": "FromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[parameters('osDiskType')]"
+                        }
+                    },
+                    "dataDisks": [
+                        {
+                            "name": "[concat(parameters('vmName'), '-disk01')]",
+                            "lun": 0,
+                            "createOption": "Empty",
+                            "diskSizeGB": "[parameters('sizeOfDataDisk')]",
+                            "managedDisk": {
+                                "storageAccountType": "[parameters('dataDiskType')]"
+                            }
+                        }
+                    ]
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(parameters('vmName'), '-nic'))]"
+                        }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                    "condition": "[parameters('deployDSC')]",
+                    "name": "[concat(parameters('vmName'), '-' , 'DesiredStateConfiguration')]",
+                    "type": "extensions",
+                    "location": "[parameters('azureLocation')]",
+                    "apiVersion": "2019-07-01",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
+                    ],
+                    "tags": {
+                        "displayName": "VM Extension - DSC Configuration"
+                    },
+                    "properties": {
+                        "publisher": "Microsoft.Powershell",
+                        "type": "DSC",
+                        "typeHandlerVersion": "2.9",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                            "configuration": {
+                                "url": "[parameters('dscPackageUri')]",
+                                "script": "[parameters('dscScript')]",
+                                "function": "Main"
+                            },
+                            "configurationArguments": {
+                                "nodeName": "[parameters('vmName')]"
+                            }
+                        },
+                        "protectedSettings": {
+                            "configurationUrlSasToken": "[parameters('_sasToken')]"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

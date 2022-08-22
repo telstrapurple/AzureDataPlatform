@@ -1,0 +1,80 @@
+﻿@page
+@model ADPConfigurator.Web.Pages.Systems.PullModel
+@using ADPConfigurator.Web.Services
+@using System.Text.Json;
+@inject PullSourceStateProvider PullSourceStateProvider
+
+@{
+    ViewData["Title"] = "Pull";
+}
+
+@if (Model.Error != null && Model.Error != "")
+{
+<script type="text/javascript">
+    console.log("@Model.Error");
+</script>
+}
+
+<h1>
+    <i class="float-right fas fa-cogs"></i>
+    Pull System
+</h1>
+
+<div class="row">
+    <div class="col-sm-12">
+        @if (!await PullSourceStateProvider.InSync())
+        {
+            <h2 class="text-danger">Out of sync!</h2>
+            <p>The pull source is using an earlier or later version of the Global Data Platform. Attempting to pull would create unexpected results, and is therefore disabled.</p>
+        }
+        else
+        {
+            <form method="post">
+                <input type="hidden" asp-for="SubmitChanges" value="@false" />
+                <div class="form-group">
+                    <label asp-for="SystemName" class="control-label">The name of the system to pull</label>
+                    <input asp-for="SystemName" class="form-control" />
+                    <span asp-validation-for="SystemName" class="text-danger"></span>
+
+                </div>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-search"></i>
+                    Find System
+                </button>
+            </form>
+
+
+            @if (Model.PulledSystem != null)
+            {
+                <hr />
+                // Only show the submit button if there are changes to be made
+                @if (Model.ExistingSystem == null || !string.IsNullOrEmpty(Model.Diff))
+                {
+                    <p>
+                        @(Model.ExistingSystem != null
+                                ? "Would you like to make the following changes?"
+                                : "Would you like to create the following system?")
+                    </p>
+
+                    <div class="code-container">
+                        <pre>@(Model.ExistingSystem == null
+                               ? JsonSerializer.Serialize(Model.PulledSystem, new JsonSerializerOptions { WriteIndented = true })
+                               : Model.Diff
+                             )</pre>
+                    </div>
+
+                    <form method="post">
+                        <input type="hidden" asp-for="SystemName" />
+                        <input type="hidden" asp-for="SubmitChanges" value="@true" />
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check"></i>
+                            @(Model.ExistingSystem != null
+                                    ? "Submit Changes"
+                                    : "Create New System")
+                        </button>
+                    </form>
+                }
+            }
+        }
+    </div>
+</div>

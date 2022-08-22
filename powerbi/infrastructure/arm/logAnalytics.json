@@ -1,0 +1,147 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "companyCode": {
+      "type": "string",
+      "maxLength": 16
+    },
+    "companyName": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "departmentCode": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "resourceType": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "resourceCode": {
+      "type": "string",
+      "maxLength": 4
+    },
+    "environmentCode": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "environmentLongName": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "azureLocation": {
+      "type": "string",
+      "defaultValue": "australiasoutheast",
+      "allowedValues": [
+        "australiaeast",
+        "australiasoutheast"
+      ]
+    },
+    "delimeter": {
+      "type": "string",
+      "defaultValue": "-",
+      "allowedValues": [
+        "-",
+        "_",
+        ""
+      ]
+    },
+    "serviceTier": {
+      "type": "string",
+      "allowedValues": [
+        "Free",
+        "Standalone",
+        "PerNode",
+        "PerGB2018"
+      ],
+      "metadata": {
+        "description": "Service Tier: PerGB2018 (Subscriptions created April 2018 onwards), Free (legacy billing pre April 2018 so not possible now), Standalone, or PerNode"
+      }
+    },
+    "solutionTypes": {
+      "type": "array",
+      "defaultValue": [
+        "SQLAssessment",
+        "Updates"
+      ]
+    },
+    "suffix": {
+      "type": "string",
+      "defaultValue": "001"
+    },
+    "tagObject": {
+      "type": "object"
+    },
+    "automationAccountName": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "lgaName": "[toUpper(concat(parameters('companyCode'),parameters('delimeter'),parameters('environmentCode'),parameters('delimeter'),parameters('departmentCode'),parameters('delimeter'),parameters('resourceCode'),parameters('delimeter'),parameters('suffix')))]",
+    "SubscriptionID": "[subscription().subscriptionId]",
+    "rgName": "[resourceGroup().name]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2015-11-01-preview",
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "name": "[variables('lgaName')]",
+      "location": "[parameters('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": {
+        "sku": {
+          "Name": "[parameters('serviceTier')]"
+        }
+      },
+      "resources": [
+      ]
+    },
+    {
+      "apiVersion": "2015-11-01-preview",
+      "type": "Microsoft.OperationsManagement/solutions",
+      "location": "[parameters('azureLocation')]",
+      "name": "[Concat(parameters('solutionTypes')[copyIndex()], '(', variables('lgaName'), ')')]",
+      "id": "[Concat('/subscriptions/', variables('SubscriptionID'), '/resourceGroups/', variables('rgName'), '/providers/Microsoft.OperationsManagement/solutions/', parameters('solutionTypes')[copyIndex()], '(', variables('lgaName'), ')')]",
+      "properties": {
+        "workspaceResourceId": "[Concat('/subscriptions/', variables('SubscriptionID'), '/resourceGroups/', variables('rgName'), '/providers/Microsoft.OperationalInsights/workspaces/', variables('lgaName'))]"
+      },
+      "dependsOn": [
+        "[variables('lgaName')]"
+      ],
+      "plan": {
+        "name": "[Concat(parameters('solutionTypes')[copyIndex()], '(', variables('lgaName'), ')')]",
+        "product": "[Concat('OMSGallery/', parameters('solutionTypes')[copyIndex()])]",
+        "promotionCode": "",
+        "publisher": "Microsoft"
+      },
+      "copy": {
+        "name": "solutionsCopy",
+        "count": "[length(parameters('solutionTypes'))]"
+      }
+    },
+    {
+      "apiVersion": "2015-11-01-preview",
+      "type": "Microsoft.OperationalInsights/workspaces/linkedServices",
+      "name": "[Concat(variables('lgaName'), '/' , 'Automation')]",
+      "location": "[parameters('azureLocation')]",
+      "dependsOn": [
+        "[variables('lgaName')]"
+      ],
+      "properties": {
+        "resourceId": "[resourceId('Microsoft.Automation/automationAccounts/', parameters('automationAccountName'))]"
+      }
+    }
+  ],
+  "outputs": {
+    "logAnalyticsName": {
+      "type": "string",
+      "value": "[variables('lgaName')]"
+    },
+    "logAnalyticsWorkspaceID": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('lgaName'))]"
+    }
+
+  }
+}

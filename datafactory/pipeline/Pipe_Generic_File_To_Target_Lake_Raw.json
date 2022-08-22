@@ -1,0 +1,942 @@
+{
+	"name": "Pipe_Generic_File_To_Target_Lake_Raw",
+	"properties": {
+		"activities": [
+			{
+				"name": "GM - Check if target path exists in lake",
+				"type": "GetMetadata",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the file schema mapping",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "Generic_DatalakeGen2_File",
+						"type": "DatasetReference",
+						"parameters": {
+							"dataLakeServiceEndPoint": {
+								"value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+								"type": "Expression"
+							},
+							"dataLakeFilePath": {
+								"value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+								"type": "Expression"
+							},
+							"dataLakeFileName": {
+								"value": "@variables('TargetFileName')",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"exists"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true
+					}
+				}
+			},
+			{
+				"name": "IF - Check if data lake path exists",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "GM - Check if target path exists in lake",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('GM - Check if target path exists in lake').output.Exists, true)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "DEL - Clean out target data lake file",
+							"type": "Delete",
+							"dependsOn": [
+								{
+									"activity": "FN - Remove blob lease",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "Generic_DatalakeGen2_File",
+									"type": "DatasetReference",
+									"parameters": {
+										"dataLakeServiceEndPoint": {
+											"value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+											"type": "Expression"
+										},
+										"dataLakeFilePath": {
+											"value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+											"type": "Expression"
+										},
+										"dataLakeFileName": {
+											"value": "@variables('TargetFileName')",
+											"type": "Expression"
+										}
+									}
+								},
+								"enableLogging": false,
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": false
+								}
+							}
+						},
+						{
+							"name": "SP - Log the error - Clean out lake file",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "DEL - Clean out target data lake file",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "DEL - Clean out target data lake folder",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": {
+											"value": "@{activity('DEL - Clean out target data lake file').error.message}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{activity('DEL - Clean out target data lake file').output}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@{pipeline().Pipeline}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@{pipeline().RunId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@{pipeline().TriggerId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@{pipeline().TriggerName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@{pipeline().TriggerTime}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@{pipeline().TriggerType}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": {
+											"value": "@pipeline().parameters.TaskInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "Error",
+										"type": "String"
+									},
+									"FileLoadLogID": {
+										"value": {
+											"value": "@pipeline().parameters.FileLoadLogID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						},
+						{
+							"name": "FN - Remove blob lease",
+							"type": "AzureFunctionActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"functionName": "BreakBlobLease",
+								"method": "POST",
+								"body": {
+									"serviceEndpoint": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+									"filePath": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+									"fileName": "@variables('TargetFileName')"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureFunction",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "SP - Log the error - Remove blob lease",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "FN - Remove blob lease",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "FN - Remove blob lease",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": {
+											"value": "@{activity('FN - Remove blob lease').error.message}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{activity('FN - Remove blob lease').output}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@{pipeline().Pipeline}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@{pipeline().RunId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@{pipeline().TriggerId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@{pipeline().TriggerName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@{pipeline().TriggerTime}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@{pipeline().TriggerType}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": {
+											"value": "@pipeline().parameters.TaskInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "Error",
+										"type": "String"
+									},
+									"FileLoadLogID": {
+										"value": {
+											"value": "@pipeline().parameters.FileLoadLogID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "SP - Log the error - Check lake path",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "GM - Check if target path exists in lake",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+					"storedProcedureParameters": {
+						"ActivityName": {
+							"value": "GM - Check if target path exists in lake",
+							"type": "String"
+						},
+						"DataFactoryName": {
+							"value": {
+								"value": "@{pipeline().DataFactory}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ErrorMessage": {
+							"value": {
+								"value": "@{activity('GM - Check if target path exists in lake').error.message}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"OutputMessage": {
+							"value": {
+								"value": "@{activity('GM - Check if target path exists in lake').output}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@{pipeline().Pipeline}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineRunID": {
+							"value": {
+								"value": "@{pipeline().RunId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerID": {
+							"value": {
+								"value": "@{pipeline().TriggerId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerName": {
+							"value": {
+								"value": "@{pipeline().TriggerName}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerTime": {
+							"value": {
+								"value": "@{pipeline().TriggerTime}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerType": {
+							"value": {
+								"value": "@{pipeline().TriggerType}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TaskInstanceID": {
+							"value": {
+								"value": "@pipeline().parameters.TaskInstanceID",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"LogType": {
+							"value": "Error",
+							"type": "String"
+						},
+						"FileLoadLogID": {
+							"value": {
+								"value": "@pipeline().parameters.FileLoadLogID",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSQL",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"secretName": "sqlDatabaseConnectionStringConfig"
+					}
+				}
+			},
+			{
+				"name": "EP - Generic File To Lake",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the schema and table definitions",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Pipe_Generic_File_To_Lake",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"TaskType": {
+							"value": "@pipeline().parameters.TaskType",
+							"type": "Expression"
+						},
+						"SourceConfig": {
+							"value": "@pipeline().parameters.SourceConfig",
+							"type": "Expression"
+						},
+						"TaskInstanceID": {
+							"value": "@pipeline().parameters.TaskInstanceID",
+							"type": "Expression"
+						},
+						"TargetConfig": {
+							"value": "@pipeline().parameters.TargetConfig",
+							"type": "Expression"
+						},
+						"SchemaMapping": {
+							"value": "@json(activity('LKP - Get the file schema mapping').output.firstRow.output)",
+							"type": "Expression"
+						},
+						"KeyVaultName": {
+							"value": "@pipeline().parameters.KeyVaultName",
+							"type": "Expression"
+						},
+						"TaskConfig": {
+							"value": "@pipeline().parameters.TaskConfig",
+							"type": "Expression"
+						},
+						"CallingPipeline": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"SourceFilePath": {
+							"value": "@pipeline().parameters.SourceFilePath",
+							"type": "Expression"
+						},
+						"SourceFileName": {
+							"value": "@pipeline().parameters.SourceFileName",
+							"type": "Expression"
+						},
+						"FileLoadLogID": {
+							"value": "@pipeline().parameters.FileLoadLogID",
+							"type": "Expression"
+						},
+						"TargetFileName": {
+							"value": "@variables('TargetFileName')",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "LKP - Get the file schema mapping",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "SV - TargetFileName",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[DI].[usp_SchemaMapping_Get]",
+						"storedProcedureParameters": {
+							"TaskID": {
+								"type": "Int32",
+								"value": {
+									"value": "@pipeline().parameters.TaskID",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "Generic_AzureSQL",
+						"type": "DatasetReference",
+						"parameters": {
+							"secretName": "sqlDatabaseConnectionStringConfig"
+						}
+					}
+				}
+			},
+			{
+				"name": "SP - Log the error - Get file schema mapping",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the file schema mapping",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+					"storedProcedureParameters": {
+						"ActivityName": {
+							"value": "LKP - Get the schema and table definitions",
+							"type": "String"
+						},
+						"DataFactoryName": {
+							"value": {
+								"value": "@{pipeline().DataFactory}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ErrorMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get the file schema mapping').error.message}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"OutputMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get the file schema mapping').output}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@{pipeline().Pipeline}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineRunID": {
+							"value": {
+								"value": "@{pipeline().RunId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerID": {
+							"value": {
+								"value": "@{pipeline().TriggerId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerName": {
+							"value": {
+								"value": "@{pipeline().TriggerName}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerTime": {
+							"value": {
+								"value": "@{pipeline().TriggerTime}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerType": {
+							"value": {
+								"value": "@{pipeline().TriggerType}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TaskInstanceID": {
+							"value": {
+								"value": "@pipeline().parameters.TaskInstanceID",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"LogType": {
+							"value": "Error",
+							"type": "String"
+						},
+						"FileLoadLogID": {
+							"value": {
+								"value": "@pipeline().parameters.FileLoadLogID",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSQL",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"secretName": "sqlDatabaseConnectionStringConfig"
+					}
+				}
+			},
+			{
+				"name": "LKP - Get the schema and table definitions",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "IF - Check if data lake path exists",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[DI].[usp_StagingTableScript_Generate]",
+						"storedProcedureParameters": {
+							"TaskID": {
+								"type": "Int32",
+								"value": {
+									"value": "@pipeline().parameters.TaskID",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "Generic_AzureSQL",
+						"type": "DatasetReference",
+						"parameters": {
+							"secretName": "sqlDatabaseConnectionStringConfig"
+						}
+					}
+				}
+			},
+			{
+				"name": "SP - Log the error - Get schema and table definitions",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the schema and table definitions",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+					"storedProcedureParameters": {
+						"ActivityName": {
+							"value": "LKP - Get the schema and table definitions",
+							"type": "String"
+						},
+						"DataFactoryName": {
+							"value": {
+								"value": "@{pipeline().DataFactory}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ErrorMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get the schema and table definitions').error.message}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"OutputMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get the schema and table definitions').output}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@{pipeline().Pipeline}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineRunID": {
+							"value": {
+								"value": "@{pipeline().RunId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerID": {
+							"value": {
+								"value": "@{pipeline().TriggerId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerName": {
+							"value": {
+								"value": "@{pipeline().TriggerName}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerTime": {
+							"value": {
+								"value": "@{pipeline().TriggerTime}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerType": {
+							"value": {
+								"value": "@{pipeline().TriggerType}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TaskInstanceID": {
+							"value": {
+								"value": "@pipeline().parameters.TaskInstanceID",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"LogType": {
+							"value": "Error",
+							"type": "String"
+						},
+						"FileLoadLogID": {
+							"value": {
+								"value": "@pipeline().parameters.FileLoadLogID",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSQL",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"secretName": "sqlDatabaseConnectionStringConfig"
+					}
+				}
+			},
+			{
+				"name": "SV - TargetFileName",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "TargetFileName",
+					"value": {
+						"value": "@concat(split(concat(split(pipeline().parameters.TargetConfig.value[0].TargetFileName,'.')[0], '_', replace(pipeline().parameters.SourceFilePath,'/','_'), '_',pipeline().parameters.SourceFileName),'.')[0],'.parquet')",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"TaskID": {
+				"type": "int"
+			},
+			"TaskInstanceID": {
+				"type": "int"
+			},
+			"TargetConfig": {
+				"type": "object"
+			},
+			"SourceConfig": {
+				"type": "object"
+			},
+			"TaskType": {
+				"type": "string"
+			},
+			"TaskConfig": {
+				"type": "object"
+			},
+			"KeyVaultName": {
+				"type": "string"
+			},
+			"ETLConfig": {
+				"type": "object"
+			},
+			"SourceFilePath": {
+				"type": "string"
+			},
+			"SourceFileName": {
+				"type": "string"
+			},
+			"FileLoadLogID": {
+				"type": "int"
+			}
+		},
+		"variables": {
+			"TargetFileName": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "ETL/File Load"
+		},
+		"annotations": []
+	}
+}

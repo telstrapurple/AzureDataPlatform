@@ -1,0 +1,99 @@
+{
+	"name": "Generic_Blob_Csv_AzureIR",
+	"properties": {
+		"description": "This is the generic Blob data set for csv files",
+		"linkedServiceName": {
+			"referenceName": "AzureBlobStorage_AzureIR",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"serviceEndPoint": {
+					"value": "@dataset().serviceEndPoint",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"serviceEndPoint": {
+				"type": "string"
+			},
+			"filePath": {
+				"type": "string"
+			},
+			"fileName": {
+				"type": "string"
+			},
+			"compressionType": {
+				"type": "string"
+			},
+			"columnDelimiter": {
+				"type": "string"
+			},
+			"rowDelimiter": {
+				"type": "string"
+			},
+			"escapeCharacter": {
+				"type": "string"
+			},
+			"quoteCharacter": {
+				"type": "string"
+			},
+			"firstRowAsHeader": {
+				"type": "bool"
+			},
+			"nullValue": {
+				"type": "string"
+			},
+			"encoding": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Blob"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				},
+				"container": {
+					"value": "@dataset().filePath",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": {
+				"value": "@dataset().columnDelimiter",
+				"type": "Expression"
+			},
+			"compressionCodec": {
+				"value": "@dataset().compressionType",
+				"type": "Expression"
+			},
+			"encodingName": {
+				"value": "@dataset().encoding",
+				"type": "Expression"
+			},
+			"escapeChar": {
+				"value": "@dataset().escapeCharacter",
+				"type": "Expression"
+			},
+			"firstRowAsHeader": {
+				"value": "@dataset().firstRowAsHeader",
+				"type": "Expression"
+			},
+			"nullValue": {
+				"value": "@dataset().nullValue",
+				"type": "Expression"
+			},
+			"quoteChar": {
+				"value": "@dataset().quoteCharacter",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

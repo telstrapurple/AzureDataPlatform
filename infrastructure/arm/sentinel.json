@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Specific params
+    "lawName": {
+      "type": "string"
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2015-11-01-preview",
+      "type": "Microsoft.OperationsManagement/solutions",
+      "location": "[variables('azureLocation')]",
+      "name": "[concat('SecurityInsights(', parameters('lawName'), ')')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": {
+        "workspaceResourceId": "[parameters('logAnalyticsWorkspaceId')]"
+      },
+      "plan": {
+        "name": "[concat('SecurityInsights(', parameters('lawName'), ')')]",
+        "product": "OMSGallery/SecurityInsights",
+        "promotionCode": "",
+        "publisher": "Microsoft"
+      }
+    }
+  ]
+}

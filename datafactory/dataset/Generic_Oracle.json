@@ -1,0 +1,28 @@
+{
+	"name": "Generic_Oracle",
+	"properties": {
+		"description": "This is the generic Oracle data set",
+		"linkedServiceName": {
+			"referenceName": "Oracle",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"secretName": {
+					"value": "@dataset().secretName",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"secretName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Oracle"
+		},
+		"annotations": [],
+		"type": "OracleTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,197 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    },
+    // Specific params
+    "lgaName": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "azurelocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2017-07-01",
+      "name": "[parameters('lgaName')]",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": {
+        "state": "Enabled",
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "$connections": {
+              "defaultValue": {},
+              "type": "Object"
+            }
+          },
+          "triggers": {
+            "manual": {
+              "type": "Request",
+              "kind": "Http",
+              "inputs": {
+                "method": "POST",
+                "schema": {
+                  "properties": {
+                    "Bcc": {
+                      "type": "string"
+                    },
+                    "Body": {
+                      "type": "string"
+                    },
+                    "Caller": {
+                      "type": "string"
+                    },
+                    "Cc": {
+                      "type": "string"
+                    },
+                    "Importance": {
+                      "type": "string"
+                    },
+                    "Subject": {
+                      "type": "string"
+                    },
+                    "To": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "actions": {
+            "Check_if_triggered_by_ADF_webhook": {
+              "actions": {
+                "Post_to_the_ADF_callBackUri": {
+                  "runAfter": {},
+                  "type": "Http",
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "@{triggerBody()['callBackUri']}"
+                  }
+                }
+              },
+              "runAfter": {
+                "Send_an_Email": ["Succeeded"]
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": ["@triggerBody()?['Caller']", "ADF"]
+                  }
+                ]
+              },
+              "type": "If"
+            },
+            "Send_an_Email": {
+              "runAfter": {},
+              "type": "ApiConnection",
+              "inputs": {
+                "body": {
+                  "Bcc": "@triggerBody()?['Bcc']",
+                  "Body": "<p>@{triggerBody()?['Body']}</p>",
+                  "Cc": "@triggerBody()?['Cc']",
+                  "Importance": "@triggerBody()?['Importance']",
+                  "Subject": "@triggerBody()?['Subject']",
+                  "To": "@triggerBody()?['To']"
+                },
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['office365']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/v2/Mail"
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {
+          "$connections": {
+            "value": {
+              "office365": {
+                "connectionId": "[concat('/subscriptions/', subscription().subscriptionid, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Web/connections/office365')]",
+                "connectionName": "office365",
+                "id": "[concat('/subscriptions/', subscription().subscriptionid, '/providers/Microsoft.Web/locations/', variables('azurelocation'), '/managedApis/office365')]"
+              }
+            }
+          }
+        }
+      },
+      "resources": [
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "providers/diagnosticSettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "Microsoft.Insights/diagnostics",
+          "dependsOn": ["[parameters('lgaName')]"],
+          "properties": {
+            "name": "Diagnostics",
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "metrics": [
+              {
+                "category": "AllMetrics",
+                "timeGrain": null,
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ],
+            "logs": [
+              {
+                "category": "WorkflowRuntime",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "callbackURL": {
+      "type": "string",
+      "value": "[listCallbackUrl(resourceId(resourceGroup().name,'Microsoft.Logic/workflows/triggers', parameters('lgaName'), 'manual'), '2016-06-01').value]"
+    }
+  }
+}

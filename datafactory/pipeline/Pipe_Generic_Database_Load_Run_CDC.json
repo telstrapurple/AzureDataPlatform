@@ -1,0 +1,367 @@
+{
+	"name": "Pipe_Generic_Database_Load_Run_CDC",
+	"properties": {
+		"description": "This is the generic pipeline to copy Azure SQL and On prem SQL server tables from source through Data Lake to SQL staging",
+		"activities": [
+			{
+				"name": "IF - Load to Lake or Database",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@contains(toUpper(pipeline().parameters.TaskType),'TO LAKE')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "EP - Database to Target Database",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "Pipe_Generic_Database_To_Target_Database_CDC",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"TaskID": {
+										"value": "@pipeline().parameters.TaskID",
+										"type": "Expression"
+									},
+									"TaskInstanceID": {
+										"value": "@pipeline().parameters.TaskInstanceID",
+										"type": "Expression"
+									},
+									"TaskType": {
+										"value": "@pipeline().parameters.TaskType",
+										"type": "Expression"
+									},
+									"TaskConfig": {
+										"value": "@pipeline().parameters.TaskConfig",
+										"type": "Expression"
+									},
+									"SourceConfig": {
+										"value": "@pipeline().parameters.SourceConfig",
+										"type": "Expression"
+									},
+									"StagingConfig": {
+										"value": "@pipeline().parameters.StagingConfig",
+										"type": "Expression"
+									},
+									"ETLConfig": {
+										"value": "@pipeline().parameters.ETLConfig",
+										"type": "Expression"
+									},
+									"TargetConfig": {
+										"value": "@pipeline().parameters.TargetConfig",
+										"type": "Expression"
+									}
+								}
+							}
+						},
+						{
+							"name": "SP - Log the end of the data extract - Database",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "EP - Database to Target Database",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": null,
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{pipeline().parameters.TaskConfig.value}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@{pipeline().Pipeline}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@{pipeline().RunId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@{pipeline().TriggerId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@{pipeline().TriggerName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@{pipeline().TriggerTime}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@{pipeline().TriggerType}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": {
+											"value": "@pipeline().parameters.TaskInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "End",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "EP - Database to Target Lake",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "Pipe_Generic_Database_To_Target_Lake_CDC",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"TaskID": {
+										"value": "@pipeline().parameters.TaskID",
+										"type": "Expression"
+									},
+									"TaskInstanceID": {
+										"value": "@pipeline().parameters.TaskInstanceID",
+										"type": "Expression"
+									},
+									"TaskType": {
+										"value": "@pipeline().parameters.TaskType",
+										"type": "Expression"
+									},
+									"TaskConfig": {
+										"value": "@pipeline().parameters.TaskConfig",
+										"type": "Expression"
+									},
+									"SourceConfig": {
+										"value": "@pipeline().parameters.SourceConfig",
+										"type": "Expression"
+									},
+									"ETLConfig": {
+										"value": "@pipeline().parameters.ETLConfig",
+										"type": "Expression"
+									},
+									"TargetConfig": {
+										"value": "@pipeline().parameters.TargetConfig",
+										"type": "Expression"
+									}
+								}
+							}
+						},
+						{
+							"name": "SP - Log the end of the data extract - Lake",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "EP - Database to Target Lake",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": null,
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{pipeline().parameters.TaskConfig.value}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@{pipeline().Pipeline}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@{pipeline().RunId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@{pipeline().TriggerId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@{pipeline().TriggerName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@{pipeline().TriggerTime}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@{pipeline().TriggerType}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": {
+											"value": "@pipeline().parameters.TaskInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "End",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"System": {
+				"type": "string"
+			},
+			"TaskType": {
+				"type": "string"
+			},
+			"TaskInstanceID": {
+				"type": "int"
+			},
+			"TaskID": {
+				"type": "int"
+			},
+			"TaskConfig": {
+				"type": "object"
+			},
+			"SourceConfig": {
+				"type": "object"
+			},
+			"TargetConfig": {
+				"type": "object"
+			},
+			"ETLConfig": {
+				"type": "object"
+			},
+			"StagingConfig": {
+				"type": "object"
+			}
+		},
+		"variables": {
+			"Start": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "ETL/Database Load"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

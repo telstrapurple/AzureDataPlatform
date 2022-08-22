@@ -1,0 +1,43 @@
+{
+	"name": "Odbc",
+	"properties": {
+		"type": "Odbc",
+		"description": "Generic ODBC Connection",
+		"annotations": [],
+		"typeProperties": {
+			"connectionString": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "KeyVault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "@linkedService().odbcConnectionSecret"
+			},
+			"authenticationType": "Basic",
+			"userName": "@linkedService().odbcUserName",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "KeyVault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "@linkedService().odbcPasswordSecret"
+			}
+		},
+		"connectVia": {
+			"referenceName": "IR-ADP",
+			"type": "IntegrationRuntimeReference"
+		},
+		"parameters": {
+			"odbcConnectionSecret": {
+				"type": "string"
+			},
+			"odbcPasswordSecret": {
+				"type": "string"
+			},
+			"odbcUserName": {
+				"type": "string"
+			}
+		}
+	}
+}

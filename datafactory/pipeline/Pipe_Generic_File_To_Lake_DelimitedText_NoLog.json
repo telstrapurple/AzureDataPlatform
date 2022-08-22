@@ -1,0 +1,2056 @@
+{
+  "name": "Pipe_Generic_File_To_Lake_DelimitedText_NoLog",
+  "properties": {
+    "description": "This pipeline is used to copy On PRem SQL, Azure SQL and Oracle data from source into the data lake",
+    "activities": [
+      {
+        "name": "IF - Task type is Lake Delimited File to Lake - NL",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@and(or(equals(toUpper(pipeline().parameters.TaskType), toUpper('Azure Data Lake File to Lake')),equals(toUpper(pipeline().parameters.TaskType), toUpper('Azure Data Lake File to SQL'))),equals(pipeline().parameters.Log,false))",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "CD - Write the del file to the lake - Lake to Lake-NL",
+              "type": "Copy",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "DelimitedTextSource",
+                  "storeSettings": {
+                    "type": "AzureBlobFSReadSettings",
+                    "recursive": true
+                  },
+                  "formatSettings": {
+                    "type": "DelimitedTextReadSettings",
+                    "skipLineCount": {
+                      "value": "@pipeline().parameters.SkipLineCount",
+                      "type": "Expression"
+                    }
+                  }
+                },
+                "sink": {
+                  "type": "ParquetSink",
+                  "storeSettings": {
+                    "type": "AzureBlobFSWriteSettings"
+                  }
+                },
+                "enableStaging": false,
+                "translator": {
+                  "value": "@pipeline().parameters.SchemaMapping",
+                  "type": "Expression"
+                }
+              },
+              "inputs": [
+                {
+                  "referenceName": "Generic_DatalakeGen2_Csv",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "dataLakeServiceEndPoint": {
+                      "value": "@pipeline().parameters.SourceServiceEndPoint",
+                      "type": "Expression"
+                    },
+                    "dataLakeFilePath": {
+                      "value": "@pipeline().parameters.SourceFilePath",
+                      "type": "Expression"
+                    },
+                    "dataLakeFileName": {
+                      "value": "@pipeline().parameters.SourceFileName",
+                      "type": "Expression"
+                    },
+                    "compressionType": {
+                      "value": "@pipeline().parameters.CompressionType",
+                      "type": "Expression"
+                    },
+                    "columnDelimiter": {
+                      "value": "@pipeline().parameters.ColumnDelimiter",
+                      "type": "Expression"
+                    },
+                    "rowDelimiter": {
+                      "value": "@pipeline().parameters.RowDelimiter",
+                      "type": "Expression"
+                    },
+                    "escapeCharacter": {
+                      "value": "@pipeline().parameters.EscapeCharacter",
+                      "type": "Expression"
+                    },
+                    "quoteCharacter": {
+                      "value": "@pipeline().parameters.QuoteCharacter",
+                      "type": "Expression"
+                    },
+                    "firstRowAsHeader": {
+                      "value": "@pipeline().parameters.FirstRowAsHeader",
+                      "type": "Expression"
+                    },
+                    "nullValue": {
+                      "value": "@pipeline().parameters.NullValue",
+                      "type": "Expression"
+                    },
+                    "encoding": {
+                      "value": "@pipeline().parameters.Encoding",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "Generic_DatalakeGen2_Parquet_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "dataLakeServiceEndPoint": {
+                      "value": "@pipeline().parameters.TargetServiceEndPoint",
+                      "type": "Expression"
+                    },
+                    "dataLakeFilePath": {
+                      "value": "@pipeline().parameters.TargetFilePath",
+                      "type": "Expression"
+                    },
+                    "dataLakeFileName": {
+                      "value": "@pipeline().parameters.TargetFileName",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "SP - Log the error - Write del to lake -Lake to Lake-NL",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "CD - Write the del file to the lake - Lake to Lake-NL",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Write the file to the lake - Lake to Lake",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@activity('CD - Write the del file to the lake - Lake to Lake-NL').Error.message",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('CD - Write the del file to the lake - Lake to Lake-NL').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  },
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - FileLoadLog - Del Lake to Lake-NL",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "SP - Update FileLoadLog - Del Lake to Lake-NL",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Write the file to the lake - Lake to Lake",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@activity('SP - Update FileLoadLog - Del Lake to Lake-NL').Error.message",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('SP - Update FileLoadLog - Del Lake to Lake-NL').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  },
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Update FileLoadLog - Del Lake to Lake-NL",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "CD - Write the del file to the lake - Lake to Lake-NL",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_FileLoadLog_Update]",
+                "storedProcedureParameters": {
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "TargetFilePath": {
+                    "value": {
+                      "value": "@pipeline().parameters.TargetFilePath",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TargetFileName": {
+                    "value": {
+                      "value": "@pipeline().parameters.TargetFileName",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "SuccessIndicator": {
+                    "value": "0",
+                    "type": "Int32"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "IF - Task type is AFS Delimited File to Lake-NL",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@and(or(equals(toUpper(pipeline().parameters.TaskType), toUpper('Azure File Share to Lake')),equals(toUpper(pipeline().parameters.TaskType), toUpper('Azure File Share to SQL'))),equals(pipeline().parameters.Log,false))",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "CD - Write the del file to the lake - AFS to Lake",
+              "description": "This pipeline is used to copy delimited text files from source into the data lake",
+              "type": "Copy",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "DelimitedTextSource",
+                  "storeSettings": {
+                    "type": "AzureFileStorageReadSettings",
+                    "recursive": true
+                  },
+                  "formatSettings": {
+                    "type": "DelimitedTextReadSettings",
+                    "skipLineCount": {
+                      "value": "@pipeline().parameters.SkipLineCount",
+                      "type": "Expression"
+                    }
+                  }
+                },
+                "sink": {
+                  "type": "ParquetSink",
+                  "storeSettings": {
+                    "type": "AzureBlobFSWriteSettings"
+                  }
+                },
+                "enableStaging": false,
+                "translator": {
+                  "value": "@pipeline().parameters.SchemaMapping",
+                  "type": "Expression"
+                }
+              },
+              "inputs": [
+                {
+                  "referenceName": "Generic_AzureFileShare_Csv_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "storageAccountName": {
+                      "value": "@pipeline().parameters.storageAccountName",
+                      "type": "Expression"
+                    },
+                    "accountKeySecretName": {
+                      "value": "@pipeline().parameters.accountKeySecretName",
+                      "type": "Expression"
+                    },
+                    "fileShare": {
+                      "value": "@pipeline().parameters.fileShare",
+                      "type": "Expression"
+                    },
+                    "filePath": {
+                      "value": "@pipeline().parameters.SourceFilePath",
+                      "type": "Expression"
+                    },
+                    "fileName": {
+                      "value": "@pipeline().parameters.SourceFileName",
+                      "type": "Expression"
+                    },
+                    "compressionType": {
+                      "value": "@pipeline().parameters.CompressionType",
+                      "type": "Expression"
+                    },
+                    "columnDelimiter": {
+                      "value": "@pipeline().parameters.ColumnDelimiter",
+                      "type": "Expression"
+                    },
+                    "rowDelimiter": {
+                      "value": "@pipeline().parameters.RowDelimiter",
+                      "type": "Expression"
+                    },
+                    "escapeCharacter": {
+                      "value": "@pipeline().parameters.EscapeCharacter",
+                      "type": "Expression"
+                    },
+                    "quoteCharacter": {
+                      "value": "@pipeline().parameters.QuoteCharacter",
+                      "type": "Expression"
+                    },
+                    "firstRowAsHeader": {
+                      "value": "@pipeline().parameters.FirstRowAsHeader",
+                      "type": "Expression"
+                    },
+                    "nullValue": {
+                      "value": "@pipeline().parameters.NullValue",
+                      "type": "Expression"
+                    },
+                    "encoding": {
+                      "value": "@pipeline().parameters.Encoding",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "Generic_DatalakeGen2_Parquet_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "dataLakeServiceEndPoint": {
+                      "value": "@pipeline().parameters.TargetServiceEndPoint",
+                      "type": "Expression"
+                    },
+                    "dataLakeFilePath": {
+                      "value": "@pipeline().parameters.TargetFilePath",
+                      "type": "Expression"
+                    },
+                    "dataLakeFileName": {
+                      "value": "@pipeline().parameters.TargetFileName",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "SP - Log the error - Write del to lake - AFS to Lake",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "CD - Write the del file to the lake - AFS to Lake",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Write the file to the lake - AFS to Lake",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@activity('CD - Write the del file to the lake - AFS to Lake').Error.message",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('CD - Write the del file to the lake - AFS to Lake').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  },
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Update FileLoadLog - Del AFS to Lake",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "CD - Write the del file to the lake - AFS to Lake",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_FileLoadLog_Update]",
+                "storedProcedureParameters": {
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "TargetFilePath": {
+                    "value": {
+                      "value": "@pipeline().parameters.TargetFilePath",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TargetFileName": {
+                    "value": {
+                      "value": "@pipeline().parameters.TargetFileName",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "SuccessIndicator": {
+                    "value": "0",
+                    "type": "Int32"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - FileLoadLog - Del AFS to Lake",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "SP - Update FileLoadLog - Del AFS to Lake",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Write the file to the lake - AFS to Lake",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@activity('SP - Update FileLoadLog - Del AFS to Lake').Error.message",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('SP - Update FileLoadLog - Del AFS to Lake').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  },
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "IF - Task type is Blob Delimited File to Lake - NL",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@and(or(equals(toUpper(pipeline().parameters.TaskType), toUpper('Azure Blob File to Lake')),equals(toUpper(pipeline().parameters.TaskType), toUpper('Azure Blob File to SQL'))),equals(pipeline().parameters.Log,false))",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "CD - Write the del file to the lake - Blob to Lake-NL",
+              "type": "Copy",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "DelimitedTextSource",
+                  "storeSettings": {
+                    "type": "AzureBlobStorageReadSettings",
+                    "recursive": true
+                  },
+                  "formatSettings": {
+                    "type": "DelimitedTextReadSettings",
+                    "skipLineCount": {
+                      "value": "@pipeline().parameters.SkipLineCount",
+                      "type": "Expression"
+                    }
+                  }
+                },
+                "sink": {
+                  "type": "ParquetSink",
+                  "storeSettings": {
+                    "type": "AzureBlobFSWriteSettings"
+                  }
+                },
+                "enableStaging": false,
+                "translator": {
+                  "value": "@pipeline().parameters.SchemaMapping",
+                  "type": "Expression"
+                }
+              },
+              "inputs": [
+                {
+                  "referenceName": "Generic_Blob_Csv_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "serviceEndPoint": {
+                      "value": "@pipeline().parameters.SourceServiceEndPoint",
+                      "type": "Expression"
+                    },
+                    "filePath": {
+                      "value": "@pipeline().parameters.SourceFilePath",
+                      "type": "Expression"
+                    },
+                    "fileName": {
+                      "value": "@pipeline().parameters.SourceFileName",
+                      "type": "Expression"
+                    },
+                    "compressionType": {
+                      "value": "@pipeline().parameters.CompressionType",
+                      "type": "Expression"
+                    },
+                    "columnDelimiter": {
+                      "value": "@pipeline().parameters.ColumnDelimiter",
+                      "type": "Expression"
+                    },
+                    "rowDelimiter": {
+                      "value": "@pipeline().parameters.RowDelimiter",
+                      "type": "Expression"
+                    },
+                    "escapeCharacter": {
+                      "value": "@pipeline().parameters.EscapeCharacter",
+                      "type": "Expression"
+                    },
+                    "quoteCharacter": {
+                      "value": "@pipeline().parameters.QuoteCharacter",
+                      "type": "Expression"
+                    },
+                    "firstRowAsHeader": {
+                      "value": "@pipeline().parameters.FirstRowAsHeader",
+                      "type": "Expression"
+                    },
+                    "nullValue": {
+                      "value": "@pipeline().parameters.NullValue",
+                      "type": "Expression"
+                    },
+                    "encoding": {
+                      "value": "@pipeline().parameters.Encoding",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "Generic_DatalakeGen2_Parquet_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "dataLakeServiceEndPoint": {
+                      "value": "@pipeline().parameters.TargetServiceEndPoint",
+                      "type": "Expression"
+                    },
+                    "dataLakeFilePath": {
+                      "value": "@pipeline().parameters.TargetFilePath",
+                      "type": "Expression"
+                    },
+                    "dataLakeFileName": {
+                      "value": "@pipeline().parameters.TargetFileName",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "SP - Log the error - Write del to lake -Blob to Lake-NL",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "CD - Write the del file to the lake - Blob to Lake-NL",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Write the file to the lake - Blob to Lake",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@activity('CD - Write the del file to the lake - Blob to Lake-NL').Error.message",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('CD - Write the del file to the lake - Blob to Lake-NL').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  },
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - FileLoadLog - Del Blob to Lake-NL",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "SP - Update FileLoadLog - Del Blob to Lake-NL",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Write the file to the lake - Lake to Lake",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@activity('SP - Update FileLoadLog - Del Blob to Lake-NL').Error.message",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('SP - Update FileLoadLog - Del Blob to Lake-NL').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  },
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Update FileLoadLog - Del Blob to Lake-NL",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "CD - Write the del file to the lake - Blob to Lake-NL",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_FileLoadLog_Update]",
+                "storedProcedureParameters": {
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "TargetFilePath": {
+                    "value": {
+                      "value": "@pipeline().parameters.TargetFilePath",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TargetFileName": {
+                    "value": {
+                      "value": "@pipeline().parameters.TargetFileName",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "SuccessIndicator": {
+                    "value": "0",
+                    "type": "Int32"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "IF - Task type is FileSys Delimited File to Lake - NL",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@and(or(equals(toUpper(pipeline().parameters.TaskType), toUpper('File System File to Lake')),equals(toUpper(pipeline().parameters.TaskType), toUpper('File System File to SQL'))),equals(pipeline().parameters.Log,false))",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "CD - Write the del file to the lake -FileSys to Lake-NL",
+              "type": "Copy",
+              "dependsOn": [
+                {
+                  "activity": "FN - Get file system password delimited-NL",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": true
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "DelimitedTextSource",
+                  "storeSettings": {
+                    "type": "FileServerReadSettings",
+                    "recursive": true
+                  },
+                  "formatSettings": {
+                    "type": "DelimitedTextReadSettings",
+                    "skipLineCount": {
+                      "value": "@pipeline().parameters.SkipLineCount",
+                      "type": "Expression"
+                    }
+                  }
+                },
+                "sink": {
+                  "type": "ParquetSink",
+                  "storeSettings": {
+                    "type": "AzureBlobFSWriteSettings"
+                  }
+                },
+                "enableStaging": false,
+                "translator": {
+                  "value": "@pipeline().parameters.SchemaMapping",
+                  "type": "Expression"
+                }
+              },
+              "inputs": [
+                {
+                  "referenceName": "Generic_Local_Csv",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "host": {
+                      "value": "@pipeline().parameters.Host",
+                      "type": "Expression"
+                    },
+                    "filePath": {
+                      "value": "@pipeline().parameters.SourceFilePath",
+                      "type": "Expression"
+                    },
+                    "fileName": {
+                      "value": "@pipeline().parameters.SourceFileName",
+                      "type": "Expression"
+                    },
+                    "compressionType": {
+                      "value": "@pipeline().parameters.CompressionType",
+                      "type": "Expression"
+                    },
+                    "columnDelimiter": {
+                      "value": "@pipeline().parameters.ColumnDelimiter",
+                      "type": "Expression"
+                    },
+                    "rowDelimiter": {
+                      "value": "@pipeline().parameters.RowDelimiter",
+                      "type": "Expression"
+                    },
+                    "escapeCharacter": {
+                      "value": "@pipeline().parameters.EscapeCharacter",
+                      "type": "Expression"
+                    },
+                    "quoteCharacter": {
+                      "value": "@pipeline().parameters.QuoteCharacter",
+                      "type": "Expression"
+                    },
+                    "firstRowAsHeader": {
+                      "value": "@pipeline().parameters.FirstRowAsHeader",
+                      "type": "Expression"
+                    },
+                    "nullValue": {
+                      "value": "@pipeline().parameters.NullValue",
+                      "type": "Expression"
+                    },
+                    "encoding": {
+                      "value": "@pipeline().parameters.Encoding",
+                      "type": "Expression"
+                    },
+                    "userid": {
+                      "value": "@activity('FN - Get file system username delimited-NL').output.Response",
+                      "type": "Expression"
+                    },
+                    "password": {
+                      "value": "@activity('FN - Get file system password delimited-NL').output.Response",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "Generic_DatalakeGen2_Parquet_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "dataLakeServiceEndPoint": {
+                      "value": "@pipeline().parameters.TargetServiceEndPoint",
+                      "type": "Expression"
+                    },
+                    "dataLakeFilePath": {
+                      "value": "@pipeline().parameters.TargetFilePath",
+                      "type": "Expression"
+                    },
+                    "dataLakeFileName": {
+                      "value": "@pipeline().parameters.TargetFileName",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "SP - Log the error-Write del to lake-FileSys to Lake-NL",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "CD - Write the del file to the lake -FileSys to Lake-NL",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Write the file to the lake - Blob to Lake",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@activity('CD - Write the del file to the lake -FileSys to Lake-NL').Error.message",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('CD - Write the del file to the lake -FileSys to Lake-NL').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  },
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "FN - Get file system password delimited-NL",
+              "type": "AzureFunctionActivity",
+              "dependsOn": [
+                {
+                  "activity": "FN - Get file system username delimited-NL",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": true,
+                "secureInput": true
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "functionName": "GetKeyVaultSecret",
+                "method": "POST",
+                "body": {
+                  "keyvaultName": "@pipeline().parameters.KeyVaultName",
+                  "secretName": "onPremisesPassword"
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureFunction",
+                "type": "LinkedServiceReference"
+              }
+            },
+            {
+              "name": "SP-Log the error-Get file system password delimited-NL",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "FN - Get file system password delimited-NL",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "FN - Get file system password delimited",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('FN - Get file system password delimited-NL').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('FN - Get file system password delimited-NL').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  },
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "FN - Get file system username delimited-NL",
+              "type": "AzureFunctionActivity",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": true,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "functionName": "GetKeyVaultSecret",
+                "method": "POST",
+                "body": {
+                  "keyvaultName": "@pipeline().parameters.KeyVaultName",
+                  "secretName": "onPremisesUserName"
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureFunction",
+                "type": "LinkedServiceReference"
+              }
+            },
+            {
+              "name": "SP - Log the error - Get file system username del-NL",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "FN - Get file system username delimited-NL",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "FN - Get file system username delimited",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('FN - Get file system username delimited-NL').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('FN - Get file system username delimited-NL').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  },
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - FileLoadLog-Del FileSys to Lake-NL",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "SP - Update FileLoadLog - Del FileSys to Lake-NL",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Write the file to the lake - Lake to Lake",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@activity('SP - Update FileLoadLog - Del FileSys to Lake-NL').Error.message",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('SP - Update FileLoadLog - Del FileSys to Lake-NL').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  },
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Update FileLoadLog - Del FileSys to Lake-NL",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "CD - Write the del file to the lake -FileSys to Lake-NL",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_FileLoadLog_Update]",
+                "storedProcedureParameters": {
+                  "FileLoadLogID": {
+                    "value": {
+                      "value": "@pipeline().parameters.FileLoadLogID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "TargetFilePath": {
+                    "value": {
+                      "value": "@pipeline().parameters.TargetFilePath",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TargetFileName": {
+                    "value": {
+                      "value": "@pipeline().parameters.TargetFileName",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "SuccessIndicator": {
+                    "value": "0",
+                    "type": "Int32"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "parameters": {
+      "TaskType": {
+        "type": "string"
+      },
+      "SourceConnectionSecret": {
+        "type": "string"
+      },
+      "TaskInstanceID": {
+        "type": "string"
+      },
+      "SourceServiceEndPoint": {
+        "type": "string"
+      },
+      "SourceFilePath": {
+        "type": "string"
+      },
+      "SourceFileName": {
+        "type": "string"
+      },
+      "TargetServiceEndPoint": {
+        "type": "string"
+      },
+      "TargetFilePath": {
+        "type": "string"
+      },
+      "TargetFileName": {
+        "type": "string"
+      },
+      "SchemaMapping": {
+        "type": "object"
+      },
+      "CompressionType": {
+        "type": "string"
+      },
+      "ColumnDelimiter": {
+        "type": "string"
+      },
+      "RowDelimiter": {
+        "type": "string"
+      },
+      "EscapeCharacter": {
+        "type": "string"
+      },
+      "QuoteCharacter": {
+        "type": "string"
+      },
+      "FirstRowAsHeader": {
+        "type": "bool"
+      },
+      "NullValue": {
+        "type": "string"
+      },
+      "SkipLineCount": {
+        "type": "int"
+      },
+      "Encoding": {
+        "type": "string"
+      },
+      "Host": {
+        "type": "string"
+      },
+      "SourceFileFormat": {
+        "type": "string"
+      },
+      "KeyVaultName": {
+        "type": "string"
+      },
+      "TaskConfig": {
+        "type": "object"
+      },
+      "CallingPipeline": {
+        "type": "string"
+      },
+      "UseDeltaLakeIndicator": {
+        "type": "string"
+      },
+      "FileLoadLogID": {
+        "type": "int"
+      },
+      "Log": {
+        "type": "bool"
+      },
+      "storageAccountName": {
+        "type": "string"
+      },
+      "accountKeySecretName": {
+        "type": "string"
+      },
+      "fileShare": {
+        "type": "string"
+      }
+    },
+    "folder": {
+      "name": "ETL/File Load/Generic File to Lake"
+    },
+    "annotations": []
+  },
+  "type": "Microsoft.DataFactory/factories/pipelines"
+}

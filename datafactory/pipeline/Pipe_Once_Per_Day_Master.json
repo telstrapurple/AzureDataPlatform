@@ -1,0 +1,294 @@
+{
+  "name": "Pipe_Once_Per_Day_Master",
+  "properties": {
+    "description": "This pipeline will run once a day and will scale SQL and the ADF VM's, get the config and run all the daily systems",
+    "activities": [
+      {
+        "name": "EP - Get all the config",
+        "type": "ExecutePipeline",
+        "dependsOn": [
+          {
+            "activity": "WT - Wait 5 minutes so VM runtimes are available",
+            "dependencyConditions": ["Succeeded"]
+          },
+          {
+            "activity": "EP - Scale SQL Up",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "Pipe_Config_Master",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true
+        }
+      },
+      {
+        "name": "EP - Scale SQL Up",
+        "type": "ExecutePipeline",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "Pipe_Generic_Scale_Azure_SQL",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true,
+          "parameters": {
+            "ResourceGroupName": {
+              "value": "@pipeline().parameters.DataResourceGroupName",
+              "type": "Expression"
+            },
+            "SQLServerName": {
+              "value": "@pipeline().parameters.SQLServerName",
+              "type": "Expression"
+            },
+            "DatabaseList": {
+              "value": "@pipeline().parameters.DatabaseList",
+              "type": "Expression"
+            },
+            "Edition": {
+              "value": "@pipeline().parameters.DatabaseEdition",
+              "type": "Expression"
+            },
+            "ServiceObjectiveName": {
+              "value": "@pipeline().parameters.ServiceObjectiveName",
+              "type": "Expression"
+            }
+          }
+        }
+      },
+      {
+        "name": "EP - Scale ADF VMs up",
+        "type": "ExecutePipeline",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "Pipe_Generic_Scale_Azure_VM",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true,
+          "parameters": {
+            "ResourceGroupName": {
+              "value": "@pipeline().parameters.AdminResourceGroupName",
+              "type": "Expression"
+            },
+            "VMList": {
+              "value": "@pipeline().parameters.VMList",
+              "type": "Expression"
+            },
+            "VMSize": {
+              "value": "@pipeline().parameters.VMSize",
+              "type": "Expression"
+            }
+          }
+        }
+      },
+      {
+        "name": "WT - Wait 5 minutes so VM runtimes are available",
+        "type": "Wait",
+        "dependsOn": [
+          {
+            "activity": "EP - Scale ADF VMs up",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "waitTimeInSeconds": 300
+        }
+      },
+      {
+        "name": "EP - Master Once a Day Load",
+        "type": "ExecutePipeline",
+        "dependsOn": [
+          {
+            "activity": "EP - Get all the config",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "Pipe_Master_Generic_Schedule_Load",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true,
+          "parameters": {
+            "Schedule": "Once a day"
+          }
+        }
+      },
+      {
+        "name": "EP - Scale SQL Down",
+        "type": "ExecutePipeline",
+        "dependsOn": [
+          {
+            "activity": "EP - Master Once a Day Load",
+            "dependencyConditions": ["Completed"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "Pipe_Generic_Scale_Azure_SQL",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true,
+          "parameters": {
+            "ResourceGroupName": {
+              "value": "@pipeline().parameters.DataResourceGroupName",
+              "type": "Expression"
+            },
+            "SQLServerName": {
+              "value": "@pipeline().parameters.SQLServerName",
+              "type": "Expression"
+            },
+            "DatabaseList": {
+              "value": "@pipeline().parameters.DatabaseList",
+              "type": "Expression"
+            },
+            "Edition": {
+              "value": "@pipeline().parameters.DatabaseEdition",
+              "type": "Expression"
+            },
+            "ServiceObjectiveName": "HS_Gen5_6"
+          }
+        }
+      },
+      {
+        "name": "EP - Scale ADF VMs down",
+        "type": "ExecutePipeline",
+        "dependsOn": [
+          {
+            "activity": "EP - Master Once a Day Load",
+            "dependencyConditions": ["Completed"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "Pipe_Generic_Scale_Azure_VM",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true,
+          "parameters": {
+            "ResourceGroupName": {
+              "value": "@pipeline().parameters.AdminResourceGroupName",
+              "type": "Expression"
+            },
+            "VMList": {
+              "value": "@pipeline().parameters.VMList",
+              "type": "Expression"
+            },
+            "VMSize": "Standard_D4s_v3"
+          }
+        }
+      },
+      {
+        "name": "EP - Scale SQL Down - Config Error",
+        "type": "ExecutePipeline",
+        "dependsOn": [
+          {
+            "activity": "EP - Get all the config",
+            "dependencyConditions": ["Failed"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "Pipe_Generic_Scale_Azure_SQL",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true,
+          "parameters": {
+            "ResourceGroupName": {
+              "value": "@pipeline().parameters.DataResourceGroupName",
+              "type": "Expression"
+            },
+            "SQLServerName": {
+              "value": "@pipeline().parameters.SQLServerName",
+              "type": "Expression"
+            },
+            "DatabaseList": {
+              "value": "@pipeline().parameters.DatabaseList",
+              "type": "Expression"
+            },
+            "Edition": {
+              "value": "@pipeline().parameters.DatabaseEdition",
+              "type": "Expression"
+            },
+            "ServiceObjectiveName": "HS_Gen5_6"
+          }
+        }
+      },
+      {
+        "name": "EP - Scale ADF VMs down - Config Error",
+        "type": "ExecutePipeline",
+        "dependsOn": [
+          {
+            "activity": "EP - Get all the config",
+            "dependencyConditions": ["Failed"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "Pipe_Generic_Scale_Azure_VM",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true,
+          "parameters": {
+            "ResourceGroupName": {
+              "value": "@pipeline().parameters.AdminResourceGroupName",
+              "type": "Expression"
+            },
+            "VMList": {
+              "value": "@pipeline().parameters.VMList",
+              "type": "Expression"
+            },
+            "VMSize": "Standard_D4s_v3"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "AdminResourceGroupName": {
+        "type": "string"
+      },
+      "VMList": {
+        "type": "string"
+      },
+      "VMSize": {
+        "type": "string",
+        "defaultValue": "Standard_D4s_v3"
+      },
+      "SQLServerName": {
+        "type": "string"
+      },
+      "DatabaseList": {
+        "type": "string",
+        "defaultValue": "ADP_Stage"
+      },
+      "DatabaseEdition": {
+        "type": "string",
+        "defaultValue": "Hyperscale"
+      },
+      "ServiceObjectiveName": {
+        "type": "string",
+        "defaultValue": "HS_Gen5_4"
+      },
+      "DataResourceGroupName": {
+        "type": "string"
+      }
+    },
+    "folder": {
+      "name": "Master Pipelines"
+    },
+    "annotations": []
+  },
+  "type": "Microsoft.DataFactory/factories/pipelines"
+}

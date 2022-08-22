@@ -1,0 +1,74 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    "vmNamePrefix": {
+      "value": "tpsyddevadpvm"
+    },
+    "vmCount": {
+      "value": 2
+    },
+    "adfIntegrationRuntimeKey": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourceGroups/TP-SYD-DEV-ADP-ARG-Data/providers/Microsoft.DataFactory/factories/TP-SYD-DEV-ADP-ADF-001/integrationruntimes/IR-ADP"
+    },
+    "subnetResourceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Network/providers/Microsoft.Network/virtualNetworks/TP-SYD-DEV-ADP-VNT-10.23.0.0/subnets/VirtualMachines"
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.operationalinsights/workspaces/tp-syd-dev-adp-law-001"
+    },
+    "diagnosticsStorageAccountId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.storage/storageAccount/tpsyddevadpsta001"
+    },
+    "diagnosticsRetentionInDays": {
+      "value": 30
+    },
+    "diskType": {
+      "value": "Standard_LRS"
+    },
+    "adminUsername": {
+      "value": "WCWA_AzureAdmin"
+    },
+    "adminPassword": {
+      "value": ""
+    },
+    "OSType": {
+      "value": "Windows"
+    },
+    "OSPublisher": {
+      "value": "MicrosoftWindowsServer"
+    },
+    "OSOffer": {
+      "value": "WindowsServer"
+    },
+    "OSVersion": {
+      "value": "2019-Datacenter"
+    },
+    "availabilitySetName": {
+      "value": "TP-SYD-DEV-ADP-AVS-001"
+    },
+    "vmSize": {
+      "value": "Standard_D1_v2"
+    },
+    "timeZone": {
+      "value": "W. Australia Standard Time"
+    },
+    "scriptBlobContainer": {
+      "value": "string"
+    },
+    "scriptBlobSASToken": {
+      "value": "string"
+    },
+    "scriptName": {
+      "value": "string"
+    }
+  }
+}

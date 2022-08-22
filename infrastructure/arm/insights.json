@@ -1,0 +1,117 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    }
+  },
+  "variables": {
+    "activityLogName": "ActivityLog"
+  },
+  "resources": [
+    {
+      "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "tags": "[parameters('tagObject')]",
+      "apiVersion": "2017-05-01-preview",
+      "name": "[variables('ActivityLogName')]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+        "logs": [
+          {
+            "category": "Administrative",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "Security",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "ServiceHealth",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "Alert",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "Recommendation",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "Policy",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "Autoscale",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          },
+          {
+            "category": "ResourceHealth",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('diagnosticsRetentionInDays')]"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {}
+}

@@ -1,0 +1,10 @@
+﻿CREATE TABLE [pbi].[Dashboards] (
+    [Id]                    VARCHAR (50) NOT NULL,
+    [Name]                  NVARCHAR (MAX)   NULL,
+	[IsReadOnly]			VARCHAR (30)   NULL,
+	[EmbedUrl]				VARCHAR (MAX)   NULL,
+	ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START NOT NULL,
+	ValidTo DATETIME2 GENERATED ALWAYS AS ROW END NOT NULL,
+	PERIOD FOR SYSTEM_TIME (ValidFrom,ValidTo),
+	CONSTRAINT [PK_PBI_Dashboards] PRIMARY KEY CLUSTERED ([Id] ASC)
+) WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = pbi.Dashboards_History));

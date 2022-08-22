@@ -1,0 +1,1053 @@
+{
+  "name": "Pipe_Generic_ODBC_Load_Run",
+  "properties": {
+    "description": "This is the generic pipeline to copy files from source through Data Lake to SQL staging",
+    "activities": [
+      {
+        "name": "FLT - Get the Source config",
+        "type": "Filter",
+        "dependsOn": [
+          {
+            "activity": "SP - Log the start of the extract",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('LKP - Get the task instance config').output.value",
+            "type": "Expression"
+          },
+          "condition": {
+            "value": "@equals(item().ConnectionStage, 'Source')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "FLT - Get the ETL config",
+        "type": "Filter",
+        "dependsOn": [
+          {
+            "activity": "SP - Log the start of the extract",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('LKP - Get the task instance config').output.value",
+            "type": "Expression"
+          },
+          "condition": {
+            "value": "@equals(item().ConnectionStage, 'ETL')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "FLT - Get the Staging config",
+        "type": "Filter",
+        "dependsOn": [
+          {
+            "activity": "SP - Log the start of the extract",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('LKP - Get the task instance config').output.value",
+            "type": "Expression"
+          },
+          "condition": {
+            "value": "@equals(item().ConnectionStage, 'Staging')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "FLT - Get the Target config",
+        "type": "Filter",
+        "dependsOn": [
+          {
+            "activity": "SP - Log the start of the extract",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('LKP - Get the task instance config').output.value",
+            "type": "Expression"
+          },
+          "condition": {
+            "value": "@equals(item().ConnectionStage, 'Target')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "LKP - Get the task instance config",
+        "type": "Lookup",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "AzureSqlSource",
+            "sqlReaderStoredProcedureName": "[DI].[usp_TaskInstanceConfig_Get]",
+            "storedProcedureParameters": {
+              "TaskInstanceID": {
+                "type": "Int64",
+                "value": {
+                  "value": "@pipeline().parameters.TaskInstanceID",
+                  "type": "Expression"
+                }
+              }
+            }
+          },
+          "dataset": {
+            "referenceName": "Generic_AzureSQL",
+            "type": "DatasetReference",
+            "parameters": {
+              "secretName": "sqlDatabaseConnectionStringConfig"
+            }
+          },
+          "firstRowOnly": false
+        }
+      },
+      {
+        "name": "SP - Log the start of the extract",
+        "type": "SqlServerStoredProcedure",
+        "dependsOn": [
+          {
+            "activity": "LKP - Get the task instance config",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+          "storedProcedureParameters": {
+            "ActivityName": {
+              "value": "",
+              "type": "String"
+            },
+            "DataFactoryName": {
+              "value": {
+                "value": "@{pipeline().DataFactory}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "ErrorMessage": {
+              "value": null,
+              "type": "String"
+            },
+            "OutputMessage": {
+              "value": {
+                "value": "@{activity('LKP - Get the task instance config').output.value}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineName": {
+              "value": {
+                "value": "@{pipeline().Pipeline}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineRunID": {
+              "value": {
+                "value": "@{pipeline().RunId}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerID": {
+              "value": {
+                "value": "@{pipeline().TriggerId}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerName": {
+              "value": {
+                "value": "@{pipeline().TriggerName}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerTime": {
+              "value": {
+                "value": "@{pipeline().TriggerTime}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerType": {
+              "value": {
+                "value": "@{pipeline().TriggerType}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "TaskInstanceID": {
+              "value": {
+                "value": "@pipeline().parameters.TaskInstanceID",
+                "type": "Expression"
+              },
+              "type": "Int64"
+            },
+            "LogType": {
+              "value": "Start",
+              "type": "String"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "AzureSQL",
+          "type": "LinkedServiceReference",
+          "parameters": {
+            "secretName": "sqlDatabaseConnectionStringConfig"
+          }
+        }
+      },
+      {
+        "name": "IF - Load to Lake or Database",
+        "type": "IfCondition",
+        "dependsOn": [
+          {
+            "activity": "LKP - Get the generic config values",
+            "dependencyConditions": ["Succeeded"]
+          },
+          {
+            "activity": "FLT - Get the Source config",
+            "dependencyConditions": ["Succeeded"]
+          },
+          {
+            "activity": "FLT - Get the ETL config",
+            "dependencyConditions": ["Succeeded"]
+          },
+          {
+            "activity": "FLT - Get the Staging config",
+            "dependencyConditions": ["Succeeded"]
+          },
+          {
+            "activity": "FLT - Get the Target config",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@contains(toUpper(pipeline().parameters.TaskType),'TO LAKE')",
+            "type": "Expression"
+          },
+          "ifFalseActivities": [
+            {
+              "name": "EP - ODBC to Target Database",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_ODBC_To_Target_Database",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TargetConfig": {
+                    "value": "@activity('FLT - Get the Target config').output",
+                    "type": "Expression"
+                  },
+                  "StagingConfig": {
+                    "value": "@activity('FLT - Get the Staging config').output",
+                    "type": "Expression"
+                  },
+                  "SourceConfig": {
+                    "value": "@activity('FLT - Get the Source config').output",
+                    "type": "Expression"
+                  },
+                  "ETLConfig": {
+                    "value": "@activity('FLT - Get the ETL config').output",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@activity('LKP - Get the task instance config').output",
+                    "type": "Expression"
+                  },
+                  "GenericConfig": {
+                    "value": "@activity('LKP - Get the generic config values').output",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "EP - ODBC to Target Database Log - Success",
+              "type": "ExecutePipeline",
+              "dependsOn": [
+                {
+                  "activity": "EP - ODBC to Target Database",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_ODBC_To_Target_Incremental_Load_Log",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TargetConfig": {
+                    "value": "@activity('FLT - Get the Target config').output",
+                    "type": "Expression"
+                  },
+                  "SuccessIndicator": true,
+                  "StagingConfig": {
+                    "value": "@activity('FLT - Get the Staging config').output",
+                    "type": "Expression"
+                  },
+                  "ETLConfig": {
+                    "value": "@activity('FLT - Get the ETL config').output",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "EP - ODBC to Target Database Log - Failure",
+              "type": "ExecutePipeline",
+              "dependsOn": [
+                {
+                  "activity": "EP - ODBC to Target Database",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_ODBC_To_Target_Incremental_Load_Log",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TargetConfig": {
+                    "value": "@activity('FLT - Get the Target config').output",
+                    "type": "Expression"
+                  },
+                  "SuccessIndicator": false,
+                  "StagingConfig": {
+                    "value": "@activity('FLT - Get the Staging config').output",
+                    "type": "Expression"
+                  },
+                  "ETLConfig": {
+                    "value": "@activity('FLT - Get the ETL config').output",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "SP - Log the end of the data extract",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "EP - ODBC to Target Database Log - Success",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": null,
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('LKP - Get the task instance config').output.value}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "End",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ],
+          "ifTrueActivities": [
+            {
+              "name": "EP - ODBC to Target Lake Master",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_ODBC_To_Target_Lake",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TargetConfig": {
+                    "value": "@activity('FLT - Get the Target config').output",
+                    "type": "Expression"
+                  },
+                  "SourceConfig": {
+                    "value": "@activity('FLT - Get the Source config').output",
+                    "type": "Expression"
+                  },
+                  "TaskType": {
+                    "value": "@pipeline().parameters.TaskType",
+                    "type": "Expression"
+                  },
+                  "TaskConfig": {
+                    "value": "@activity('LKP - Get the task instance config').output",
+                    "type": "Expression"
+                  },
+                  "ETLConfig": {
+                    "value": "@activity('FLT - Get the ETL config').output",
+                    "type": "Expression"
+                  },
+                  "GenericConfig": {
+                    "value": "@activity('LKP - Get the generic config values').output",
+                    "type": "Expression"
+                  },
+                  "StagingConfig": {
+                    "value": "@activity('FLT - Get the Staging config').output",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "EP - ODBC to Target Lake log - Success",
+              "type": "ExecutePipeline",
+              "dependsOn": [
+                {
+                  "activity": "EP - ODBC to Target Lake Master",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_ODBC_To_Target_Incremental_Load_Log",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TargetConfig": {
+                    "value": "@activity('FLT - Get the Target config').output",
+                    "type": "Expression"
+                  },
+                  "SuccessIndicator": true,
+                  "StagingConfig": {
+                    "value": "@activity('FLT - Get the Staging config').output",
+                    "type": "Expression"
+                  },
+                  "ETLConfig": {
+                    "value": "@activity('FLT - Get the ETL config').output",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "EP - ODBC to Target Lake log - Failure",
+              "type": "ExecutePipeline",
+              "dependsOn": [
+                {
+                  "activity": "EP - ODBC to Target Lake Master",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_ODBC_To_Target_Incremental_Load_Log",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "TaskID": {
+                    "value": "@pipeline().parameters.TaskID",
+                    "type": "Expression"
+                  },
+                  "TaskInstanceID": {
+                    "value": "@pipeline().parameters.TaskInstanceID",
+                    "type": "Expression"
+                  },
+                  "TargetConfig": {
+                    "value": "@activity('FLT - Get the Target config').output",
+                    "type": "Expression"
+                  },
+                  "SuccessIndicator": false,
+                  "StagingConfig": {
+                    "value": "@activity('FLT - Get the Staging config').output",
+                    "type": "Expression"
+                  },
+                  "ETLConfig": {
+                    "value": "@activity('FLT - Get the ETL config').output",
+                    "type": "Expression"
+                  }
+                }
+              }
+            },
+            {
+              "name": "SP - Log the end of the data extract - Lake",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "EP - ODBC to Target Lake log - Success",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": null,
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('LKP - Get the task instance config').output.value}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "End",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "LKP - Get the generic config values",
+        "type": "Lookup",
+        "dependsOn": [
+          {
+            "activity": "SP - Log the start of the extract",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "AzureSqlSource",
+            "sqlReaderStoredProcedureName": "[DI].[usp_GenericConfig_Get]"
+          },
+          "dataset": {
+            "referenceName": "Generic_AzureSQL",
+            "type": "DatasetReference",
+            "parameters": {
+              "secretName": "sqlDatabaseConnectionStringConfig"
+            }
+          },
+          "firstRowOnly": true
+        }
+      },
+      {
+        "name": "SP - Log the error - Get Config values",
+        "type": "SqlServerStoredProcedure",
+        "dependsOn": [
+          {
+            "activity": "LKP - Get the generic config values",
+            "dependencyConditions": ["Failed"]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+          "storedProcedureParameters": {
+            "ActivityName": {
+              "value": "LKP - Get the generic config values",
+              "type": "String"
+            },
+            "DataFactoryName": {
+              "value": {
+                "value": "@{pipeline().DataFactory}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "ErrorMessage": {
+              "value": {
+                "value": "@{activity('LKP - Get the generic config values').error.message}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "OutputMessage": {
+              "value": {
+                "value": "@{activity('LKP - Get the generic config values').output}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineName": {
+              "value": {
+                "value": "@{pipeline().Pipeline}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineRunID": {
+              "value": {
+                "value": "@{pipeline().RunId}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerID": {
+              "value": {
+                "value": "@{pipeline().TriggerId}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerName": {
+              "value": {
+                "value": "@{pipeline().TriggerName}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerTime": {
+              "value": {
+                "value": "@{pipeline().TriggerTime}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerType": {
+              "value": {
+                "value": "@{pipeline().TriggerType}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "TaskInstanceID": {
+              "value": {
+                "value": "@pipeline().parameters.TaskInstanceID",
+                "type": "Expression"
+              },
+              "type": "Int64"
+            },
+            "LogType": {
+              "value": "Error",
+              "type": "String"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "AzureSQL",
+          "type": "LinkedServiceReference",
+          "parameters": {
+            "secretName": "sqlDatabaseConnectionStringConfig"
+          }
+        }
+      },
+      {
+        "name": "SP - Log the error - Get the task instance config",
+        "type": "SqlServerStoredProcedure",
+        "dependsOn": [
+          {
+            "activity": "LKP - Get the task instance config",
+            "dependencyConditions": ["Failed"]
+          }
+        ],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+          "storedProcedureParameters": {
+            "ActivityName": {
+              "value": "LKP - Get the generic config values",
+              "type": "String"
+            },
+            "DataFactoryName": {
+              "value": {
+                "value": "@{pipeline().DataFactory}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "ErrorMessage": {
+              "value": {
+                "value": "@{activity('LKP - Get the task instance config').error.message}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "OutputMessage": {
+              "value": {
+                "value": "@{activity('LKP - Get the task instance config').output}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineName": {
+              "value": {
+                "value": "@{pipeline().Pipeline}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineRunID": {
+              "value": {
+                "value": "@{pipeline().RunId}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerID": {
+              "value": {
+                "value": "@{pipeline().TriggerId}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerName": {
+              "value": {
+                "value": "@{pipeline().TriggerName}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerTime": {
+              "value": {
+                "value": "@{pipeline().TriggerTime}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "PipelineTriggerType": {
+              "value": {
+                "value": "@{pipeline().TriggerType}",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "TaskInstanceID": {
+              "value": {
+                "value": "@pipeline().parameters.TaskInstanceID",
+                "type": "Expression"
+              },
+              "type": "Int64"
+            },
+            "LogType": {
+              "value": "Error",
+              "type": "String"
+            }
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "AzureSQL",
+          "type": "LinkedServiceReference",
+          "parameters": {
+            "secretName": "sqlDatabaseConnectionStringConfig"
+          }
+        }
+      },
+      {
+        "name": "IF - Check for ACL permissions",
+        "type": "IfCondition",
+        "dependsOn": [
+          {
+            "activity": "IF - Load to Lake or Database",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@greater(length(activity('FLT - Get the Staging config').output.value[0].ACLPermissions), 0)",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "EP - Apply data lake ACLs",
+              "type": "ExecutePipeline",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "pipeline": {
+                  "referenceName": "Pipe_Generic_Lake_ACL",
+                  "type": "PipelineReference"
+                },
+                "waitOnCompletion": true,
+                "parameters": {
+                  "StagingConfig": {
+                    "value": "@activity('FLT - Get the Staging config').output",
+                    "type": "Expression"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "parameters": {
+      "System": {
+        "type": "string",
+        "defaultValue": "ODBC Access"
+      },
+      "TaskType": {
+        "type": "string",
+        "defaultValue": "ODBC to Lake"
+      },
+      "TaskInstanceID": {
+        "type": "int"
+      },
+      "TaskID": {
+        "type": "int"
+      }
+    },
+    "folder": {
+      "name": "ETL/ODBC Load"
+    },
+    "annotations": []
+  },
+  "type": "Microsoft.DataFactory/factories/pipelines"
+}

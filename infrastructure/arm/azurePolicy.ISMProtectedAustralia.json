@@ -1,0 +1,815 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Specific params
+    "subscriptionId": {
+      "type": "string"
+    },
+    "notScopes": {
+      "type": "array"
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string"
+    },
+    "azureLocation": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "policyAssignments": [
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Audit virtual machines without disaster recovery configured",
+        "description": "Audit virtual machines which do not have disaster recovery configured. To learn more about disaster recovery, visit https://aka.ms/asr-doc.",
+        "policyDefinitionReferenceId": "auditVirtualMachinesWithoutDisasterRecoveryConfigured",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/0015ea4d-51ff-4ce3-8d8c-f3f8f0179a56",
+        "parameters": {}
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Vulnerability Assessment settings for SQL server should contain an email address to receive reports",
+        "description": "Enable or disable the monitoring of Vulnerability Assessment settings for SQL server should contain an email address to receive scan reports",
+        "policyDefinitionReferenceId": "vulnerabilityAssessmentEmailSettingForReceivingScanReports",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/057d6cfe-9c4f-4a6d-bc60-14420ea1f1a9",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Adaptive Network Hardening recommendations should be applied on internet facing virtual machines",
+        "description": "Enable or disable the monitoring of Internet-facing virtual machines for Network Security Group traffic hardening recommendations",
+        "policyDefinitionReferenceId": "adaptiveNetworkHardeningsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/08e6af2d-db70-460a-bfe9-d5bd474ba9d6",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: There should be more than one owner assigned to your subscription",
+        "description": "Enable or disable the monitoring of minimum owners in subscription",
+        "policyDefinitionReferenceId": "identityDesignateMoreThanOneOwnerMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/09024ccc-0c5f-475e-9457-b7c0d9ed487b",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Disk encryption should be applied on virtual machines",
+        "description": "Enable or disable the monitoring for VM disk encryption",
+        "policyDefinitionReferenceId": "diskEncryptionMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/0961003e-5a0a-4549-abde-af6a37f2724d",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Remote debugging should be turned off for Function App",
+        "description": "Enable or disable the monitoring of remote debugging for Function App",
+        "policyDefinitionReferenceId": "functionAppDisableRemoteDebuggingMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/0e60b895-3786-45da-8377-9c6b4b6ac5f9",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Audit Windows machines that have the specified members in the Administrators group",
+        "description": "Requires that prerequisites are deployed to the policy assignment scope. For details, visit https://aka.ms/gcpol. Machines are non-compliant if the local Administrators group contains one or more of the members listed in the policy parameter.",
+        "policyDefinitionReferenceId": "AdministratorsGroupMembersToExclude",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/69bf4abd-ca1e-4cf6-8b5a-762d42e61d4f",
+        "parameters": {
+          "IncludeArcMachines": {
+            "value": "false"
+          },
+          "membersToExclude": {
+            "value": ""
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Transparent Data Encryption on SQL databases should be enabled",
+        "description": "Enable or disable the monitoring of unencrypted SQL databases",
+        "policyDefinitionReferenceId": "sqlDbEncryptionMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/17k78e20-9358-41c9-923c-fb736d382a12",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Vulnerability assessment should be enabled on SQL Managed Instance",
+        "description": "Audit each SQL Managed Instance which doesn't have recurring vulnerability assessment scans enabled. Vulnerability assessment can discover, track, and help you remediate potential database vulnerabilities.",
+        "policyDefinitionReferenceId": "vulnerabilityAssessmentOnManagedInstanceMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/1b7aa243-30e4-4c9e-bca8-d0d3022b634a",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: An Azure Active Directory administrator should be provisioned for SQL servers",
+        "description": "Enable or disable the monitoring of an Azure AD admininistrator for SQL server",
+        "policyDefinitionReferenceId": "aadAuthenticationInSqlServerMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/1f314764-cb73-4fc9-b863-8eca98ac36e9",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Only secure connections to your Redis Cache should be enabled",
+        "description": "Enable or disable the monitoring of diagnostic logs in Azure Redis Cache",
+        "policyDefinitionReferenceId": "diagnosticsLogsInRedisCacheMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/22bee202-a82f-4305-9a2a-6d7f44d4dedb",
+        "parameters": {
+          "effect": {
+            "value": "Audit"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Endpoint protection solution should be installed on virtual machine scale sets",
+        "description": "Enable or disable the monitoring of virtual machine scale sets endpoint protection monitoring",
+        "policyDefinitionReferenceId": "vmssEndpointProtectionMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/26a828e1-e88f-464e-bbb3-c134a282b9de",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Audit Log Analytics Agent Deployment - VM Image (OS) unlisted",
+        "description": "Reports VMs as non-compliant if the VM Image (OS) is not in the list defined and the agent is not installed. The list of OS images will be updated over time as support is updated.",
+        "policyDefinitionReferenceId": "logAnalyticsOSImageAudit",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/32133ab0-ee4b-4b44-98d6-042180979d50",
+        "parameters": {
+          "listOfImageIdToInclude_windows": {
+            "value": []
+          },
+          "listOfImageIdToInclude_linux": {
+            "value": []
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Audit Linux machines that have accounts without passwords",
+        "description": "Requires that prerequisites are deployed to the policy assignment scope. For details, visit https://aka.ms/gcpol. Machines are non-compliant if Linux machines that have accounts without passwords",
+        "policyDefinitionReferenceId": "previewAuditLinuxVmAccountsWithNoPasswords",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/f6ec09a3-78bf-4f8f-99dc-6c77182d0f99",
+        "parameters": {
+          "IncludeArcMachines": {
+            "value": "false"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Audit unrestricted network access to storage accounts",
+        "description": "Enable or disable the monitoring of network access to storage account",
+        "policyDefinitionReferenceId": "auditUnrestrictedNetworkToStorageAccountMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/34c877ad-507e-4c82-993e-3452a6e0ad3c",
+        "parameters": {
+          "effect": {
+            "value": "Audit"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Vulnerabilities in security configuration on your virtual machine scale sets should be remediated",
+        "description": "Enable or disable the monitoring of virtual machine scale sets OS vulnerabilities monitoring",
+        "policyDefinitionReferenceId": "vmssOsVulnerabilitiesMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/3c735d8a-a4ba-4a3a-b7cf-db7754cf57f4",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Secure transfer to storage accounts should be enabled",
+        "description": "Enable or disable the monitoring of secure transfer to storage account",
+        "policyDefinitionReferenceId": "secureTransferToStorageAccountMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/404c3081-a854-4457-ae30-26a93ef643f9",
+        "parameters": {
+          "effect": {
+            "value": "Audit"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Adaptive Application Controls should be enabled on virtual machines",
+        "description": "Enable or disable the monitoring of allowed application list in Azure Security Center",
+        "policyDefinitionReferenceId": "adaptiveApplicationControlsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/47a6b606-51aa-4496-8bb7-64b11cf66adc",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: A maximum of 3 owners should be designated for your subscription",
+        "description": "Enable or disable the monitoring of maximum owners in subscription",
+        "policyDefinitionReferenceId": "identityDesignateLessThanOwnersMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/4f11b553-d42e-4e3a-89be-32ca364cad4c",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: A vulnerability assessment solution should be enabled on your virtual machines",
+        "description": "Enable or disable the detection of virtual machine vulnerabilities by Azure Security Center vulnerability assessment",
+        "policyDefinitionReferenceId": "serverVulnerabilityAssessment",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/501541f7-f7e7-4cd6-868c-4190fdad3ac9",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: CORS should not allow every resource to access your Web Application",
+        "description": "Enable or disable the monitoring of CORS restrictions for Web Application",
+        "policyDefinitionReferenceId": "webAppRestrictCORSAccessMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/5744710e-cc2f-4ee8-8809-3b11e89f4bc9",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Audit Log Analytics agent deployment in virtual machine scale sets - VM Image (OS) unlisted",
+        "description": "Reports virtual machine scale sets as non-compliant if the VM Image (OS) is not in the list defined and the agent is not installed. The list of OS images will be updated over time as support is updated.",
+        "policyDefinitionReferenceId": "logAnalyticsOSImageVMSSAudit",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/5c3bc7b8-a64c-4e08-a9cd-7ff0f31e1138",
+        "parameters": {
+          "listOfImageIdToInclude_windows": {
+            "value": []
+          },
+          "listOfImageIdToInclude_linux": {
+            "value": []
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: External accounts with write permissions should be removed from your subscription",
+        "description": "Enable or disable the monitoring of external acounts with write permissions in subscription",
+        "policyDefinitionReferenceId": "identityRemoveExternalAccountWithWritePermissionsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/5c607a2e-c700-4744-8254-d77e7c9eb5e4",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Deprecated accounts should be removed from your subscription",
+        "description": "Enable or disable the monitoring of deprecated acounts in subscription",
+        "policyDefinitionReferenceId": "identityRemoveDeprecatedAccountMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/6b1cbf55-e8b6-442f-ba4c-7246b6381474",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Function App should only be accessible over HTTPS v2",
+        "description": "Enable or disable the monitoring of the use of HTTPS in Function App v2",
+        "policyDefinitionReferenceId": "functionAppEnforceHttpsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/6d555dd1-86f2-4f1c-8ed7-5abae7c6cbab",
+        "parameters": {
+          "effect": {
+            "value": "Audit"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Vulnerabilities should be remediated by a Vulnerability Assessment solution",
+        "description": "Enable or disable the detection of VM vulnerabilities by a vulnerability assessment solution",
+        "policyDefinitionReferenceId": "vulnerabilityAssessmentMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/760a85ff-6162-42b3-8d70-698e268f648c",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Azure subscriptions should have a log profile for Activity Log",
+        "description": "Enable or disable the monitoring of a log profile for Activity Log in subscription",
+        "policyDefinitionReferenceId": "logProfilesForActivityLog",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/7796937f-307b-4598-941c-67d3a05ebfe7",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Audit diagnostic setting",
+        "description": "Audit diagnostic setting for selected resource types",
+        "policyDefinitionReferenceId": "auditDiagnosticSetting",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/7f89b1eb-583c-429a-8828-af049802c1d9",
+        "parameters": {
+          "listOfResourceTypes": {
+            "value": [
+              "microsoft.compute/virtualmachines",
+              "microsoft.sql/servers/databases",
+              "microsoft.storage/storageaccounts",
+              "microsoft.datafactory/datafactories"
+            ]
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: System updates should be installed on your machines",
+        "description": "Enable or disable the monitoring of system updates reporting",
+        "policyDefinitionReferenceId": "systemUpdatesMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/86b3d65f-7626-441e-b690-81a8b71cff60",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Latest TLS version should be used for App Service",
+        "description": "Enable or disable the monitoring of the latest TLS version in App Service",
+        "policyDefinitionReferenceId": "apiAppRequireLatestTlsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/8cb6aa8b-9e41-4f4e-aa25-089a7ac2581e",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: MFA should be enabled accounts with write permissions on your subscription",
+        "description": "Enable or disable the monitoring of MFA for accounts with write permissions in subscription",
+        "policyDefinitionReferenceId": "identityEnableMFAForWritePermissionsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/9297c21d-2ed6-4474-b48f-163f75654ce3",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Microsoft IaaSAntimalware extension should be deployed on Windows servers",
+        "description": "Enable or disable the monitoring of Windows server VMs without Microsoft IaaSAntimalware extension deployed",
+        "policyDefinitionReferenceId": "anitmalwareRequiredForWindowsServers",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/9b597639-28e4-48eb-b506-56b05d366257",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Web Application should only be accessible over HTTPS v2",
+        "description": "Enable or disable the monitoring of the use of HTTPS in Web App v2",
+        "policyDefinitionReferenceId": "webAppEnforceHttpsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/a4af4a39-4135-47fb-b175-47fbdf85311d",
+        "parameters": {
+          "effect": {
+            "value": "Audit"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: DDoS Protection Standard should be enabled",
+        "description": "Enable or disable the monitoring of DDoS protection for all virtual networks with a subnet that is part of an application gateway with a public IP.",
+        "policyDefinitionReferenceId": "vnetEnableDDoSProtectionMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/a7aca53f-2ed4-4466-a25e-0b45ade68efd",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: MFA should be enabled on accounts with owner permissions on your subscription",
+        "description": "Enable or disable the monitoring of MFA for accounts with owner permissions in subscription",
+        "policyDefinitionReferenceId": "identityEnableMFAForOwnerPermissionsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/aa633080-8b72-40c4-a2d7-d00c03e80bed",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Advanced data security should be enabled on your SQL servers",
+        "description": "Enable or disable the monitoring of SQL servers without Advanced Data Security",
+        "policyDefinitionReferenceId": "sqlServerAdvancedDataSecurityMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/abfb4388-5bf4-4ad7-ba82-2cd2f41ceae9",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Advanced data security should be enabled on SQL Managed Instance",
+        "description": "Enable or disable the monitoring of each SQL Managed Instance without advanced data security.",
+        "policyDefinitionReferenceId": "sqlManagedInstanceAdvancedDataSecurityMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/abfb7388-5bf4-4ad7-ba99-2cd2f41cebb9",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Monitor missing Endpoint Protection in Azure Security Center",
+        "description": "Servers without an installed Endpoint Protection agent will be monitored by Azure Security Center as recommendations",
+        "policyDefinitionReferenceId": "endpointProtectionMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/af6cd1bd-1635-48cb-bde7-5b15693900b9",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Just-in-time network access control should be applied on virtual machines",
+        "description": "Enable or disable the monitoring of network just-in-time access",
+        "policyDefinitionReferenceId": "jitNetworkAccessMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/b0f33259-77d7-4c9e-aac6-3aabcfae693c",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Audit Windows web servers that are not using secure communication protocols",
+        "description": "Requires that prerequisites are deployed to the policy assignment scope. For details, visit https://aka.ms/gcpol. Machines are non-compliant if the registry key HKLM:\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols includes protocols less secure than what is selected in the policy parameter.",
+        "policyDefinitionReferenceId": "auditWindowsTLS",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/5752e6d6-1206-46d8-8ab1-ecc2f71a8112",
+        "parameters": {
+          "IncludeArcMachines": {
+            "value": "false"
+          },
+          "minimumTLSVersion": {
+            "value": "1.1"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Service Fabric clusters should only use Azure Active Directory for client authentication",
+        "description": "Enable or disable the monitoring of Azure Active Directory for client authentication in Service Fabric",
+        "policyDefinitionReferenceId": "aadAuthenticationInServiceFabricMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/b54ed75b-3e1a-44ac-a333-05ba39b99ff0",
+        "parameters": {
+          "effect": {
+            "value": "Audit"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: App Service should only be accessible over HTTPS v2",
+        "description": "Enable or disable the monitoring of the use of HTTPS v2 in App Service",
+        "policyDefinitionReferenceId": "apiAppEnforceHttpsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/b7ddfbdc-1260-477d-91fd-98bd9be789a6",
+        "parameters": {
+          "effect": {
+            "value": "Audit"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: System updates on virtual machine scale sets should be installed",
+        "description": "Enable or disable the monitoring of virtual machine scale sets system updates reporting",
+        "policyDefinitionReferenceId": "vmssSystemUpdatesMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/c3f317a7-a95c-4547-b7e7-11017ebdf2fe",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Remote debugging should be turned off for Web Application",
+        "description": "Enable or disable the monitoring of remote debugging for Web App",
+        "policyDefinitionReferenceId": "webAppDisableRemoteDebuggingMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/cb510bfd-1cba-4d9f-a230-cb0976f4bb71",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Vulnerabilities in security configuration on your machines should be remediated",
+        "description": "Enable or disable the monitoring of OS vulnerabilities (based on a configured baseline)",
+        "policyDefinitionReferenceId": "systemConfigurationsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/e1e5fd5d-3e4c-4ce1-8661-7d1873ae6b15",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: MFA should be enabled on accounts with read permissions on your subscription",
+        "description": "Enable or disable the monitoring of MFA for accounts with read permissions in subscription",
+        "policyDefinitionReferenceId": "identityEnableMFAForReadPermissionsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/e3576e28-8b17-4677-84c3-db2990658d64",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "SystemAssigned",
+        "displayName": "ISM PROTECTED Australia: Add system-assigned managed identity to enable Guest Configuration assignments on VMs",
+        "description": "This policy adds a system-assigned managed identity to virtual machines hosted in Azure that are supported by Guest Configuration but do not have any managed identities. A system-assigned managed identity is a prerequisite for all Guest Configuration assignments and must be added to machines before using any Guest Configuration policy definitions. For more information on Guest Configuration, visit https://aka.ms/gcpol.",
+        "policyDefinitionReferenceId": "Prerequisite_AddSystemIdentityWhenNone",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/3cf2ab00-13f1-4d0c-8971-2ac904541a7e",
+        "parameters": {}
+      },
+      {
+        "managedIdentity": "SystemAssigned",
+        "displayName": "ISM PROTECTED Australia: Add system-assigned managed identity to enable Guest Configuration assignments on VMs",
+        "description": "This policy adds a system-assigned managed identity to virtual machines hosted in Azure that are supported by Guest Configuration and have at least one user-assigned identity but do not have a system-assigned managed identity. A system-assigned managed identity is a prerequisite for all Guest Configuration assignments and must be added to machines before using any Guest Configuration policy definitions. For more information on Guest Configuration, visit https://aka.ms/gcpol.",
+        "policyDefinitionReferenceId": "Prerequisite_AddSystemIdentityWhenUser",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/497dff13-db2a-4c0f-8603-28fa3b331ab6",
+        "parameters": {}
+      },
+      {
+        "managedIdentity": "SystemAssigned",
+        "displayName": "ISM PROTECTED Australia: Deploy the Windows Guest Configuration extension to enable Guest Configuration assignments",
+        "description": "This policy deploys the Windows Guest Configuration extension to Windows virtual machines hosted in Azure that are supported by Guest Configuration. The Windows Guest Configuration extension is a prerequisite for all Windows Guest Configuration assignments and must deployed to machines before using any Windows Guest Configuration policy definition. For more information on Guest Configuration, visit https://aka.ms/gcpol.",
+        "policyDefinitionReferenceId": "Prerequisite_DeployExtensionWindows",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/385f5831-96d4-41db-9a3c-cd3af78aaae6",
+        "parameters": {}
+      },
+      {
+        "managedIdentity": "SystemAssigned",
+        "displayName": "ISM PROTECTED Australia: Deploy the Linux Guest Configuration extension to enable Guest Configuration assignments",
+        "description": "This policy deploys the Linux Guest Configuration extension to Linux virtual machines hosted in Azure that are supported by Guest Configuration. The Linux Guest Configuration extension is a prerequisite for all Linux Guest Configuration assignments and must deployed to machines before using any Linux Guest Configuration policy definition. For more information on Guest Configuration, visit https://aka.ms/gcpol.",
+        "policyDefinitionReferenceId": "Prerequisite_DeployExtensionLinux",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/331e8ea8-378a-410f-a2e5-ae22f38bb0da",
+        "parameters": {}
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Windows machines should meet requirements for 'Security Settings - Account Policies'",
+        "description": "Windows machines should have the specified Group Policy settings in the category 'Security Settings - Account Policies' for password history, age, length, complexity, and storing passwords using reversible encryption. This policy requires that the Guest Configuration prerequisites have been deployed to the policy assignment scope. For details, visit https://aka.ms/gcpol.",
+        "policyDefinitionReferenceId": "AzureBaselineSecuritySettingsAccountPolicies",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/f2143251-70de-4e81-87a8-36cee5a2f29d",
+        "parameters": {
+          "IncludeArcMachines": {
+            "value": "false"
+          },
+          "enforcePasswordHistory": {
+            "value": "24"
+          },
+          "maximumPasswordAge": {
+            "value": "70"
+          },
+          "minimumPasswordAge": {
+            "value": "1"
+          },
+          "minimumPasswordLength": {
+            "value": "14"
+          },
+          "passwordMustMeetComplexityRequirements": {
+            "value": "1"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Vulnerabilities in container security configurations should be remediated",
+        "description": "Enable or disable the monitoring of container benchmark",
+        "policyDefinitionReferenceId": "containerBenchmarkMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/e8cbc669-f12d-49eb-93e7-9273119e9933",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Remote debugging should be turned off for App Service",
+        "description": "Enable or disable the monitoring of remote debugging for App Service",
+        "policyDefinitionReferenceId": "apiAppDisableRemoteDebuggingMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/e9c8d085-d9cc-4b17-9cdc-059f1f01f19e",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Deprecated accounts with owner permissions should be removed from your subscription",
+        "description": "Enable or disable the monitoring of deprecated acounts with owner permissions in subscription",
+        "policyDefinitionReferenceId": "identityRemoveDeprecatedAccountWithOwnerPermissionsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/ebb62a0c-3560-49e1-89ed-27e074e9f8ad",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Audit Linux machines that allow remote connections from accounts without passwords",
+        "description": "Requires that prerequisites are deployed to the policy assignment scope. For details, visit https://aka.ms/gcpol. Machines are non-compliant if Linux machines that allow remote connections from accounts without passwords",
+        "policyDefinitionReferenceId": "previewAuditLinuxVmAllowingRemoteConnectionsFromAccountsNoPwds",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/ea53dbee-c6c9-4f0e-9f9e-de0039b78023",
+        "parameters": {
+          "IncludeArcMachines": {
+            "value": "false"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Vulnerability assessment should be enabled on your SQL servers",
+        "description": "Audit Azure SQL servers which do not have recurring vulnerability assessment scans enabled. Vulnerability assessment can discover, track, and help you remediate potential database vulnerabilities.",
+        "policyDefinitionReferenceId": "vulnerabilityAssessmentOnServerMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/ef2a8f2a-b3d9-49cd-a8a8-9a3aaaf647d9",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Latest TLS version should be used in your Web App",
+        "description": "Enable or disable the monitoring of the latest TLS version in Web App",
+        "policyDefinitionReferenceId": "webAppRequireLatestTlsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/f0e6e85b-9b9f-4a4b-b67b-f730d42f1b0b",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Internet-facing virtual machines should be protected with Network Security Groups",
+        "description": "Enable or disable the monitoring of NSGs on VMs",
+        "policyDefinitionReferenceId": "networkSecurityGroupsOnVirtualMachinesMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/f6de0be7-9a8a-4b8a-b349-43cf02d22f7c",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: External accounts with owner permissions should be removed from your subscription",
+        "description": "Enable or disable the monitoring of external acounts with owner permissions in subscription",
+        "policyDefinitionReferenceId": "identityRemoveExternalAccountWithOwnerPermissionsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/f8456c1c-aa66-4dfb-861a-25d127b775c9",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Latest TLS version should be used in your Function App",
+        "description": "Enable or disable the monitoring of the latest TLS version in Function App",
+        "policyDefinitionReferenceId": "functionAppRequireLatestTlsMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/f9d614c5-c173-4d56-95a7-b4437057d193",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      },
+      {
+        "managedIdentity": "None",
+        "displayName": "ISM PROTECTED Australia: Vulnerabilities on your SQL databases should be remediated",
+        "description": "Enable or disable the monitoring of Vulnerability Assessment scan results and recommendations for how to remediate database vulnerabilities.",
+        "policyDefinitionReferenceId": "sqlDbVulnerabilityAssesmentMonitoring",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/feedbf84-6b99-488c-acc2-71c829aa5ffc",
+        "parameters": {
+          "effect": {
+            "value": "AuditIfNotExists"
+          }
+        }
+      }
+    ]
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Authorization/policyAssignments",
+      "name": "[concat(variables('policyAssignments')[copyIndex()].policyDefinitionReferenceId)]",
+      "apiVersion": "2018-05-01",
+      "location": "[parameters('azureLocation')]",
+      "copy": {
+        "name": "loopPolicyAssignments",
+        "count": "[length(variables('policyAssignments'))]"
+      },
+      "identity": {
+        "type": "[variables('policyAssignments')[copyIndex()].managedIdentity]"
+      },
+      "properties": {
+        "scope": "[concat('/subscriptions/',parameters('subscriptionId'))]",
+        "notScopes": "[parameters('notScopes')]",
+        "description": "[variables('policyAssignments')[copyIndex()].description]",
+        "parameters": "[variables('policyAssignments')[copyIndex()].parameters]",
+        "displayName": "[variables('policyAssignments')[copyIndex()].displayName]",
+        "policyDefinitionId": "[variables('policyAssignments')[copyIndex()].policyDefinitionId]"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+      "type": "Microsoft.Authorization/policyAssignments",
+      "name": "auditlogdiagnostics",
+      "apiVersion": "2018-05-01",
+      "location": "[parameters('azureLocation')]",
+      "dependsOn": ["loopPolicyAssignments"],
+      "properties": {
+        "scope": "[concat('/subscriptions/',parameters('subscriptionId'))]",
+        "notScopes": "[parameters('notScopes')]",
+        "description": "Reports VMs as non-compliant if they aren't logging to the Log Analytics workspace specified in the policy/initiative assignment.",
+        "parameters": {
+          "logAnalyticsWorkspaceId": {
+            "value": "[parameters('logAnalyticsWorkspaceID')]"
+          }
+        },
+        "displayName": "Audit Log Analytics workspace for VM - Report Mismatch",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/f47b5582-33ec-4c5c-87c0-b010a6b2e917"
+      }
+    }
+  ],
+  "outputs": {}
+}

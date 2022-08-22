@@ -1,0 +1,545 @@
+{
+	"name": "Pipe_Get_Oracle_Actual_Row_Counts",
+	"properties": {
+		"description": "This pipeline gets all the database table, view and synonym row count information from Oracle sources",
+		"activities": [
+			{
+				"name": "LKP - Get list of sources to iterate",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[DI].[usp_Connections_Get]",
+						"storedProcedureParameters": {
+							"ConnectionType": {
+								"type": "String",
+								"value": "Oracle"
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "Generic_AzureSQL",
+						"type": "DatasetReference",
+						"parameters": {
+							"secretName": "sqlDatabaseConnectionStringConfig"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "FEL - Loop through Oracle data sources",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get list of sources to iterate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LKP - Get list of sources to iterate').output.value",
+						"type": "Expression"
+					},
+					"batchCount": 5,
+					"activities": [
+						{
+							"name": "CD - Copy Oracle table row count",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "OracleSource",
+									"oracleReaderQuery": {
+										"value": "--Get all the tables and views\n\nSELECT\n\t@{item().ConnectionID} AS \"ConnectionID\",\n    tabs.owner AS \"Schema\",\n\ttabs.table_name AS \"TableName\",\n\tto_number(\n\textractvalue(\n\t\txmltype(\n\t\t\tdbms_xmlgen.getxml('select count(*) c from ' ||owner||'.'||table_name))\n\t,'/ROWSET/ROW/C')) \"NoOfRows\"\nFROM \n\tall_tables tabs\nWHERE\n\ttabs.owner NOT IN('SYS', 'SYSTEM')\n\tAND tabs.temporary = 'N'\n    \nUNION ALL\n\n--Get all the synonyms\n\nSELECT\n\t@{item().ConnectionID} AS \"ConnectionID\",\n    syn.owner AS \"Schema\",\n\tsyn.synonym_name AS \"TableName\",\n\tto_number(\n\textractvalue(\n\t\txmltype(\n\t\t\tdbms_xmlgen.getxml('select count(*) c from ' ||tabs.owner||'.'||tabs.table_name))\n\t,'/ROWSET/ROW/C')) \"NoOfRows\"\nFROM \n\tall_synonyms syn\n    INNER JOIN all_tables tabs ON syn.table_owner = tabs.owner\n        AND syn.table_name = tabs.table_name\nWHERE\n\ttabs.owner NOT IN('SYS', 'SYSTEM')",
+										"type": "Expression"
+									},
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"preCopyScript": {
+										"value": "DELETE FROM SRC.DatabaseTableRowCount WHERE ConnectionID = @{item().ConnectionID}",
+										"type": "Expression"
+									},
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "Generic_Oracle",
+									"type": "DatasetReference",
+									"parameters": {
+										"secretName": {
+											"value": "@{item().secretName}",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "Generic_AzureSQL_Table_AzureIR",
+									"type": "DatasetReference",
+									"parameters": {
+										"secretName": "sqlDatabaseConnectionStringConfig",
+										"tableName": "DatabaseTableRowCount",
+										"tableSchema": "SRC"
+									}
+								}
+							]
+						},
+						{
+							"name": "SP - Log ADF Error - Oracle table row count",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "CD - Copy Oracle table row count",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "CD - Copy Oracle table row count",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": {
+											"value": "@{activity('CD - Copy Oracle table row count').error.message}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{activity('CD - Copy Oracle table row count').output}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@{pipeline().Pipeline}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@{pipeline().RunId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@{pipeline().TriggerId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@{pipeline().TriggerName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@{pipeline().TriggerTime}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@{pipeline().TriggerType}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": null,
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "Error",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						},
+						{
+							"name": "SP - Log ADF Success - Oracle table row count",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "CD - Copy Oracle table row count",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "CD - Copy Oracle table row count",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": null,
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{activity('CD - Copy Oracle table row count').output}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@{pipeline().Pipeline}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@{pipeline().RunId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@{pipeline().TriggerId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@{pipeline().TriggerName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@{pipeline().TriggerTime}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@{pipeline().TriggerType}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": null,
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "Progress",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "SP - Log ADF Error - Source Loop",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get list of sources to iterate",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+					"storedProcedureParameters": {
+						"ActivityName": {
+							"value": "LKP - Get list of sources to iterate",
+							"type": "String"
+						},
+						"DataFactoryName": {
+							"value": {
+								"value": "@{pipeline().DataFactory}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ErrorMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get list of sources to iterate').error.message}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"OutputMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get list of sources to iterate').output}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@{pipeline().Pipeline}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineRunID": {
+							"value": {
+								"value": "@{pipeline().RunId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerID": {
+							"value": {
+								"value": "@{pipeline().TriggerId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerName": {
+							"value": {
+								"value": "@{pipeline().TriggerName}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerTime": {
+							"value": {
+								"value": "@{pipeline().TriggerTime}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerType": {
+							"value": {
+								"value": "@{pipeline().TriggerType}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TaskInstanceID": {
+							"value": null,
+							"type": "Int64"
+						},
+						"LogType": {
+							"value": "Error",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSQL",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"secretName": "sqlDatabaseConnectionStringConfig"
+					}
+				}
+			},
+			{
+				"name": "SP - Log ADF Success - Source Loop",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get list of sources to iterate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+					"storedProcedureParameters": {
+						"ActivityName": {
+							"value": "LKP - Get list of sources to iterate",
+							"type": "String"
+						},
+						"DataFactoryName": {
+							"value": {
+								"value": "@{pipeline().DataFactory}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ErrorMessage": {
+							"value": null,
+							"type": "String"
+						},
+						"OutputMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get list of sources to iterate').output}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@{pipeline().Pipeline}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineRunID": {
+							"value": {
+								"value": "@{pipeline().RunId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerID": {
+							"value": {
+								"value": "@{pipeline().TriggerId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerName": {
+							"value": {
+								"value": "@{pipeline().TriggerName}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerTime": {
+							"value": {
+								"value": "@{pipeline().TriggerTime}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerType": {
+							"value": {
+								"value": "@{pipeline().TriggerType}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TaskInstanceID": {
+							"value": null,
+							"type": "Int64"
+						},
+						"LogType": {
+							"value": "Progress",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSQL",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"secretName": "sqlDatabaseConnectionStringConfig"
+					}
+				}
+			}
+		],
+		"folder": {
+			"name": "Config"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

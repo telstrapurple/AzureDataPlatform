@@ -1,0 +1,111 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    }, // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    },
+    // Specific params
+    "servicePlanName": {
+      "type": "string"
+    },
+    "servicePlanKind": {
+      "type": "string",
+      "defaultValue": "app",
+      "allowedValues": [
+        "app",
+        "linux",
+        "functionapp"
+      ]
+    },
+    "servicePlanLevel": {
+      "type": "string"
+    },
+    "servicePlanCapacity": {
+      "type": "int"
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]",
+    "servicePlanId": "[resourceId('Microsoft.Web/serverfarms', parameters('servicePlanName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2020-06-01",
+      "name": "[parameters('servicePlanName')]",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "kind": "[parameters('servicePlanKind')]",
+      "sku": {
+        "name": "[parameters('servicePlanLevel')]",
+        "capacity": "[parameters('servicePlanCapacity')]"
+      },
+      "properties": {
+        "name": "[parameters('servicePlanName')]",
+        "perSiteScaling": false,
+        "reserved": false,
+        "targetWorkerCount": 0,
+        "targetWorkerSizeId": 0
+      },
+      "resources": [
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "Microsoft.Web/serverfarms/providers/diagnosticSettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "[concat(parameters('servicePlanName'), '/', 'Microsoft.Insights/', 'diagnostics')]",
+          "dependsOn": [ "[parameters('servicePlanName')]" ],
+          "properties": {
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "metrics": [
+              {
+                "category": "AllMetrics",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                },
+                "timeGrain": null
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "servicePlanName": {
+      "type": "string",
+      "value": "[parameters('servicePlanName')]"
+    },
+    "servicePlanResourceId": {
+      "type": "string",
+      "value": "[variables('servicePlanId')]"
+    }
+  }
+}

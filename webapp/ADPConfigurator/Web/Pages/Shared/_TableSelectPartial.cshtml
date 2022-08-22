@@ -1,0 +1,24 @@
+﻿<script asp-add-nonce="true">
+    const setToggleSelect = () => {
+        const allSelected = $('input[type=checkbox].table-checkbox:not(:checked)').length === 0;
+        $('#toggle-select').prop('checked', allSelected);
+    };
+
+    $(document).ready(() => {
+        setToggleSelect();
+    });
+
+    $('#toggle-select').click(() => {
+        let isChecked = $('#toggle-select').is(':checked')
+
+        if (isChecked) {
+            $('input[type=checkbox].table-checkbox:not(:checked)').click()
+        } else {
+            $('input[type=checkbox].table-checkbox:checked').click()
+        }
+    });
+
+    $('input[type=checkbox].table-checkbox').click(() => {
+        setToggleSelect();
+    });
+</script>

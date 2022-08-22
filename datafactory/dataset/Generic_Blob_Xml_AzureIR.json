@@ -1,0 +1,55 @@
+{
+	"name": "Generic_Blob_Xml_AzureIR",
+	"properties": {
+		"description": "This is the generic Azure Blob Storage connection for XML files using the Azure IR",
+		"linkedServiceName": {
+			"referenceName": "AzureBlobStorage_AzureIR",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"serviceEndPoint": {
+					"value": "@dataset().serviceEndpoint",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"serviceEndpoint": {
+				"type": "string"
+			},
+			"filePath": {
+				"type": "string"
+			},
+			"fileName": {
+				"type": "string"
+			},
+			"compressionType": {
+				"type": "string"
+			},
+			"encoding": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Blob"
+		},
+		"annotations": [],
+		"type": "Xml",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				},
+				"container": {
+					"value": "@dataset().filePath",
+					"type": "Expression"
+				}
+			},
+			"encodingName": {
+				"value": "@dataset().encoding",
+				"type": "Expression"
+			}
+		}
+	}
+}

@@ -1,0 +1,245 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "nsgName": {
+      "type": "string"
+    },
+    "tagObject": {
+      "type": "object"
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]",
+    "azureRegionToWebappIp": {
+      "australiacentral": "13.75.218.172/32",
+      "australiacentral2": "13.75.218.172/32",
+      "australiaeast": "13.75.218.172/32",
+      "australiasoutheast": "13.75.218.172/32",
+      "canadacentral": "13.71.184.74/32",
+      "canadaeast": "13.71.184.74/32",
+      "centralindia": "104.211.89.81/32",
+      "centralus": "40.70.58.221/32",
+      "eastasia": "52.187.145.107/32",
+      "eastus": "40.70.58.221/32",
+      "eastus2": "40.70.58.221/32",
+      "eastus2euap": "40.70.58.221/32",
+      "japaneast": "52.246.160.72/32",
+      "japanwest": "52.246.160.72/32",
+      "northcentralus": "40.70.58.221/32",
+      "northeurope": "52.232.19.246/32",
+      "southcentralus": "40.118.174.12/32",
+      "southeastasia": "52.187.145.107/32",
+      "southindia": "104.211.89.81/32",
+      "uksouth": "51.140.204.4/32",
+      "ukwest": "51.140.204.4/32",
+      "westcentralus": "40.118.174.12/32",
+      "westeurope": "52.232.19.246/32",
+      "westindia": "104.211.89.81/32",
+      "westus": "40.118.174.12/32",
+      "westus2": "40.118.174.12/32"
+    },
+    "databricks_webappIp": "[variables('azureRegionToWebappIp')[variables('azureLocation')]]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2018-02-01",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "location": "[variables('azureLocation')]",
+      "name": "[parameters('nsgName')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "IBD-Any-Any",
+            "properties": {
+              "access": "Deny",
+              "description": "Deny all inbound network access.",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "*",
+              "direction": "Inbound",
+              "priority": 4096,
+              "protocol": "*",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-worker-to-worker",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for worker nodes communication within a cluster.",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "*",
+              "direction": "Inbound",
+              "priority": 200,
+              "protocol": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-control-plane-to-worker-ssh",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for Databricks control plane management of worker nodes.",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "destinationPortRange": "22",
+              "direction": "Inbound",
+              "priority": 100,
+              "protocol": "tcp",
+              "sourceAddressPrefix": "AzureDatabricks",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-control-plane-to-worker-proxy",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for Databricks control plane communication with worker nodes.",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "destinationPortRange": "5557",
+              "direction": "Inbound",
+              "priority": 110,
+              "protocol": "tcp",
+              "sourceAddressPrefix": "AzureDatabricks",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-worker-to-webapp",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for workers communication with Databricks Webapp.",
+              "destinationAddressPrefix": "[variables('databricks_webappIp')]",
+              "destinationPortRange": "*",
+              "direction": "Outbound",
+              "priority": 100,
+              "protocol": "*",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-worker-to-sql",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for workers communication with Azure SQL services.",
+              "destinationAddressPrefix": "Sql",
+              "destinationPortRange": "*",
+              "direction": "Outbound",
+              "priority": 110,
+              "protocol": "*",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-worker-to-storage",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for workers communication with Azure Storage services.",
+              "destinationAddressPrefix": "Storage",
+              "destinationPortRange": "*",
+              "direction": "Outbound",
+              "priority": 120,
+              "protocol": "*",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-worker-to-worker-outbound",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for worker nodes communication within a cluster.",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "destinationPortRange": "*",
+              "direction": "Outbound",
+              "priority": 130,
+              "protocol": "*",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-worker-to-any",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for worker nodes communication with any destination.",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "*",
+              "direction": "Outbound",
+              "priority": 140,
+              "protocol": "*",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*"
+            }
+          }
+        ]
+      },
+      "resources": [
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "Microsoft.Network/networkSecurityGroups/providers/diagnosticSettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "[concat(parameters('nsgName'), '/', 'Microsoft.Insights/', 'diagnostics')]",
+          "dependsOn": ["[parameters('nsgName')]"],
+          "properties": {
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "metrics": [],
+            "logs": [
+              {
+                "category": "NetworkSecurityGroupEvent",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "NetworkSecurityGroupRuleCounter",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "nsgResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsgName'))]"
+    }
+  }
+}

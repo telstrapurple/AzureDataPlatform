@@ -1,0 +1,647 @@
+{
+	"name": "Pipe_Oracle_To_Lake_Batch",
+	"properties": {
+		"description": "This is the generic pipeline to copy Oracle tables from source to the Data Lake in batches to speed up the data extraction process",
+		"activities": [
+			{
+				"name": "LKP - Get the min and max values",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "OracleSource",
+						"oracleReaderQuery": {
+							"value": "@concat('SELECT MIN(\"', pipeline().parameters.BatchColumnName, '\") AS \"MinValue\", MAX(\"', pipeline().parameters.BatchColumnName, '\") AS \"MaxValue\" FROM ',pipeline().parameters.SourceTableName)",
+							"type": "Expression"
+						},
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Generic_Oracle",
+						"type": "DatasetReference",
+						"parameters": {
+							"secretName": {
+								"value": "@pipeline().parameters.SourceConnectionSecret",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "SP - Log the error - Get the min and max values",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the min and max values",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+					"storedProcedureParameters": {
+						"ActivityName": {
+							"value": "LKP - Get the min and max values",
+							"type": "String"
+						},
+						"DataFactoryName": {
+							"value": {
+								"value": "@{pipeline().DataFactory}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ErrorMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get the min and max values').error.message}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"OutputMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get the min and max values').output}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@{pipeline().Pipeline}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineRunID": {
+							"value": {
+								"value": "@{pipeline().RunId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerID": {
+							"value": {
+								"value": "@{pipeline().TriggerId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerName": {
+							"value": {
+								"value": "@{pipeline().TriggerName}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerTime": {
+							"value": {
+								"value": "@{pipeline().TriggerTime}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerType": {
+							"value": {
+								"value": "@{pipeline().TriggerType}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TaskInstanceID": {
+							"value": {
+								"value": "@pipeline().parameters.TaskInstanceID",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"LogType": {
+							"value": "Error",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSQL",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"secretName": "sqlDatabaseConnectionStringConfig"
+					}
+				}
+			},
+			{
+				"name": "LKP - Get the partition list",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the min and max values",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[DI].[usp_BatchPartitionList_Get]",
+						"storedProcedureParameters": {
+							"MaxValue": {
+								"type": "String",
+								"value": {
+									"value": "@activity('LKP - Get the min and max values').output.firstRow.MaxValue",
+									"type": "Expression"
+								}
+							},
+							"MinValue": {
+								"type": "String",
+								"value": {
+									"value": "@activity('LKP - Get the min and max values').output.firstRow.MinValue",
+									"type": "Expression"
+								}
+							},
+							"PartitionCount": {
+								"type": "Int32",
+								"value": {
+									"value": "@pipeline().parameters.PartitionCount",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"dataset": {
+						"referenceName": "Generic_AzureSQL",
+						"type": "DatasetReference",
+						"parameters": {
+							"secretName": "sqlDatabaseConnectionStringConfig"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "SP - Log the error - Get the partition list",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the partition list",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+					"storedProcedureParameters": {
+						"ActivityName": {
+							"value": "LKP - Get the partition list",
+							"type": "String"
+						},
+						"DataFactoryName": {
+							"value": {
+								"value": "@{pipeline().DataFactory}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ErrorMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get the partition list').error.message}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"OutputMessage": {
+							"value": {
+								"value": "@{activity('LKP - Get the partition list').output}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@{pipeline().Pipeline}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineRunID": {
+							"value": {
+								"value": "@{pipeline().RunId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerID": {
+							"value": {
+								"value": "@{pipeline().TriggerId}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerName": {
+							"value": {
+								"value": "@{pipeline().TriggerName}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerTime": {
+							"value": {
+								"value": "@{pipeline().TriggerTime}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerType": {
+							"value": {
+								"value": "@{pipeline().TriggerType}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TaskInstanceID": {
+							"value": {
+								"value": "@pipeline().parameters.TaskInstanceID",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"LogType": {
+							"value": "Error",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSQL",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"secretName": "sqlDatabaseConnectionStringConfig"
+					}
+				}
+			},
+			{
+				"name": "FEL - Loop through all partitions",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LKP - Get the partition list",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LKP - Get the partition list').output.value",
+						"type": "Expression"
+					},
+					"batchCount": 5,
+					"activities": [
+						{
+							"name": "PIPE - Run the generic Database to Lake pipeline",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "Pipe_Generic_Database_To_Lake",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"TaskType": {
+										"value": "@pipeline().parameters.TaskType",
+										"type": "Expression"
+									},
+									"SourceConnectionSecret": {
+										"value": "@pipeline().parameters.SourceConnectionSecret",
+										"type": "Expression"
+									},
+									"SQLCommand": {
+										"value": "@pipeline().parameters.SQLCommand",
+										"type": "Expression"
+									},
+									"SelectColumnList": {
+										"value": "@pipeline().parameters.SelectColumnList",
+										"type": "Expression"
+									},
+									"WhereClause": {
+										"value": "@concat(' WHERE \"', pipeline().parameters.BatchColumnName, '\" >= ', item().StartValue, ' AND \"',pipeline().parameters.BatchColumnName, '\" < ', item().EndValue)",
+										"type": "Expression"
+									},
+									"TaskInstanceID": {
+										"value": "@pipeline().parameters.TaskInstanceID",
+										"type": "Expression"
+									},
+									"DataLakeServiceEndPoint": {
+										"value": "@pipeline().parameters.DataLakeServiceEndPoint",
+										"type": "Expression"
+									},
+									"DataLakeFilePath": {
+										"value": "@pipeline().parameters.DataLakeFilePath",
+										"type": "Expression"
+									},
+									"DataLakeFileName": {
+										"value": "@replace(pipeline().parameters.DataLakeFileName, '.', concat('_', item().PartitionNo, '.'))",
+										"type": "Expression"
+									},
+									"PreviousDataLakeFilePath": {
+										"value": "@pipeline().parameters.PreviousDataLakeFilePath",
+										"type": "Expression"
+									},
+									"TargetTempTable": {
+										"value": "@pipeline().parameters.TargetTempTable",
+										"type": "Expression"
+									},
+									"UniqueConstraintIndicator": {
+										"value": "@pipeline().parameters.UniqueConstraintIndicator",
+										"type": "Expression"
+									},
+									"TargetTable": {
+										"value": "@pipeline().parameters.TargetTable",
+										"type": "Expression"
+									},
+									"TargetDeltaFilePath": {
+										"value": "@pipeline().parameters.TargetDeltaFilePath",
+										"type": "Expression"
+									},
+									"UniqueConstraintColumns": {
+										"value": "@pipeline().parameters.UniqueConstraintColumns",
+										"type": "Expression"
+									},
+									"UseDeltaLakeIndicator": {
+										"value": "@pipeline().parameters.UseDeltaLakeIndicator",
+										"type": "Expression"
+									},
+									"DeltaLakeRetentionDays": {
+										"value": "@pipeline().parameters.DeltaLakeRetentionDays",
+										"type": "Expression"
+									},
+									"LoadType": {
+										"value": "@pipeline().parameters.LoadType",
+										"type": "Expression"
+									},
+									"TargetDatabase": {
+										"value": "@pipeline().parameters.TargetDatabase",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "IF - Check if target lake load",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "FEL - Loop through all partitions",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.CallingPipeline,'Pipe_Generic_Database_To_Target_Lake')",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "EP - Parquet to Lake Load",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "Pipe_Generic_Databricks_Parquet_Load_Delta_Lake",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"PreviousTargetFilePath": {
+										"value": "@pipeline().parameters.PreviousDataLakeFilePath",
+										"type": "Expression"
+									},
+									"TargetFilePath": {
+										"value": "@pipeline().parameters.DataLakeFilePath",
+										"type": "Expression"
+									},
+									"TargetTempTable": {
+										"value": "@pipeline().parameters.TargetTempTable",
+										"type": "Expression"
+									},
+									"LoadType": {
+										"value": "@if(greater(length(pipeline().parameters.LoadType), 0), pipeline().parameters.LoadType, 'Full')",
+										"type": "Expression"
+									},
+									"TargetDatabase": {
+										"value": "@pipeline().parameters.TargetDatabase",
+										"type": "Expression"
+									},
+									"UniqueConstraintIndicator": {
+										"value": "@pipeline().parameters.UniqueConstraintIndicator",
+										"type": "Expression"
+									},
+									"TaskType": {
+										"value": "@pipeline().parameters.TaskType",
+										"type": "Expression"
+									},
+									"TargetTable": {
+										"value": "@pipeline().parameters.TargetTable",
+										"type": "Expression"
+									},
+									"TargetDeltaFilePath": {
+										"value": "@pipeline().parameters.TargetDeltaFilePath",
+										"type": "Expression"
+									},
+									"UniqueConstraintColumns": {
+										"value": "@pipeline().parameters.UniqueConstraintColumns",
+										"type": "Expression"
+									},
+									"UseDeltaLakeIndicator": {
+										"value": "@pipeline().parameters.UseDeltaLakeIndicator",
+										"type": "Expression"
+									},
+									"DeltaLakeRetentionDays": {
+										"value": "@pipeline().parameters.DeltaLakeRetentionDays",
+										"type": "Expression"
+									},
+									"AllowSchemaDrift": {
+										"value": "@pipeline().parameters.AllowSchemaDrift",
+										"type": "Expression"
+									},
+									"PipelineName": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"PipelineRunID": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"PipelineTriggerID": {
+										"value": "@pipeline().TriggerId",
+										"type": "Expression"
+									},
+									"PipelineTriggerName": {
+										"value": "@pipeline().TriggerName",
+										"type": "Expression"
+									},
+									"PipelineTriggerTime": {
+										"value": "@pipeline().TriggerTime",
+										"type": "Expression"
+									},
+									"PipelineTriggerType": {
+										"value": "@pipeline().TriggerType",
+										"type": "Expression"
+									},
+									"TaskInstanceID": {
+										"value": "@pipeline().parameters.TaskInstanceID",
+										"type": "Expression"
+									},
+									"DatabricksURL": {
+										"value": "@pipeline().parameters.DatabricksURL",
+										"type": "Expression"
+									},
+									"DatabricksClusterID": {
+										"value": "@pipeline().parameters.DatabricksClusterID",
+										"type": "Expression"
+									},
+									"SourceConfig": {
+										"value": "@pipeline().parameters.SourceConfig",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"SourceTableName": {
+				"type": "string"
+			},
+			"BatchColumnName": {
+				"type": "string"
+			},
+			"TaskType": {
+				"type": "string"
+			},
+			"SQLCommand": {
+				"type": "string"
+			},
+			"SelectColumnList": {
+				"type": "string"
+			},
+			"PartitionCount": {
+				"type": "string"
+			},
+			"SourceConnectionSecret": {
+				"type": "string"
+			},
+			"TaskInstanceID": {
+				"type": "string"
+			},
+			"WhereClause": {
+				"type": "string"
+			},
+			"DataLakeServiceEndPoint": {
+				"type": "string"
+			},
+			"DataLakeFilePath": {
+				"type": "string"
+			},
+			"DataLakeFileName": {
+				"type": "string"
+			},
+			"PreviousDataLakeFilePath": {
+				"type": "string"
+			},
+			"TargetTempTable": {
+				"type": "string"
+			},
+			"UniqueConstraintIndicator": {
+				"type": "string"
+			},
+			"TargetTable": {
+				"type": "string"
+			},
+			"TargetDeltaFilePath": {
+				"type": "string"
+			},
+			"UniqueConstraintColumns": {
+				"type": "string"
+			},
+			"UseDeltaLakeIndicator": {
+				"type": "string"
+			},
+			"DeltaLakeRetentionDays": {
+				"type": "string"
+			},
+			"LoadType": {
+				"type": "string"
+			},
+			"DatabricksURL": {
+				"type": "string"
+			},
+			"DatabricksClusterID": {
+				"type": "string"
+			},
+			"TargetDatabase": {
+				"type": "string"
+			},
+			"AllowSchemaDrift": {
+				"type": "string"
+			},
+			"SourceConfig": {
+				"type": "object"
+			},
+			"CallingPipeline": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "ETL/Database Load/Batch Loads"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

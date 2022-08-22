@@ -1,0 +1,77 @@
+﻿@page
+@model Web.Pages.MaintenanceData.Users.IndexModel
+
+@{
+    ViewData["Title"] = "Users";
+}
+
+<h1>
+    <i class="float-right fas fa-user-alt"></i>
+    Users
+</h1>
+
+@if (Model.Users.Count > 0)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>User Type</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model.Users)
+            {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => user.UserName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => user.EmailAddress)
+                </td>
+                <td>
+                    @(user.AdminIndicator ? "Admin" : "Regular")
+                </td>
+                <td class="text-right">
+                    <a asp-page="./Edit" asp-route-userid="@user.UserId" class="btn btn-outline-secondary">
+                        <i class="fas fa-edit fa-sm"></i>
+                        Edit
+                    </a>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-warning" role="alert">
+        <i class="fas fa-exclamation-triangle"></i>
+        There are no users
+    </div>
+}
+
+@{
+    var prevDisabled = !Model.Users.HasPreviousPage ? "disabled" : "";
+    var nextDisabled = !Model.Users.HasNextPage ? "disabled" : "";
+}
+
+<div class="alert alert-secondary">
+    <a asp-page="./Index"
+       asp-route-pageIndex="@(Model.Users.PageIndex - 1)"
+       asp-route-currentFilter="@ViewData["CurrentFilter"]"
+       class="btn btn-primary @prevDisabled">
+        <i class="fas fa-chevron-left"></i>
+        Previous
+    </a>
+
+    <a asp-page="./Index"
+       asp-route-pageIndex="@(Model.Users.PageIndex + 1)"
+       asp-route-currentFilter="@ViewData["CurrentFilter"]"
+       class="btn btn-primary @nextDisabled">
+        Next
+        <i class="fas fa-chevron-right"></i>
+    </a>
+</div>

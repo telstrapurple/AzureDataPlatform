@@ -1,0 +1,14 @@
+{
+    "environment": {
+        "UAT": {
+            "workspaceId": "",
+            "deploy": false,
+            "datasetOnly": false
+        },
+        "production": {
+            "workspaceId": "49207BF9-F2B0-4D97-8586-DCE459CB938C",
+            "deploy": true,
+            "datasetOnly": true
+        }
+    }
+}

@@ -1,0 +1,45 @@
+parameters:
+  - name: adosServiceConnectionName
+    type: string
+  - name: environmentName
+    type: string
+  - name: environmentCode
+    type: string
+  - name: location
+    type: string
+  - name: locationCode
+    type: string
+  - name: tenantId
+    type: string
+  - name: subscriptionId
+    type: string
+  - name: configFileName
+    type: string
+
+steps:
+  - task: PowerShell@2
+    displayName: Install DatabricksPS module
+    inputs:
+      pwsh: true
+      targetType: inline
+      script: >-
+        Install-Module -Name DatabricksPS -RequiredVersion 1.3.1.0 -Force -Verbose
+
+  - task: AzurePowerShell@5
+    displayName: Deploy Databricks notebooks
+    inputs:
+      azureSubscription: ${{ parameters.adosServiceConnectionName }}
+      azurePowerShellVersion: LatestVersion
+      pwsh: true
+      ScriptType: FilePath
+      ScriptPath: $(Pipeline.Workspace)/databricks/deployment.ps1
+      ScriptArguments: >-
+        -EnvironmentName '${{ parameters.environmentName }}'
+        -EnvironmentCode '${{ parameters.environmentCode }}'
+        -Location '${{ parameters.location }}'
+        -LocationCode '${{ parameters.locationCode }}'
+        -TenantId '${{ parameters.tenantId }}'
+        -SubscriptionId '${{ parameters.subscriptionId }}'
+        -ConfigFileName '${{ parameters.configFileName }}'
+        -DatabricksNotebooksLocation '$(Pipeline.Workspace)/databricks'
+        -InfrastructureScriptsLocation '$(Pipeline.Workspace)/infrastructure'

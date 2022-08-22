@@ -1,0 +1,222 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    },
+    // Specific params
+    "sqlServerName": {
+      "type": "string"
+    },
+    "sqlAdministratorLoginUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "The username of the admin user of the SQL Server"
+      }
+    },
+    "sqlAdministratorLoginPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password of the admin user of the SQL Server"
+      }
+    },
+    "ipsToAllow": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "List of IP address allow rules; objects with string keys: name, start and end"
+      }
+    },
+    "azureADAdminDisplayName": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "azureADAdminSid": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "azureTenantId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "subnetIdArray": {
+      "type": "array",
+      "defaultValue": null
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]",
+    "sqlServerId": "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]",
+    // Avoids an issue with template validation failing if there is a length of 0 for parameters('ipsToAllow')
+    "dummyIpsToAllow": [
+      {
+        "name": "Dummy value"
+      }
+    ],
+    "ipsToAllow": "[if(greater(length(parameters('ipsToAllow')), 0), parameters('ipsToAllow'), variables('dummyIpsToAllow'))]"
+  },
+  "resources": [
+    {
+      "name": "[parameters('sqlServerName')]",
+      "type": "Microsoft.Sql/servers",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "apiVersion": "2019-06-01-preview",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('sqlAdministratorLoginUsername')]",
+        "administratorLoginPassword": "[parameters('sqlAdministratorLoginPassword')]",
+        "version": "12.0"
+      },
+      "resources": [
+        {
+          "name": "[concat(parameters('sqlServerName'), '/master')]",
+          "type": "Microsoft.Sql/servers/databases",
+          "apiVersion": "2014-04-01",
+          "location": "[variables('azureLocation')]",
+          "dependsOn": ["[parameters('sqlServerName')]"],
+          "properties": {}
+        },
+        {
+          "condition": "[not(empty(parameters('azureADAdminDisplayName')))]",
+          "type": "administrators",
+          "name": "activeDirectory",
+          "apiVersion": "2014-04-01",
+          "dependsOn": ["[parameters('sqlServerName')]"],
+          "location": "[variables('azureLocation')]",
+          "properties": {
+            "administratorType": "ActiveDirectory",
+            "login": "[parameters('azureADAdminDisplayName')]",
+            "sid": "[parameters('azureADAdminSid')]",
+            "tenantId": "[parameters('azureTenantId')]"
+          }
+        },
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "databases/providers/diagnosticSettings",
+          "name": "[concat('master/microsoft.insights/','DefaultAuditingSettings')]",
+          "dependsOn": [
+            "[parameters('sqlServerName')]",
+            "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'), '/databases/master')]"
+          ],
+          "location": "[variables('azureLocation')]",
+          "apiVersion": "2017-05-01-preview",
+          "properties": {
+            "name": "DefaultAuditingSettings",
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "logs": [
+              {
+                "category": "SQLSecurityAuditEvents",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "condition": "[greater(length(parameters('ipsToAllow')), 0)]",
+      "copy": {
+        "name": "ipsToAllow",
+        "count": "[length(variables('ipsToAllow'))]",
+        "mode": "Parallel"
+      },
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2014-04-01",
+      "dependsOn": ["[variables('sqlServerId')]"],
+      "location": "[variables('azureLocation')]",
+      "name": "[concat(parameters('sqlServerName'), '/', variables('ipsToAllow')[copyIndex()].name)]",
+      "properties": {
+        "startIpAddress": "[variables('ipsToAllow')[copyIndex()].start]",
+        "endIpAddress": "[variables('ipsToAllow')[copyIndex()].end]"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('subnetIdArray')))]",
+      "type": "Microsoft.Sql/servers/virtualNetworkRules",
+      "name": "[concat(parameters('sqlServerName'), '/', 'virtualNetworkRule', copyIndex(1))]",
+      "apiVersion": "2015-05-01-preview",
+      "copy": {
+        "name": "vNetLoop",
+        "count": "[length(parameters('subnetIdArray'))]"
+      },
+      "properties": {
+        "virtualNetworkSubnetId": "[parameters('subnetIdArray')[copyIndex()]]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+      "type": "Microsoft.Sql/servers/auditingSettings",
+      "apiVersion": "2017-03-01-preview",
+      "name": "[concat(parameters('sqlServerName'),'/Default')]",
+      "properties": {
+        "storageEndpoint": "[reference(parameters('diagnosticsStorageAccountId'), '2019-06-01').PrimaryEndpoints.Blob]",
+        "storageAccountAccessKey": "[listKeys(parameters('diagnosticsStorageAccountId'), '2019-06-01').keys[0].value]",
+        "state": "Enabled",
+        "storageAccountSubscriptionId": "[subscription().subscriptionId]",
+        "auditActionsAndGroups": [
+          "SUCCESSFUL_DATABASE_AUTHENTICATION_GROUP",
+          "FAILED_DATABASE_AUTHENTICATION_GROUP",
+          "BATCH_COMPLETED_GROUP"
+        ],
+        "isAzureMonitorTargetEnabled": true,
+        "retentionDays": "[parameters('diagnosticsRetentionInDays')]"
+      },
+      "dependsOn": ["[variables('sqlServerId')]"]
+    }
+  ],
+  "outputs": {
+    "sqlServerName": {
+      "type": "string",
+      "value": "[parameters('sqlServerName')]"
+    },
+    "sqlServerManagedIdentity": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Sql/servers', parameters('sqlServerName')), '2019-06-01-preview', 'Full').identity.principalId]"
+    },
+    "sqlServerFQDN": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Sql/servers', parameters('sqlServerName')), '2019-06-01-preview').fullyQualifiedDomainName]"
+    },
+    "sqlServerResourceId": {
+      "type": "string",
+      "value": "[variables('sqlServerId')]"
+    }
+  }
+}

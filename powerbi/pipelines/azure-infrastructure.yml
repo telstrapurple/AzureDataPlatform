@@ -1,0 +1,404 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - infrastructure/
+
+variables:
+  - group: powerbi-infrastructure-vg
+
+pool:
+  vmImage: "windows-latest"
+
+stages:
+  - stage: "Build"
+    displayName: "Build - Create build artifacts"
+    jobs:
+      - job: "BuildCopyAndPublishAllFiles"
+        displayName: "Build, Copy and Publish All files"
+        steps:
+          - task: VSBuild@1
+            displayName: "Build PowerBILogs sln"
+            inputs:
+              solution: '**\PowerBILogs.sln'
+              configuration: "release"
+          - task: CopyFiles@2
+            displayName: "Copy Files"
+            inputs:
+              Contents: "**"
+              TargetFolder: "$(Build.ArtifactStagingDirectory)"
+          - task: PublishBuildArtifacts@1
+            displayName: "Publish all files"
+            inputs:
+              PathtoPublish: "$(Build.ArtifactStagingDirectory)"
+              ArtifactName: "drop"
+              publishLocation: "Container"
+
+  - stage: "Production"
+    displayName: "Deploy infrastructure to Production environment"
+    jobs:
+      - deployment: "deployProduction"
+        environment: "Power BI Infrastructure Production"
+        displayName: "Deploy Power BI infrastructure to Production"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  displayName: "Download Build Artifacts"
+                  inputs:
+                    buildType: "current"
+                    downloadType: "single"
+                    artifactName: "drop"
+                    downloadPath: "$(System.ArtifactsDirectory)"
+
+                - task: AzureResourceManagerTemplateDeployment@3
+                  condition: eq(variables.NETWORK_DEPLOY, true)
+                  displayName: "Deploy Power BI Virtual Network"
+                  inputs:
+                    deploymentScope: "Resource Group"
+                    azureResourceManagerConnection: "$(ARM_CONNECTION)"
+                    subscriptionId: "$(SUBSCRIPTION_ID)"
+                    action: "Create Or Update Resource Group"
+                    resourceGroupName: "$(RESOURCE_GROUP_NETWORK)"
+                    location: "$(LOCATION)"
+                    templateLocation: "Linked artifact"
+                    csmFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/network.Generic.json"
+                    csmParametersFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/parameters/network.Generic.parameters.json"
+                    deploymentMode: "Incremental"
+                    overrideParameters: >-
+                      -vNetName "$(NETWORK_VNET_NAME)" 
+                      -vNetCIDR "$(NETWORK_VNET_CIDR)" 
+                      -subNetName "$(NETWORK_SUBNET_NAME)" 
+                      -subNetCIDR "$(NETWORK_SUBNET_CIDR)" 
+                      -companyName "$(COMPANY_NAME)" 
+                      -resourceType "Network" 
+                      -environmentCode "$(ENVIRONMENT_CODE)" 
+                      -environmentLongName "$(ENVIRONMENT_LONG_NAME)" 
+                      -azureLocation "$(LOCATION)"
+
+                - task: AzureResourceManagerTemplateDeployment@3
+                  displayName: "Deploy Virtual Machine - Power BI Gateway"
+                  inputs:
+                    deploymentScope: "Resource Group"
+                    azureResourceManagerConnection: "$(ARM_CONNECTION)"
+                    subscriptionId: "$(SUBSCRIPTION_ID)"
+                    action: "Create Or Update Resource Group"
+                    resourceGroupName: "$(RESOURCE_GROUP_POWERBI)"
+                    location: "$(LOCATION)"
+                    templateLocation: "Linked artifact"
+                    csmFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/virtualMachine.json"
+                    csmParametersFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/parameters/virtualMachine.Windows.parameters.json"
+                    deploymentMode: "Incremental"
+                    overrideParameters: >-
+                      -vmName "$(VM_PBIGATEWAY_NAME)" 
+                      -virtualNetworkResourceGroup "$(RESOURCE_GROUP_NETWORK)" 
+                      -virtualNetworkName "$(NETWORK_VNET_NAME)" 
+                      -subNetName "$(NETWORK_SUBNET_NAME)" 
+                      -adminUsername "$(VM_PBIGATEWAY_ADMIN_USERNAME)" 
+                      -adminPassword "$(VM_PBIGATEWAY_ADMIN_PASSWORD)" 
+                      -osDiskType "Premium_LRS" 
+                      -OSPublisher "MicrosoftWindowsServer" 
+                      -OSOffer "WindowsServer" 
+                      -OSVersion "2019-Datacenter" 
+                      -vmSize "standard_d2s_v3" 
+                      -sizeOfDataDisk 64 
+                      -dataDiskType "Premium_LRS" 
+                      -applyHUB "$(VM_PBIGATEWAY_APPLY_HUB)" 
+                      -deployDSC "$(VM_PBIGATEWAY_DEPLOY_DSC)" 
+                      -companyName "$(COMPANY_NAME)" 
+                      -resourceType "Virtual Machine" 
+                      -environmentCode "$(ENVIRONMENT_CODE)" 
+                      -environmentLongName "$(ENVIRONMENT_LONG_NAME)" 
+                      -azureLocation "$(LOCATION)"
+
+                - task: AzureResourceManagerTemplateDeployment@3
+                  displayName: "Deploy Virtual Machine - Hybrid Worker"
+                  inputs:
+                    deploymentScope: "Resource Group"
+                    azureResourceManagerConnection: "$(ARM_CONNECTION)"
+                    subscriptionId: "$(SUBSCRIPTION_ID)"
+                    action: "Create Or Update Resource Group"
+                    resourceGroupName: "$(RESOURCE_GROUP_POWERBI)"
+                    location: "$(LOCATION)"
+                    templateLocation: "Linked artifact"
+                    csmFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/virtualMachine.json"
+                    csmParametersFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/parameters/virtualMachine.Windows.parameters.json"
+                    deploymentMode: "Incremental"
+                    overrideParameters: >-
+                      -vmName "$(VM_HYBRIDWORKER_NAME)" 
+                      -virtualNetworkResourceGroup "$(RESOURCE_GROUP_NETWORK)" 
+                      -virtualNetworkName "$(NETWORK_VNET_NAME)" 
+                      -subNetName "$(NETWORK_SUBNET_NAME)" 
+                      -adminUsername "$(VM_HYBRIDWORKER_ADMIN_USERNAME)" 
+                      -adminPassword "$(VM_HYBRIDWORKER_ADMIN_PASSWORD)" 
+                      -osDiskType "Premium_LRS" 
+                      -OSPublisher "MicrosoftWindowsServer" 
+                      -OSOffer "WindowsServer" 
+                      -OSVersion "2019-Datacenter" 
+                      -vmSize "standard_d2s_v3" 
+                      -sizeOfDataDisk 64 
+                      -dataDiskType "Premium_LRS" 
+                      -applyHUB "$(VM_HYBRIDWORKER_APPLY_HUB)" 
+                      -deployDSC "$(VM_HYBRIDWORKER_DEPLOY_DSC)" 
+                      -companyName "$(COMPANY_NAME)" 
+                      -resourceType "Virtual Machine" 
+                      -environmentCode "$(ENVIRONMENT_CODE)" 
+                      -environmentLongName "$(ENVIRONMENT_LONG_NAME)" 
+                      -azureLocation "$(LOCATION)"
+
+                - task: AzurePowerShell@4
+                  displayName: "Get Hybrid Worker MSI ObjectId, Add Hybrid Worker MSI to RG"
+                  inputs:
+                    azureSubscription: "$(ARM_CONNECTION)"
+                    ScriptType: "InlineScript"
+                    Inline: |
+                      $hybridWorkerMSIObjectId = (Get-AzADServicePrincipal -DisplayName "$(VM_HYBRIDWORKER_DEPLOY_DSC)" -ErrorAction SilentlyContinue).Id
+                      if($null -eq $hybridWorkerMSIObjectId){
+                        $hybridWorkerMSIObjectId = "$(VM_HYBRIDWORKER_SERVICE_PRINCIPAL_OBJECT_ID_FAILOVER)"
+                      }
+                      Write-Host "hybridWorkerMSIObjectId:" $hybridWorkerMSIObjectId
+                      Write-Output "##vso[task.setvariable variable=hybridWorkerMSIObjectId]$hybridWorkerMSIObjectId"
+                      $output = New-AzRoleAssignment -ObjectId $hybridWorkerMSIObjectId -ResourceGroupName "$(RESOURCE_GROUP_POWERBI)" -RoleDefinitionName "Contributor" -ErrorAction SilentlyContinue
+                    azurePowerShellVersion: "LatestVersion"
+
+                - task: AzureResourceManagerTemplateDeployment@3
+                  displayName: "Deploy Azure SQL Server"
+                  inputs:
+                    deploymentScope: "Resource Group"
+                    azureResourceManagerConnection: "$(ARM_CONNECTION)"
+                    subscriptionId: "$(SUBSCRIPTION_ID)"
+                    action: "Create Or Update Resource Group"
+                    resourceGroupName: "$(RESOURCE_GROUP_POWERBI)"
+                    location: "$(LOCATION)"
+                    templateLocation: "Linked artifact"
+                    csmFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/sqlServer.json"
+                    csmParametersFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/parameters/sqlServer.parameters.json"
+                    deploymentMode: "Incremental"
+                    overrideParameters: >-
+                      -companyCode "$(COMPANY_CODE)" 
+                      -companyName "$(COMPANY_NAME)" 
+                      -departmentCode "$(DEPARTMENT_CODE)" 
+                      -resourceType "SQL Database" 
+                      -resourceCode "SQL" 
+                      -environmentCode "$(ENVIRONMENT_CODE)" 
+                      -environmentLongName "$(ENVIRONMENT_LONG_NAME)" 
+                      -azureLocation "$(LOCATION)" 
+                      -delimeter "$(DELIMITER)" 
+                      -suffix "001" 
+                      -sqlAdministratorLoginUsername "$(SQL_ADMINISTRATOR_USERNAME)" 
+                      -sqlAdministratorLoginPassword "$(SQL_ADMINISTRATOR_PASSWORD)" 
+                      -sql_AzureADGroupName "$(SQL_AZURE_AD_ADMIN_NAME)" 
+                      -sql_AzureADGroupID "$(SQL_AZURE_AD_ADMIN_ID)" 
+                      -azureTenantID "$(TENANT_ID)"
+                      -vnetName "$(NETWORK_VNET_NAME)"
+                      -subnetName "$(NETWORK_SUBNET_NAME)"
+                      -networkResourceGroupName "$(RESOURCE_GROUP_NETWORK)"
+                    deploymentOutputs: armOutput_sqlServer
+
+                - task: AzurePowerShell@4
+                  displayName: "Set SQL Variables"
+                  inputs:
+                    azureSubscription: "$(ARM_CONNECTION)"
+                    ScriptType: "InlineScript"
+                    Inline: |
+                      $sqlServerName = ('$(armOutput_sqlServer)' | ConvertFrom-Json).sqlServerName.value
+                      Write-Host "sqlServerName:" $sqlServerName
+                      Write-Output "##vso[task.setvariable variable=sqlServerName]$sqlServerName"
+                    azurePowerShellVersion: "LatestVersion"
+
+                - task: AzureResourceManagerTemplateDeployment@3
+                  displayName: "Deploy Azure SQL Database"
+                  inputs:
+                    deploymentScope: "Resource Group"
+                    azureResourceManagerConnection: "$(ARM_CONNECTION)"
+                    subscriptionId: "$(SUBSCRIPTION_ID)"
+                    action: "Create Or Update Resource Group"
+                    resourceGroupName: "$(RESOURCE_GROUP_POWERBI)"
+                    location: "$(LOCATION)"
+                    templateLocation: "Linked artifact"
+                    csmFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/sqlDatabase.json"
+                    csmParametersFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/parameters/sqlDatabase.parameters.json"
+                    deploymentMode: "Incremental"
+                    overrideParameters: >-
+                      -sqlSRVName "$(sqlServerName)" 
+                      -azureLocation "$(LOCATION)" 
+                      -databaseName "$(SQL_DATABASE_NAME)" 
+                      -databaseEdition "Standard" 
+                      -databaseServiceLevelObjective "S1" 
+                      -licenceType "BasePrice"
+
+                - task: SqlAzureDacpacDeployment@1
+                  displayName: "Deploy PowerBILogs Dacpac"
+                  inputs:
+                    azureSubscription: "$(ARM_CONNECTION)"
+                    AuthenticationType: "server"
+                    ServerName: "$(sqlServerName).database.windows.net"
+                    DatabaseName: "$(SQL_DATABASE_NAME)"
+                    SqlUsername: "$(SQL_ADMINISTRATOR_USERNAME)"
+                    SqlPassword: "$(SQL_ADMINISTRATOR_PASSWORD)"
+                    deployType: "DacpacTask"
+                    DeploymentAction: "Publish"
+                    DacpacFile: "$(System.ArtifactsDirectory)/drop/sql/PowerBILogs/bin/Release/PowerBILogs.dacpac"
+                    IpDetectionMethod: "AutoDetect"
+
+                - task: AzureResourceManagerTemplateDeployment@3
+                  displayName: "Deploy Automation Account"
+                  inputs:
+                    deploymentScope: "Resource Group"
+                    azureResourceManagerConnection: "$(ARM_CONNECTION)"
+                    subscriptionId: "$(SUBSCRIPTION_ID)"
+                    action: "Create Or Update Resource Group"
+                    resourceGroupName: "$(RESOURCE_GROUP_POWERBI)"
+                    location: "$(LOCATION)"
+                    templateLocation: "Linked artifact"
+                    csmFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/automationAccount.json"
+                    csmParametersFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/parameters/automationAccount.parameters.json"
+                    deploymentMode: "Incremental"
+                    overrideParameters: >-
+                      -companyCode "$(COMPANY_CODE)" 
+                      -companyName "$(COMPANY_NAME)" 
+                      -departmentCode "$(DEPARTMENT_CODE)" 
+                      -resourceType "Automation Account" 
+                      -resourceCode "AAA" 
+                      -environmentCode "$(ENVIRONMENT_CODE)" 
+                      -environmentLongName "$(ENVIRONMENT_LONG_NAME)" 
+                      -azureLocation "$(LOCATION)" 
+                      -delimeter "$(DELIMITER)" 
+                      -suffix "001" 
+                      -sku "Basic"
+                    deploymentOutputs: armOutput_automationAccount
+
+                - task: AzurePowerShell@4
+                  displayName: "Set Automation Variables"
+                  inputs:
+                    azureSubscription: "$(ARM_CONNECTION)"
+                    ScriptType: "InlineScript"
+                    Inline: |
+                      $automationAccountName = ('$(armOutput_automationAccount)' | ConvertFrom-Json).automationAccountName.value
+                      # $automationAccountName = "TP-PRD-PBI-AAA-001"
+                      Write-Host "automationAccountName:" $automationAccountName
+                      Write-Output "##vso[task.setvariable variable=automationAccountName]$automationAccountName"
+                    azurePowerShellVersion: "LatestVersion"
+
+                - task: AzurePowerShell@4
+                  displayName: "Import Automation Runbooks"
+                  inputs:
+                    azureSubscription: "$(ARM_CONNECTION)"
+                    ScriptType: "InlineScript"
+                    Inline: |
+                      Import-AzAutomationRunbook -Name "Invoke-PowerBILogsRunbook" -Path "$(System.ArtifactsDirectory)/drop/powershell/runbooks/Invoke-PowerBILogsRunbook.ps1" -ResourceGroup "$(RESOURCE_GROUP_POWERBI)" -AutomationAccountName "$(automationAccountName)" -Type PowerShell -Force
+                      Publish-AzAutomationRunbook -AutomationAccountName "$(automationAccountName)" -Name "Invoke-PowerBILogsRunbook" -ResourceGroupName "$(RESOURCE_GROUP_POWERBI)"
+                      Import-AzAutomationRunbook -Name "Export-PowerBILogsRunbook" -Path "$(System.ArtifactsDirectory)/drop/powershell/runbooks/Export-PowerBILogsRunbook.ps1" -ResourceGroup "$(RESOURCE_GROUP_POWERBI)" -AutomationAccountName "$(automationAccountName)" -Type PowerShell -Force
+                      Publish-AzAutomationRunbook -AutomationAccountName "$(automationAccountName)" -Name "Export-PowerBILogsRunbook" -ResourceGroupName "$(RESOURCE_GROUP_POWERBI)"
+                      Import-AzAutomationRunbook -Name "Execute-PowerBILogsRunbook" -Path "$(System.ArtifactsDirectory)/drop/powershell/runbooks/Execute-PowerBILogsRunbook.ps1" -ResourceGroup "$(RESOURCE_GROUP_POWERBI)" -AutomationAccountName "$(automationAccountName)" -Type PowerShell -Force
+                      Publish-AzAutomationRunbook -AutomationAccountName "$(automationAccountName)" -Name "Execute-PowerBILogsRunbook" -ResourceGroupName "$(RESOURCE_GROUP_POWERBI)"
+                    azurePowerShellVersion: "LatestVersion"
+
+                - task: AzureResourceManagerTemplateDeployment@3
+                  displayName: "Deploy Log Analytics"
+                  inputs:
+                    deploymentScope: "Resource Group"
+                    azureResourceManagerConnection: "$(ARM_CONNECTION)"
+                    subscriptionId: "$(SUBSCRIPTION_ID)"
+                    action: "Create Or Update Resource Group"
+                    resourceGroupName: "$(RESOURCE_GROUP_POWERBI)"
+                    location: "$(LOCATION)"
+                    templateLocation: "Linked artifact"
+                    csmFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/logAnalytics.json"
+                    csmParametersFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/parameters/logAnalytics.parameters.json"
+                    deploymentMode: "Incremental"
+                    overrideParameters: >-
+                      -companyCode "$(COMPANY_CODE)" 
+                      -companyName "$(COMPANY_NAME)" 
+                      -departmentCode "$(DEPARTMENT_CODE)" 
+                      -resourceType "Log Analytics" 
+                      -resourceCode "OMS" 
+                      -environmentCode "$(ENVIRONMENT_CODE)" 
+                      -environmentLongName "$(ENVIRONMENT_LONG_NAME)" 
+                      -azureLocation "$(LOCATION)" 
+                      -delimeter "$(DELIMITER)" 
+                      -suffix "004" 
+                      -serviceTier "PerGB2018" 
+                      -solutionTypes ["SQLAssessment", "Updates"] 
+                      -automationAccountName "$(automationAccountName)"
+
+                - task: AzurePowerShell@4
+                  displayName: "Set Key Vault Secrets"
+                  inputs:
+                    azureSubscription: "$(ARM_CONNECTION)"
+                    scriptType: filePath
+                    scriptPath: $(System.ArtifactsDirectory)/drop/infrastructure/powershell/Set-KeyVaultSecretObject.ps1
+                    scriptArguments: >-
+                      -KEYVAULT_DEPLOY "$(KEYVAULT_DEPLOY)"
+                      -RESOURCE_GROUP_POWERBI "$(RESOURCE_GROUP_POWERBI)"
+                      -KEYVAULT_EXISTING_NAME "$(KEYVAULT_EXISTING_NAME)"
+                      -sqlServerName "$(sqlServerName)"
+                      -SQL_DATABASE_NAME "$(SQL_DATABASE_NAME)"
+                      -SQL_ADMINISTRATOR_USERNAME "$(SQL_ADMINISTRATOR_USERNAME)"
+                      -SQL_ADMINISTRATOR_PASSWORD "$(SQL_ADMINISTRATOR_PASSWORD)"
+                      -PBI_ADMIN_USERNAME "$(PBI_ADMIN_USERNAME)"
+                      -PBI_ADMIN_PASSWORD "$(PBI_ADMIN_PASSWORD)"
+                    azurePowerShellVersion: latestVersion
+
+                - task: AzureResourceManagerTemplateDeployment@3
+                  displayName: "Deploy Key Vault with Secrets and Permissions"
+                  inputs:
+                    deploymentScope: "Resource Group"
+                    azureResourceManagerConnection: "$(ARM_CONNECTION)"
+                    subscriptionId: "$(SUBSCRIPTION_ID)"
+                    action: "Create Or Update Resource Group"
+                    resourceGroupName: "$(RESOURCE_GROUP_POWERBI)"
+                    location: "$(LOCATION)"
+                    templateLocation: "Linked artifact"
+                    csmFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/keyVault.json"
+                    csmParametersFile: "$(System.ArtifactsDirectory)/drop/infrastructure/arm/parameters/keyVault.parameters.json"
+                    deploymentMode: "Incremental"
+                    overrideParameters: >-
+                      -companyCode "$(COMPANY_CODE)" 
+                      -companyName "$(COMPANY_NAME)" 
+                      -departmentCode "$(DEPARTMENT_CODE)" 
+                      -resourceType "Key Vault" 
+                      -resourceCode "AKV" 
+                      -environmentCode "$(ENVIRONMENT_CODE)" 
+                      -environmentLongName "$(ENVIRONMENT_LONG_NAME)" 
+                      -azureLocation "$(LOCATION)" 
+                      -delimeter "$(DELIMITER)" 
+                      -suffix "001" 
+                      -accessPolicy_AzureDevOps "$(DEVOPS_SERVICE_PRINCIPAL_OBJECT_ID)" 
+                      -accessPolicy_Administrators "$(AAD_ADMINISTRATOR_OBJECT_ID)" 
+                      -accessPolicy_hybridWorkerMSI "$(hybridWorkerMSIObjectId)"
+                      -secretsObject {"secrets":[{"secretName":"lgaWorkspaceId","secretValue":"$(keyVault_secret_lgaWorkspaceId)"}, {"secretName":"lgaSharedKey","secretValue":"$(keyVault_secret_lgaWorkspaceSharedKey)"}, {"secretName":"pbiUsername","secretValue":"$(keyVault_secret_pbiUsername)"}, {"secretName":"pbiPwd","secretValue":"$(keyVault_secret_pbiPwd)"}, {"secretName":"sqlConnectionString","secretValue":"$(keyVault_secret_sqlConnectionString)"}]}
+                      -vnetName "$(NETWORK_VNET_NAME)"
+                      -subnetName "$(NETWORK_SUBNET_NAME)"
+                      -networkResourceGroupName "$(RESOURCE_GROUP_NETWORK)"
+                    deploymentOutputs: armOutput_keyVault
+
+                - task: AzurePowerShell@4
+                  displayName: "Set Key Vault Name Variable"
+                  inputs:
+                    azureSubscription: "$(ARM_CONNECTION)"
+                    ScriptType: "InlineScript"
+                    Inline: |
+                      $keyVaultName = ('$(armOutput_keyVault)' | ConvertFrom-Json).keyVaultName.value
+                      Write-Host "keyVaultName:" $keyVaultName
+                      Write-Output "##vso[task.setvariable variable=keyVaultName]$keyVaultName"
+                    azurePowerShellVersion: "LatestVersion"
+
+                - task: AzurePowerShell@4
+                  condition: eq(variables.AUTOMATION_DEPLOY_RUNAS, true)
+                  displayName: "PowerShell - Deploy Automation RunAs Account and Grant Contributor Access to RG"
+                  inputs:
+                    azureSubscription: $(ARM_CONNECTION)
+                    scriptType: filePath
+                    scriptPath: $(System.ArtifactsDirectory)/drop/infrastructure/powershell/Deploy-AutomationRunAs.ps1
+                    scriptArguments: >-
+                      -automationAccountName "$(automationAccountName)"
+                      -resourceGroupName $(RESOURCE_GROUP_POWERBI)
+                      -subscriptionId $(SUBSCRIPTION_ID)
+                      -tenantID $(TENANT_ID)
+                      -keyVaultName "$(keyVaultName)"
+                      -tempDirectory $(Agent.TempDirectory)
+                    azurePowerShellVersion: latestVersion

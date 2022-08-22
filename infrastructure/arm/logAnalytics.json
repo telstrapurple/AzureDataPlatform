@@ -1,0 +1,111 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    // Specific params
+    "lawName": {
+      "type": "string"
+    },
+    "serviceTier": {
+      "type": "string",
+      "allowedValues": ["PerGB2018", "CapacityReservation"],
+      "defaultValue": "PerGB2018",
+      "metadata": {
+        "description": "PerGB2018 (Subscriptions created April 2018 onwards) Pay-as-you-go, or CapacityReservation which gives you a discount for reserving a capacity."
+      }
+    },
+    "capacityReservationLevel": {
+      "type": "int",
+      "defaultValue": 0,
+      "metadata": {
+        "description": "Supply a value when serviceTier is CapacityReservation."
+      }
+    },
+    "solutionTypes": {
+      "type": "array",
+      "defaultValue": ["SQLAssessment"]
+    },
+    "retentionInDays": {
+      "type": "int",
+      "defaultValue": 31,
+      "metadata": {
+        "description": "<= 31 days of retention is free."
+      }
+    },
+    "dailyQuotaGb": {
+      "type": "int",
+      "defaultValue": 5,
+      "metadata": {
+        "description": "5 GB per day is free."
+      }
+    },
+    "publicIngestion": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "publicQuery": {
+      "type": "bool",
+      "defaultValue": true
+    }
+  },
+  "variables": {
+    "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('lawName'))]",
+    "workspaceCapping": {
+      "dailyQuotaGb": "[parameters('dailyQuotaGb')]"
+    },
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2020-08-01",
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "name": "[parameters('lawName')]",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": {
+        "sku": {
+          "name": "[parameters('serviceTier')]",
+          "capacityReservationLevel": "[if(greater(parameters('capacityReservationLevel'), 0), parameters('capacityReservationLevel'), null())]"
+        },
+        "retentionInDays": "[parameters('retentionInDays')]",
+        "workspaceCapping": "[if(greater(parameters('dailyQuotaGb'), 0), variables('workspaceCapping'), null())]",
+        "publicNetworkAccessForIngestion": "[if(parameters('publicIngestion'), 'Enabled', 'Disabled')]",
+        "publicNetworkAccessForQuery": "[if(parameters('publicQuery'), 'Enabled', 'Disabled')]"
+      }
+    },
+    {
+      "apiVersion": "2015-11-01-preview",
+      "type": "Microsoft.OperationsManagement/solutions",
+      "location": "[variables('azureLocation')]",
+      "name": "[concat(parameters('solutionTypes')[copyIndex()], '(', parameters('lawName'), ')')]",
+      "properties": {
+        "workspaceResourceId": "[variables('workspaceResourceId')]"
+      },
+      "dependsOn": ["[parameters('lawName')]"],
+      "plan": {
+        "name": "[concat(parameters('solutionTypes')[copyIndex()], '(', parameters('lawName'), ')')]",
+        "product": "[concat('OMSGallery/', parameters('solutionTypes')[copyIndex()])]",
+        "promotionCode": "",
+        "publisher": "Microsoft"
+      },
+      "copy": {
+        "name": "solutionsCopy",
+        "count": "[length(parameters('solutionTypes'))]"
+      }
+    }
+  ],
+  "outputs": {
+    "logAnalyticsName": {
+      "type": "string",
+      "value": "[parameters('lawName')]"
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "value": "[variables('workspaceResourceId')]"
+    }
+  }
+}

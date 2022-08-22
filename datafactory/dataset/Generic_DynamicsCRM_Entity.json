@@ -1,0 +1,40 @@
+{
+	"name": "Generic_DynamicsCRM_Entity",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "DynamicsCRM",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"passwordSecretName": {
+					"value": "@dataset().passwordSecretName",
+					"type": "Expression"
+				},
+				"serviceURI": {
+					"value": "@dataset().serviceURI",
+					"type": "Expression"
+				},
+				"userName": {
+					"value": "@dataset().userName",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"passwordSecretName": {
+				"type": "string"
+			},
+			"serviceURI": {
+				"type": "string"
+			},
+			"userName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Dynamics CRM"
+		},
+		"annotations": [],
+		"type": "DynamicsCrmEntity",
+		"schema": []
+	}
+}

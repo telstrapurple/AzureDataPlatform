@@ -1,0 +1,54 @@
+{
+	"name": "Generic_Blob_Json_AzureIR",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureBlobStorage_AzureIR",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"serviceEndPoint": {
+					"value": "@dataset().serviceEndpoint",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"serviceEndpoint": {
+				"type": "string"
+			},
+			"filePath": {
+				"type": "string"
+			},
+			"fileName": {
+				"type": "string"
+			},
+			"compressionType": {
+				"type": "string"
+			},
+			"encoding": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Blob"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				},
+				"container": {
+					"value": "@dataset().filePath",
+					"type": "Expression"
+				}
+			},
+			"encodingName": {
+				"value": "@dataset().encoding",
+				"type": "Expression"
+			}
+		}
+	}
+}

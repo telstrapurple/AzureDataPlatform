@@ -1,0 +1,42 @@
+{
+  "environment": {
+    "UAT": {
+      "workspaceId": "44506cf6-2c62-4b22-9994-f98f82011f78",
+      "deploy": true,
+      "datasetOnly": true,
+      "connectionProperties": [
+        {
+          "dataSourceName": "DataSourceA",
+          "dataSourceType": "Sql",
+          "oldConnection": {
+            "server": "dev-tlp-ads-bi-sql-002.database.windows.net",
+            "database": "wideworldimporters-db"
+          },
+          "newConnection": {
+            "server": "dev-tlp-ads-bi-sql-002.database.windows.net",
+            "database": "wideworldimporters-db"
+          }
+        }
+      ]
+    },
+    "production": {
+      "workspaceId": "6fa4b149-3a99-4902-a02c-9667c0d378dd",
+      "deploy": true,
+      "datasetOnly": true,
+      "connectionProperties": [
+        {
+          "dataSourceName": "DataSourceA",
+          "dataSourceType": "Sql",
+          "oldConnection": {
+            "server": "dev-tlp-ads-bi-sql-002.database.windows.net",
+            "database": "wideworldimporters-dw"
+          },
+          "newConnection": {
+            "server": "prd-tlp-ads-bi-sql-002.database.windows.net",
+            "database": "wideworldimporters-dw"
+          }
+        }
+      ]
+    }
+  }
+}

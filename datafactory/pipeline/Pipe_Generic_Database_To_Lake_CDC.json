@@ -1,0 +1,766 @@
+{
+	"name": "Pipe_Generic_Database_To_Lake_CDC",
+	"properties": {
+		"description": "This pipeline is used to copy On PRem SQL, Azure SQL and Oracle data from source into the data lake",
+		"activities": [
+			{
+				"name": "IF - Check if task type is Azure SQL to SQL",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@contains(toUpper(pipeline().parameters.TaskType), 'AZURE SQL TO')",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "CD - Write the data to the lake - Azure SQL to SQL-Net",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@pipeline().parameters.CDCQueryNet",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "Generic_AzureSQL",
+									"type": "DatasetReference",
+									"parameters": {
+										"secretName": {
+											"value": "@pipeline().parameters.SourceConnectionSecret",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "Generic_DatalakeGen2_Parquet_AzureIR",
+									"type": "DatasetReference",
+									"parameters": {
+										"dataLakeServiceEndPoint": {
+											"value": "@pipeline().parameters.DataLakeServiceEndPoint",
+											"type": "Expression"
+										},
+										"dataLakeFilePath": {
+											"value": "@pipeline().parameters.DataLakeFilePath",
+											"type": "Expression"
+										},
+										"dataLakeFileName": {
+											"value": "@pipeline().parameters.DataLakeFileName",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "SP - Log the error - Write to lake -AzureSQL to SQL-Net",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "CD - Write the data to the lake - Azure SQL to SQL-Net",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "CD - Write the data to the lake - Azure SQL to SQL",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": {
+											"value": "@activity('CD - Write the data to the lake - Azure SQL to SQL-Net').Error.message",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{activity('CD - Write the data to the lake - Azure SQL to SQL-Net').output}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@{pipeline().Pipeline}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@{pipeline().RunId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@{pipeline().TriggerId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@{pipeline().TriggerName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@{pipeline().TriggerTime}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@{pipeline().TriggerType}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": {
+											"value": "@pipeline().parameters.TaskInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "Error",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						},
+						{
+							"name": "CD - Write the data to the lake - Azure SQL to SQL-All",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@pipeline().parameters.CDCQueryAll",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "Generic_AzureSQL",
+									"type": "DatasetReference",
+									"parameters": {
+										"secretName": {
+											"value": "@pipeline().parameters.SourceConnectionSecret",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "Generic_DatalakeGen2_Parquet_AzureIR",
+									"type": "DatasetReference",
+									"parameters": {
+										"dataLakeServiceEndPoint": {
+											"value": "@pipeline().parameters.DataLakeServiceEndPoint",
+											"type": "Expression"
+										},
+										"dataLakeFilePath": {
+											"value": "@pipeline().parameters.DataLakeCDCFilePath",
+											"type": "Expression"
+										},
+										"dataLakeFileName": {
+											"value": "@pipeline().parameters.DataLakeFileName",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "SP - Log the error - Write to lake -AzureSQL to SQL-All",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "CD - Write the data to the lake - Azure SQL to SQL-All",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "CD - Write the data to the lake - Azure SQL to SQL",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": {
+											"value": "@activity('CD - Write the data to the lake - Azure SQL to SQL-All').Error.message",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{activity('CD - Write the data to the lake - Azure SQL to SQL-All').output}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@{pipeline().Pipeline}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@{pipeline().RunId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@{pipeline().TriggerId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@{pipeline().TriggerName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@{pipeline().TriggerTime}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@{pipeline().TriggerType}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": {
+											"value": "@pipeline().parameters.TaskInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "Error",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "IF - Check if task type is On Prem SQL to SQL",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@contains(toUpper(pipeline().parameters.TaskType), 'ON PREM SQL TO')",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "CD - Write the data to the lake - OnPrem SQL to SQL-Net",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"sqlReaderQuery": {
+										"value": "@pipeline().parameters.CDCQueryNet",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "Generic_SQLServer",
+									"type": "DatasetReference",
+									"parameters": {
+										"secretName": {
+											"value": "@pipeline().parameters.SourceConnectionSecret",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "Generic_DatalakeGen2_Parquet_AzureIR",
+									"type": "DatasetReference",
+									"parameters": {
+										"dataLakeServiceEndPoint": {
+											"value": "@pipeline().parameters.DataLakeServiceEndPoint",
+											"type": "Expression"
+										},
+										"dataLakeFilePath": {
+											"value": "@pipeline().parameters.DataLakeFilePath",
+											"type": "Expression"
+										},
+										"dataLakeFileName": {
+											"value": "@pipeline().parameters.DataLakeFileName",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "SP - Log the error -Write to lake -OnPremSQL to SQL-Net",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "CD - Write the data to the lake - OnPrem SQL to SQL-Net",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "CD - Write the data to the lake - On Prem SQL to SQL",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": {
+											"value": "@activity('CD - Write the data to the lake - OnPrem SQL to SQL-Net').Error.message",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{activity('CD - Write the data to the lake - OnPrem SQL to SQL-Net').output}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@{pipeline().Pipeline}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@{pipeline().RunId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@{pipeline().TriggerId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@{pipeline().TriggerName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@{pipeline().TriggerTime}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@{pipeline().TriggerType}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": {
+											"value": "@pipeline().parameters.TaskInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "Error",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						},
+						{
+							"name": "CD - Write the data to the lake - OnPrem SQL to SQL-All",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"sqlReaderQuery": {
+										"value": "@pipeline().parameters.CDCQueryAll",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "Generic_SQLServer",
+									"type": "DatasetReference",
+									"parameters": {
+										"secretName": {
+											"value": "@pipeline().parameters.SourceConnectionSecret",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "Generic_DatalakeGen2_Parquet_AzureIR",
+									"type": "DatasetReference",
+									"parameters": {
+										"dataLakeServiceEndPoint": {
+											"value": "@pipeline().parameters.DataLakeServiceEndPoint",
+											"type": "Expression"
+										},
+										"dataLakeFilePath": {
+											"value": "@pipeline().parameters.DataLakeCDCFilePath",
+											"type": "Expression"
+										},
+										"dataLakeFileName": {
+											"value": "@pipeline().parameters.DataLakeFileName",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "SP - Log the error -Write to lake -OnPremSQL to SQL-All",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "CD - Write the data to the lake - OnPrem SQL to SQL-All",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "CD - Write the data to the lake - On Prem SQL to SQL",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": {
+											"value": "@activity('CD - Write the data to the lake - OnPrem SQL to SQL-All').Error.message",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{activity('CD - Write the data to the lake - OnPrem SQL to SQL-All').output}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@{pipeline().Pipeline}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@{pipeline().RunId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@{pipeline().TriggerId}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@{pipeline().TriggerName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@{pipeline().TriggerTime}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@{pipeline().TriggerType}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": {
+											"value": "@pipeline().parameters.TaskInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "Error",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"TaskType": {
+				"type": "string"
+			},
+			"SourceConnectionSecret": {
+				"type": "string"
+			},
+			"SelectColumnList": {
+				"type": "string"
+			},
+			"TaskInstanceID": {
+				"type": "string"
+			},
+			"DataLakeServiceEndPoint": {
+				"type": "string"
+			},
+			"DataLakeFilePath": {
+				"type": "string"
+			},
+			"DataLakeFileName": {
+				"type": "string"
+			},
+			"CallingPipeline": {
+				"type": "string"
+			},
+			"TaskConfig": {
+				"type": "object"
+			},
+			"LSNValue": {
+				"type": "string"
+			},
+			"CDCQueryAll": {
+				"type": "string"
+			},
+			"CDCQueryNet": {
+				"type": "string"
+			},
+			"DataLakeCDCFilePath": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "ETL/Database Load/Generic Database to Lake"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

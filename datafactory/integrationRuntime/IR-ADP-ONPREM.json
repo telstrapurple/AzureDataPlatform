@@ -1,0 +1,7 @@
+{
+  "name": "IR-ADP-ONPREM",
+  "properties": {
+    "type": "SelfHosted",
+    "description": "This is the on prem integration runtime"
+  }
+}

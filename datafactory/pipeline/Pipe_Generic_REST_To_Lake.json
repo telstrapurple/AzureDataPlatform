@@ -1,0 +1,1215 @@
+{
+  "name": "Pipe_Generic_REST_To_Lake",
+  "properties": {
+    "activities": [
+      {
+        "name": "IF - Authentication type is basic",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(toUpper(pipeline().parameters.SourceConfig.value[0].AuthenticationType), 'BASIC')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "FN - Get username",
+              "type": "AzureFunctionActivity",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": true,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "functionName": "GetKeyVaultSecret",
+                "method": "POST",
+                "body": {
+                  "keyvaultName": "@pipeline().parameters.KeyVaultName",
+                  "secretName": "@pipeline().parameters.SourceConfig.value[0].KeyVaultSecretUserName"
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureFunction",
+                "type": "LinkedServiceReference"
+              }
+            },
+            {
+              "name": "SP - Log the error - Get username",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "FN - Get username",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "FN - Get username",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('FN - Get username').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('FN - Get username').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "CD - REST to Lake - Basic",
+              "type": "Copy",
+              "dependsOn": [
+                {
+                  "activity": "FN - Get username",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": true
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "RestSource",
+                  "httpRequestTimeout": "00:01:40",
+                  "requestInterval": "00.00:00:00.010",
+                  "requestMethod": {
+                    "value": "@{pipeline().parameters.SourceConfig.value[0].Method}",
+                    "type": "Expression"
+                  },
+                  "requestBody": {
+                    "value": "@{pipeline().parameters.SourceConfig.value[0].Body}",
+                    "type": "Expression"
+                  }
+                },
+                "sink": {
+                  "type": "ParquetSink",
+                  "storeSettings": {
+                    "type": "AzureBlobFSWriteSettings"
+                  },
+                  "formatSettings": {
+                    "type": "ParquetWriteSettings"
+                  }
+                },
+                "enableStaging": false,
+                "translator": {
+                  "value": "@pipeline().parameters.SchemaMapping",
+                  "type": "Expression"
+                }
+              },
+              "inputs": [
+                {
+                  "referenceName": "Generic_Rest_Basic_Dataset_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "restEndpoint": {
+                      "value": "@pipeline().parameters.SourceConfig.value[0].ServiceEndpoint",
+                      "type": "Expression"
+                    },
+                    "username": {
+                      "value": "@activity('FN - Get username').output.Response",
+                      "type": "Expression"
+                    },
+                    "passwordSecretName": {
+                      "value": "@pipeline().parameters.SourceConfig.value[0].KeyVaultSecretPassword",
+                      "type": "Expression"
+                    },
+                    "relativeURL": {
+                      "value": "@pipeline().parameters.SourceConfig.value[0].RelativeURL",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "Generic_DatalakeGen2_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "dataLakeServiceEndPoint": {
+                      "value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+                      "type": "Expression"
+                    },
+                    "dataLakeFilePath": {
+                      "value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+                      "type": "Expression"
+                    },
+                    "dataLakeFileName": {
+                      "value": "@pipeline().parameters.TargetConfig.value[0].TargetFileName",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "SP - Log the error - CD REST to Lake - Basic",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "CD - REST to Lake - Basic",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Rest to Lake",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('CD - REST to Lake - Basic').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('CD - REST to Lake - Basic').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "IF - Authentication type is OAuth",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(toUpper(pipeline().parameters.SourceConfig.value[0].AuthenticationType), 'OAUTH')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "FN - Get Client ID",
+              "type": "AzureFunctionActivity",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": true,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "functionName": "GetKeyVaultSecret",
+                "method": "POST",
+                "body": {
+                  "keyvaultName": "@pipeline().parameters.KeyVaultName",
+                  "secretName": "@pipeline().parameters.SourceConfig.value[0].KeyVaultSecretNameClientID"
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureFunction",
+                "type": "LinkedServiceReference"
+              }
+            },
+            {
+              "name": "SP - Log the error - Get Client ID",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "FN - Get Client ID",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "FN - Get Client ID",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('FN - Get Client ID').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('FN - Get Client ID').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "CD - REST to Lake - OAuth",
+              "type": "Copy",
+              "dependsOn": [
+                {
+                  "activity": "Get Token",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": true
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "RestSource",
+                  "httpRequestTimeout": "00:01:40",
+                  "requestInterval": "00.00:00:00.010",
+                  "requestMethod": {
+                    "value": "@{pipeline().parameters.SourceConfig.value[0].Method}",
+                    "type": "Expression"
+                  },
+                  "requestBody": {
+                    "value": "@{pipeline().parameters.SourceConfig.value[0].Body}",
+                    "type": "Expression"
+                  },
+                  "additionalHeaders": {
+                    "Authorization": {
+                      "value": "Bearer @{activity('Get Token').output.access_token}",
+                      "type": "Expression"
+                    }
+                  }
+                },
+                "sink": {
+                  "type": "ParquetSink",
+                  "storeSettings": {
+                    "type": "AzureBlobFSWriteSettings"
+                  },
+                  "formatSettings": {
+                    "type": "ParquetWriteSettings"
+                  }
+                },
+                "enableStaging": false,
+                "translator": {
+                  "value": "@pipeline().parameters.SchemaMapping",
+                  "type": "Expression"
+                }
+              },
+              "inputs": [
+                {
+                  "referenceName": "Generic_Rest_Anonymous_Dataset_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "restEndpoint": {
+                      "value": "@pipeline().parameters.SourceConfig.value[0].ServiceEndpoint",
+                      "type": "Expression"
+                    },
+                    "relativeURL": {
+                      "value": "@pipeline().parameters.SourceConfig.value[0].RelativeURL",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "Generic_DatalakeGen2_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "dataLakeServiceEndPoint": {
+                      "value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+                      "type": "Expression"
+                    },
+                    "dataLakeFilePath": {
+                      "value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+                      "type": "Expression"
+                    },
+                    "dataLakeFileName": {
+                      "value": "@pipeline().parameters.TargetConfig.value[0].TargetFileName",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "SP - Log the error - CD REST to Lake - OAuth",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "CD - REST to Lake - OAuth",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Rest to Lake",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('CD - REST to Lake - OAuth').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('CD - REST to Lake - OAuth').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "Get Token",
+              "type": "WebActivity",
+              "dependsOn": [
+                {
+                  "activity": "FN - Get Client Secret",
+                  "dependencyConditions": ["Succeeded"]
+                },
+                {
+                  "activity": "FN - Get Client ID",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": true,
+                "secureInput": true
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "url": {
+                  "value": "@pipeline().parameters.SourceConfig.value[0].AuthorizationEndpoint",
+                  "type": "Expression"
+                },
+                "connectVia": {
+                  "referenceName": "IR-ADP",
+                  "type": "IntegrationRuntimeReference"
+                },
+                "method": "POST",
+                "headers": {
+                  "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "body": {
+                  "value": "@concat('client_id=', activity('FN - Get Client ID').output.Response, '&client_secret=', activity('FN - Get Client Secret').output.Response, pipeline().parameters.SourceConfig.value[0].TokenRequestAdditionalBody)",
+                  "type": "Expression"
+                }
+              }
+            },
+            {
+              "name": "FN - Get Client Secret",
+              "type": "AzureFunctionActivity",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": true,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "functionName": "GetKeyVaultSecret",
+                "method": "POST",
+                "body": {
+                  "keyvaultName": "@pipeline().parameters.KeyVaultName",
+                  "secretName": "@pipeline().parameters.SourceConfig.value[0].KeyVaultSecretNameClientSecret"
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureFunction",
+                "type": "LinkedServiceReference"
+              }
+            },
+            {
+              "name": "SP - Log the error - Get Client Secret",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "FN - Get Client Secret",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "FN - Get Client ID",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('FN - Get Client Secret').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('FN - Get Client Secret').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            },
+            {
+              "name": "SP - Log the error - Get Token",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "Get Token",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "Get Token",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('Get Token').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('Get Token').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "IF - Authentication type is anonymous",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(toUpper(pipeline().parameters.SourceConfig.value[0].AuthenticationType), 'ANONYMOUS')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "CD - REST to Lake - Anonymous",
+              "type": "Copy",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "source": {
+                  "type": "RestSource",
+                  "httpRequestTimeout": "00:01:40",
+                  "requestInterval": "00.00:00:00.010",
+                  "requestMethod": {
+                    "value": "@{pipeline().parameters.SourceConfig.value[0].Method}",
+                    "type": "Expression"
+                  },
+                  "requestBody": {
+                    "value": "@{pipeline().parameters.SourceConfig.value[0].Body}",
+                    "type": "Expression"
+                  },
+                  "additionalHeaders": {
+                    "Content-Type": "application/json"
+                  }
+                },
+                "sink": {
+                  "type": "ParquetSink",
+                  "storeSettings": {
+                    "type": "AzureBlobFSWriteSettings"
+                  },
+                  "formatSettings": {
+                    "type": "ParquetWriteSettings"
+                  }
+                },
+                "enableStaging": false,
+                "translator": {
+                  "value": "@pipeline().parameters.SchemaMapping",
+                  "type": "Expression"
+                }
+              },
+              "inputs": [
+                {
+                  "referenceName": "Generic_Rest_Anonymous_Dataset_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "restEndpoint": {
+                      "value": "@pipeline().parameters.SourceConfig.value[0].ServiceEndpoint",
+                      "type": "Expression"
+                    },
+                    "relativeURL": {
+                      "value": "@pipeline().parameters.SourceConfig.value[0].RelativeURL",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "Generic_DatalakeGen2_AzureIR",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "dataLakeServiceEndPoint": {
+                      "value": "@pipeline().parameters.TargetConfig.value[0].ServiceEndpoint",
+                      "type": "Expression"
+                    },
+                    "dataLakeFilePath": {
+                      "value": "@pipeline().parameters.TargetConfig.value[0].TargetFilePath",
+                      "type": "Expression"
+                    },
+                    "dataLakeFileName": {
+                      "value": "@pipeline().parameters.TargetConfig.value[0].TargetFileName",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "SP - Log the error - CD REST to Lake - Anonymous",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "CD - REST to Lake - Anonymous",
+                  "dependencyConditions": ["Failed"]
+                }
+              ],
+              "policy": {
+                "timeout": "7.00:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "userProperties": [],
+              "typeProperties": {
+                "storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+                "storedProcedureParameters": {
+                  "ActivityName": {
+                    "value": "CD - Rest to Lake",
+                    "type": "String"
+                  },
+                  "DataFactoryName": {
+                    "value": {
+                      "value": "@{pipeline().DataFactory}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "@{activity('CD - REST to Lake - Anonymous').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "OutputMessage": {
+                    "value": {
+                      "value": "@{activity('CD - REST to Lake - Anonymous').output}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineName": {
+                    "value": {
+                      "value": "@{pipeline().Pipeline}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineRunID": {
+                    "value": {
+                      "value": "@{pipeline().RunId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerID": {
+                    "value": {
+                      "value": "@{pipeline().TriggerId}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerName": {
+                    "value": {
+                      "value": "@{pipeline().TriggerName}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerTime": {
+                    "value": {
+                      "value": "@{pipeline().TriggerTime}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "PipelineTriggerType": {
+                    "value": {
+                      "value": "@{pipeline().TriggerType}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "TaskInstanceID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TaskInstanceID",
+                      "type": "Expression"
+                    },
+                    "type": "Int64"
+                  },
+                  "LogType": {
+                    "value": "Error",
+                    "type": "String"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "AzureSQL",
+                "type": "LinkedServiceReference",
+                "parameters": {
+                  "secretName": "sqlDatabaseConnectionStringConfig"
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "parameters": {
+      "TaskType": {
+        "type": "string"
+      },
+      "SchemaMapping": {
+        "type": "object"
+      },
+      "KeyVaultName": {
+        "type": "string"
+      },
+      "TaskConfig": {
+        "type": "object"
+      },
+      "SourceConfig": {
+        "type": "object"
+      },
+      "TargetConfig": {
+        "type": "object"
+      },
+      "TaskInstanceID": {
+        "type": "int"
+      },
+      "CallingPipeline": {
+        "type": "string"
+      },
+      "TargetFileName": {
+        "type": "string"
+      }
+    },
+    "folder": {
+      "name": "ETL/REST Load/REST to Lake"
+    },
+    "annotations": []
+  },
+  "type": "Microsoft.DataFactory/factories/pipelines"
+}

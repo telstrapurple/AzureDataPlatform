@@ -1,0 +1,119 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.operationalinsights/workspaces/tp-syd-dev-adp-law-001"
+    },
+    "diagnosticsStorageAccountId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.storage/storageAccount/tpsyddevadpsta001"
+    },
+    "diagnosticsRetentionInDays": {
+      "value": 30
+    },
+    "synapseName": {
+      "value": "SynapseWorkspace001"
+    },
+    "location": {
+      "value": "australiaeast"
+    },
+    "defaultDataLakeStorageAccountName": {
+      "value": "tpsynapsedatalake001"
+    },
+    "defaultDataLakeStorageFilesystemName": {
+      "value": "synapsedatalakefs001"
+    },
+    "sqlAdministratorLogin": {
+      "value": "sqladminuser"
+    },
+    "sqlAdministratorLoginPassword": {
+      "value": ""
+    },
+    "setWorkspaceIdentityRbacOnStorageAccount": {
+      "value": true
+    },
+    "allowAllConnections": {
+      "value": true
+    },
+    "grantWorkspaceIdentityControlForSql": {
+      "value": "Enabled"
+    },
+    "managedVirtualNetwork": {
+      "value": "default"
+    },
+    "subnetIdArray": {
+      "value": []
+    },
+    "storageLocation": {
+      "value": "australiaeast"
+    },
+    "storageRoleUniqueIdServicePrincipal": {
+      "value": ""
+    },
+    "storageRoleUniqueIdGroup": {
+      "value": ""
+    },
+    "isNewStorageAccount": {
+      "value": true
+    },
+    "isNewFileSystemOnly": {
+      "value": false
+    },
+    "adlaResourceId": {
+      "value": ""
+    },
+    "managedResourceGroupName": {
+      "value": "Synapse-Managed-RG"
+    },
+    "storageAccessTier": {
+      "value": "Hot"
+    },
+    "storageAccountSku": {
+      "value": "Standard_RAGRS"
+    },
+    "storageSupportsHttpsTrafficOnly": {
+      "value": true
+    },
+    "storageNetworkDefaultAction": {
+      "value": "Allow"
+    },
+    "storageKind": {
+      "value": "StorageV2"
+    },
+    "storageIsHnsEnabled": {
+      "value": true
+    },
+    "storageBypassNetworkDefaultAction": {
+      "value": "None"
+    },
+    "groupObjectId": {
+      "value": ""
+    },
+    "setSbdcRbacOnStorageAccount": {
+      "value": true
+    },
+    "setStorageNetwork": {
+      "value": true
+    },
+    "managedVirtualNetworkSettings": {
+      "value": {
+        "allowedAadTenantIdsForLinking": [],
+        "preventDataExfiltration": true
+      }
+    },
+    "sqlPoolName": {
+      "value": "sqlpool001"
+    },
+    "sqlPoolSku": {
+      "value": "DW100c"
+    }
+  }
+}

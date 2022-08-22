@@ -1,0 +1,44 @@
+{
+	"name": "Generic_AzureSQL_Table",
+	"properties": {
+		"description": "This is the generic Azure SQL data set linked to a table",
+		"linkedServiceName": {
+			"referenceName": "AzureSQL",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"secretName": {
+					"value": "@dataset().secretName",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"secretName": {
+				"type": "string"
+			},
+			"tableSchema": {
+				"type": "string"
+			},
+			"tableName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "SQL Server"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().tableSchema",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().tableName",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

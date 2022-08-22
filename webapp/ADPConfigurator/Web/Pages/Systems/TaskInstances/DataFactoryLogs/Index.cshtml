@@ -1,0 +1,109 @@
+﻿@page
+@model Web.Pages.Systems.TaskInstances.DataFactoryLogs.IndexModel
+
+@{
+    ViewData["Title"] = "Data Logs";
+}
+
+<h1>
+    <i class="float-right fas fa-hdd"></i>
+    Data Logs for @Model.DataFactoryLog.First().Value.First().TaskInstance.Task.TaskName
+</h1>
+
+@if (Model.DataFactoryLog.Count > 0)
+{
+    foreach (var keyValue in Model.DataFactoryLog)
+    {
+        <h2>Pipeline Run: @keyValue.Value.First().PipelineRunId</h2>
+        <dl class="row">
+            <dt class="col-sm-2">
+                @Html.DisplayNameFor(model => keyValue.Value.First().DataFactoryName)
+            </dt>
+            <dd class="col-sm-4">
+                @Html.DisplayFor(model => keyValue.Value.First().DataFactoryName)
+            </dd>
+            <dt class="col-sm-2">
+                @Html.DisplayNameFor(model => keyValue.Value.First().PipelineName)
+            </dt>
+            <dd class="col-sm-4">
+                @Html.DisplayFor(model => keyValue.Value.First().PipelineName)
+            </dd>
+            <dt class="col-sm-2">
+                @Html.DisplayNameFor(model => keyValue.Value.First().PipelineTriggerId)
+            </dt>
+            <dd class="col-sm-4">
+                @Html.DisplayFor(model => keyValue.Value.First().PipelineTriggerId)
+            </dd>
+            <dt class="col-sm-2">
+                @Html.DisplayNameFor(model => keyValue.Value.First().PipelineTriggerName)
+            </dt>
+            <dd class="col-sm-4">
+                @Html.DisplayFor(model => keyValue.Value.First().PipelineTriggerName)
+            </dd>
+            <dt class="col-sm-2">
+                @Html.DisplayNameFor(model => keyValue.Value.First().PipelineTriggerType)
+            </dt>
+            <dd class="col-sm-4">
+                @Html.DisplayFor(model => keyValue.Value.First().PipelineTriggerType)
+            </dd>
+            <dt class="col-sm-2">
+                @Html.DisplayNameFor(model => keyValue.Value.First().PipelineTriggerTime)
+            </dt>
+            <dd class="col-sm-4">
+                @Html.DisplayFor(model => keyValue.Value.First().PipelineTriggerTime)
+            </dd>
+        </dl>
+
+        <hr/>
+        
+        @foreach (var item in keyValue.Value)
+        {
+            <dl class="row">
+                <dt class="col-sm-2">
+                    @Html.DisplayNameFor(model => item.ActivityName)
+                </dt>
+                <dd class="col-sm-4">
+                    @Html.DisplayFor(model => item.ActivityName)
+                </dd>
+                <dt class="col-sm-2">
+                    @Html.DisplayNameFor(model => item.DateCreated)
+                </dt>
+                <dd class="col-sm-4">
+                    @Html.DisplayFor(model => item.DateCreated)
+                </dd>
+                <dt class="col-sm-2">
+                    @Html.DisplayNameFor(model => item.ErrorMessage)
+                </dt>
+                <dd class="col-sm-10 json-data">
+                    @Html.DisplayFor(model => item.ErrorMessage)
+                </dd>
+                <dt class="col-sm-2">
+                    @Html.DisplayNameFor(model => item.OutputMessage)
+                </dt>
+                <dd class="col-sm-10 json-data">
+                    @Html.DisplayFor(model => item.OutputMessage)
+                </dd>
+            </dl>
+
+            <hr />
+        }
+    }
+}
+else
+{
+    <div class="alert alert-warning" role="alert">
+        <i class="fas fa-exclamation-triangle"></i>
+        There are no logs for @Model.DataFactoryLog.First().Value.First().TaskInstance.Task.TaskName
+    </div>
+}
+
+<div>
+    <a asp-page="../Index" asp-route-systemid="@ViewBag.SystemId" asp-route-taskid="@ViewBag.TaskId">
+        <i class="fas fa-arrow-left"></i>
+        Back to Task Instances
+    </a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_FormatJsonPartial");}
+}

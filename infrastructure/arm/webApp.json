@@ -1,0 +1,241 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    }, // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    },
+    // Specific params
+    "servicePlanId": {
+      "type": "string"
+    },
+    "appName": {
+      "type": "string"
+    },
+    "alwaysOn": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "appSettings": {
+      "type": "array"
+    },
+    "subnetWebAppResourceId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "addAppServiceFileAuditLogs": {
+      "type": "bool",
+      "defaultValue": true
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]",
+    "webAppId": "[resourceId('Microsoft.Web/sites', parameters('appName'))]",
+    "defaultLogs": [
+      //AppServiceAntivirusScanAuditLogs - Disabled, only applies to Java SE and Tomcat
+      //https://docs.microsoft.com/en-us/azure/app-service/troubleshoot-diagnostic-logs#send-logs-to-azure-monitor-preview
+      // {
+      //   "category": "AppServiceAntivirusScanAuditLogs",
+      //   "enabled": true,
+      //   "retentionPolicy": {
+      //     "enabled": true,
+      //     "days": "[parameters('diagnosticsRetentionInDays')]"
+      //   }
+      // },
+      {
+        "category": "AppServiceHTTPLogs",
+        "enabled": true,
+        "retentionPolicy": {
+          "enabled": true,
+          "days": "[parameters('diagnosticsRetentionInDays')]"
+        }
+      },
+      {
+        "category": "AppServiceConsoleLogs",
+        "enabled": true,
+        "retentionPolicy": {
+          "enabled": true,
+          "days": "[parameters('diagnosticsRetentionInDays')]"
+        }
+      },
+      {
+        "category": "AppServiceAppLogs",
+        "enabled": true,
+        "retentionPolicy": {
+          "enabled": true,
+          "days": "[parameters('diagnosticsRetentionInDays')]"
+        }
+      },
+      {
+        "category": "AppServiceAuditLogs",
+        "enabled": true,
+        "retentionPolicy": {
+          "enabled": true,
+          "days": "[parameters('diagnosticsRetentionInDays')]"
+        }
+      },
+      {
+        "category": "AppServiceIPSecAuditLogs",
+        "enabled": true,
+        "retentionPolicy": {
+          "enabled": true,
+          "days": "[parameters('diagnosticsRetentionInDays')]"
+        }
+      },
+      {
+        "category": "AppServicePlatformLogs",
+        "enabled": true,
+        "retentionPolicy": {
+          "enabled": true,
+          "days": "[parameters('diagnosticsRetentionInDays')]"
+        }
+      }
+    ],
+    "appServiceFileAuditLogs": [
+      {
+        //AppServiceFileAuditLogs - only applies to Premium and higher tiers
+        //https://docs.microsoft.com/en-us/azure/app-service/troubleshoot-diagnostic-logs#send-logs-to-azure-monitor-preview
+        "category": "AppServiceFileAuditLogs",
+        "enabled": true,
+        "retentionPolicy": {
+          "enabled": true,
+          "days": "[parameters('diagnosticsRetentionInDays')]"
+        }
+      }
+    ],
+    "diagnosticLogs": "[concat(variables('defaultLogs'), if(parameters('addAppServiceFileAuditLogs'), variables('appServiceFileAuditLogs'), createArray()))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2020-06-01",
+      "name": "[parameters('appName')]",
+      "location": "[variables('azureLocation')]",
+      "tags": "[parameters('tagObject')]",
+      "dependsOn": [],
+      "kind": "app",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "enabled": true,
+        "serverFarmId": "[parameters('servicePlanId')]",
+        "reserved": false,
+        "clientAffinityEnabled": true,
+        "clientCertEnabled": false,
+        "hostNamesDisabled": false,
+        "containerSize": 0,
+        "dailyMemoryTimeQuota": 0,
+        "httpsOnly": true,
+        "ftpsState": "Disabled",
+        "siteConfig": {
+          "appSettings": "[parameters('appSettings')]"
+        }
+      },
+      "resources": [
+        {
+          "condition": "[not(empty(parameters('subnetWebAppResourceId')))]",
+          "name": "virtualNetwork",
+          "type": "config",
+          "apiVersion": "2019-08-01",
+          "dependsOn": [ "[variables('webAppId')]" ],
+          "properties": {
+            "subnetResourceId": "[parameters('subnetWebAppResourceId')]",
+            "swiftSupported": true
+          }
+        },
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "Microsoft.Web/sites/providers/diagnosticSettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "[concat(parameters('appName'), '/', 'Microsoft.Insights/', 'diagnostics')]",
+          "dependsOn": [ "[parameters('appName')]" ],
+          "properties": {
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "metrics": [
+              {
+                "category": "AllMetrics",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                },
+                "timeGrain": null
+              }
+            ],
+            "logs": "[variables('diagnosticLogs')]"
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2016-08-01",
+      "name": "[concat(parameters('appName'), '/web')]",
+      "location": "[variables('azureLocation')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('appName'))]"
+      ],
+      "properties": {
+        "numberOfWorkers": 1,
+        "alwaysOn": "[parameters('alwaysOn')]",
+        "httpLoggingEnabled": true,
+        "http20Enabled": true,
+        "defaultDocuments": [
+          "Default.htm",
+          "Default.html",
+          "Default.asp",
+          "index.htm",
+          "index.html",
+          "iisstart.htm",
+          "default.aspx",
+          "index.php",
+          "hostingstart.html"
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "webAppName": {
+      "type": "string",
+      "value": "[parameters('appName')]"
+    },
+    "webAppResourceId": {
+      "type": "string",
+      "value": "[variables('webAppId')]"
+    },
+    "webAppServicePrincipalId": {
+      "type": "string",
+      "value": "[reference(variables('webAppId'), '2020-06-01', 'Full').identity.principalId]"
+    },
+    "webAppURL": {
+      "type": "string",
+      "value": "[reference(variables('webAppId'), '2020-06-01').defaultHostName]"
+    }
+  }
+}

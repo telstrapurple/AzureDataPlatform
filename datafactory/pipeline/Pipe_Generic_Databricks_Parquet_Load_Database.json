@@ -1,0 +1,529 @@
+{
+	"name": "Pipe_Generic_Databricks_Parquet_Load_Database",
+	"properties": {
+		"description": "This is a generic pipeline to load the parquet files from the data lake into SQL",
+		"activities": [
+			{
+				"name": "DBN - Write the parquet file to SQL stage",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Azure Data Platform/Generic/Parquet to SQL Delta Lake load",
+					"baseParameters": {
+						"previousTargetFilePath": {
+							"value": "@pipeline().parameters.PreviousTargetFilePath",
+							"type": "Expression"
+						},
+						"targetFilePath": {
+							"value": "@pipeline().parameters.TargetFilePath",
+							"type": "Expression"
+						},
+						"targetTempTable": {
+							"value": "@pipeline().parameters.TargetTempTable",
+							"type": "Expression"
+						},
+						"loadType": {
+							"value": "@pipeline().parameters.LoadType",
+							"type": "Expression"
+						},
+						"targetDatabase": {
+							"value": "@pipeline().parameters.TargetDatabase",
+							"type": "Expression"
+						},
+						"uniqueConstraintIndicator": {
+							"value": "@pipeline().parameters.UniqueConstraintIndicator",
+							"type": "Expression"
+						},
+						"taskType": {
+							"value": "@pipeline().parameters.TaskType",
+							"type": "Expression"
+						},
+						"targetTable": {
+							"value": "@pipeline().parameters.TargetTable",
+							"type": "Expression"
+						},
+						"targetDeltaFilePath": {
+							"value": "@pipeline().parameters.TargetDeltaFilePath",
+							"type": "Expression"
+						},
+						"uniqueConstraintColumns": {
+							"value": "@pipeline().parameters.UniqueConstraintColumns",
+							"type": "Expression"
+						},
+						"useDeltaLakeIndicator": {
+							"value": "@pipeline().parameters.UseDeltaLakeIndicator",
+							"type": "Expression"
+						},
+						"deltaLakeRetentionDays": {
+							"value": "@pipeline().parameters.DeltaLakeRetentionDays",
+							"type": "Expression"
+						},
+						"allowSchemaDrift": {
+							"value": "@pipeline().parameters.AllowSchemaDrift",
+							"type": "Expression"
+						},
+						"fileLoadConfig": {
+							"value": "@if(greater(string(coalesce(pipeline().parameters.FileLoadConfig, '')), ''), string(pipeline().parameters.FileLoadConfig.value), '')",
+							"type": "Expression"
+						},
+						"fileLoadType": {
+							"value": "@if(greater(string(coalesce(pipeline().parameters.FileLoadType, '')), ''), pipeline().parameters.FileLoadType, '')",
+							"type": "Expression"
+						},
+						"sourceConfig": {
+							"value": "@if(greater(string(coalesce(pipeline().parameters.SourceConfig, '')), ''), string(pipeline().parameters.SourceConfig.value), '')",
+							"type": "Expression"
+						},
+						"taskInstanceID": {
+							"value": "@if(greater(string(coalesce(pipeline().parameters.TaskInstanceID, '')), ''), string(pipeline().parameters.TaskInstanceID), '')",
+							"type": "Expression"
+						},
+						"taskConfig": {
+							"value": "@if(greater(string(coalesce(pipeline().parameters.TaskConfig, '')), ''), string(pipeline().parameters.TaskConfig), '')",
+							"type": "Expression"
+						},
+						"taskSchema": {
+							"value": "@if(greater(string(coalesce(pipeline().parameters.TaskSchema, '')), ''), string(pipeline().parameters.TaskSchema), '')",
+							"type": "Expression"
+						},
+						"whereClause": {
+							"value": "@coalesce(pipeline().parameters.WhereClause, '')",
+							"type": "Expression"
+						},
+						"latestLSNValue": {
+							"value": "@coalesce(pipeline().parameters.LatestLSNValue, '')",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Databricks",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"databricksURL": {
+							"value": "@pipeline().parameters.DatabricksURL",
+							"type": "Expression"
+						},
+						"databricksClusterID": {
+							"value": "@pipeline().parameters.DatabricksClusterID",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "IF - Check for Databricks error",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "DBN - Write the parquet file to SQL stage",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(length(activity('DBN - Write the parquet file to SQL stage').output.runOutput), 1)",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "EP - Merge Target Table",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "Pipe_Generic_Merge_Target_Table",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"TaskConfig": {
+										"value": "@pipeline().parameters.TaskConfig",
+										"type": "Expression"
+									},
+									"TaskSchema": {
+										"value": "@pipeline().parameters.TaskSchema",
+										"type": "Expression"
+									},
+									"PipelineName": {
+										"value": "@pipeline().parameters.PipelineName",
+										"type": "Expression"
+									},
+									"PipelineRunID": {
+										"value": "@pipeline().parameters.PipelineRunID",
+										"type": "Expression"
+									},
+									"PipelineTriggerID": {
+										"value": "@pipeline().parameters.PipelineTriggerID",
+										"type": "Expression"
+									},
+									"PipelineTriggerName": {
+										"value": "@pipeline().parameters.PipelineTriggerName",
+										"type": "Expression"
+									},
+									"PipelineTriggerTime": {
+										"value": "@pipeline().parameters.PipelineTriggerTime",
+										"type": "Expression"
+									},
+									"PipelineTriggerType": {
+										"value": "@pipeline().parameters.PipelineTriggerType",
+										"type": "Expression"
+									},
+									"TaskInstanceID": {
+										"value": "@pipeline().parameters.TaskInstanceID",
+										"type": "Expression"
+									},
+									"SecretName": {
+										"value": "@pipeline().parameters.SecretName",
+										"type": "Expression"
+									},
+									"FileLoadType": {
+										"value": "@pipeline().parameters.FileLoadType",
+										"type": "Expression"
+									},
+									"TaskType": {
+										"value": "@pipeline().parameters.TaskType",
+										"type": "Expression"
+									},
+									"LoadType": {
+										"value": "@pipeline().parameters.LoadType",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "SP - Log the error - Databricks notebook",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+								"storedProcedureParameters": {
+									"ActivityName": {
+										"value": "DBN - Write the parquet file to SQL stage",
+										"type": "String"
+									},
+									"DataFactoryName": {
+										"value": {
+											"value": "@{pipeline().DataFactory}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ErrorMessage": {
+										"value": {
+											"value": "@{activity('DBN - Write the parquet file to SQL stage').output.runOutput}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"OutputMessage": {
+										"value": {
+											"value": "@{activity('DBN - Write the parquet file to SQL stage').output}",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@pipeline().parameters.PipelineName",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineRunID": {
+										"value": {
+											"value": "@pipeline().parameters.PipelineRunID",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerID": {
+										"value": {
+											"value": "@pipeline().parameters.PipelineTriggerID",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerName": {
+										"value": {
+											"value": "@pipeline().parameters.PipelineTriggerName",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerTime": {
+										"value": {
+											"value": "@pipeline().parameters.PipelineTriggerTime",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineTriggerType": {
+										"value": {
+											"value": "@pipeline().parameters.PipelineTriggerType",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TaskInstanceID": {
+										"value": {
+											"value": "@pipeline().parameters.TaskInstanceID",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"LogType": {
+										"value": "Error",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSQL",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"secretName": "sqlDatabaseConnectionStringConfig"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "SP - Log the error - Databricks notebook failure",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "DBN - Write the parquet file to SQL stage",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[DI].[usp_DataFactoryLog_Insert]",
+					"storedProcedureParameters": {
+						"ActivityName": {
+							"value": "DBN - Write the parquet file to SQL stage",
+							"type": "String"
+						},
+						"DataFactoryName": {
+							"value": {
+								"value": "@{pipeline().DataFactory}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ErrorMessage": {
+							"value": {
+								"value": "@{activity('DBN - Write the parquet file to SQL stage').error.message}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"OutputMessage": {
+							"value": {
+								"value": "@{activity('DBN - Write the parquet file to SQL stage').output}",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@pipeline().parameters.PipelineName",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineRunID": {
+							"value": {
+								"value": "@pipeline().parameters.PipelineRunID",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerID": {
+							"value": {
+								"value": "@pipeline().parameters.PipelineTriggerID",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerName": {
+							"value": {
+								"value": "@pipeline().parameters.PipelineTriggerName",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerTime": {
+							"value": {
+								"value": "@pipeline().parameters.PipelineTriggerTime",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineTriggerType": {
+							"value": {
+								"value": "@pipeline().parameters.PipelineTriggerType",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TaskInstanceID": {
+							"value": {
+								"value": "@pipeline().parameters.TaskInstanceID",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"LogType": {
+							"value": "Error",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSQL",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"secretName": "sqlDatabaseConnectionStringConfig"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"PreviousTargetFilePath": {
+				"type": "string"
+			},
+			"TargetFilePath": {
+				"type": "string"
+			},
+			"TargetTempTable": {
+				"type": "string"
+			},
+			"LoadType": {
+				"type": "string"
+			},
+			"TargetDatabase": {
+				"type": "string"
+			},
+			"UniqueConstraintIndicator": {
+				"type": "string"
+			},
+			"TaskType": {
+				"type": "string"
+			},
+			"TargetTable": {
+				"type": "string"
+			},
+			"TargetDeltaFilePath": {
+				"type": "string"
+			},
+			"UniqueConstraintColumns": {
+				"type": "string"
+			},
+			"UseDeltaLakeIndicator": {
+				"type": "string"
+			},
+			"DeltaLakeRetentionDays": {
+				"type": "string"
+			},
+			"AllowSchemaDrift": {
+				"type": "string"
+			},
+			"TaskConfig": {
+				"type": "string"
+			},
+			"TaskSchema": {
+				"type": "string"
+			},
+			"PipelineName": {
+				"type": "string"
+			},
+			"PipelineRunID": {
+				"type": "string"
+			},
+			"PipelineTriggerID": {
+				"type": "string"
+			},
+			"PipelineTriggerName": {
+				"type": "string"
+			},
+			"PipelineTriggerTime": {
+				"type": "string"
+			},
+			"PipelineTriggerType": {
+				"type": "string"
+			},
+			"TaskInstanceID": {
+				"type": "int"
+			},
+			"DatabricksURL": {
+				"type": "string"
+			},
+			"DatabricksClusterID": {
+				"type": "string"
+			},
+			"SecretName": {
+				"type": "string"
+			},
+			"FileLoadConfig": {
+				"type": "object"
+			},
+			"FileLoadType": {
+				"type": "string"
+			},
+			"SourceConfig": {
+				"type": "object"
+			},
+			"WhereClause": {
+				"type": "string"
+			},
+			"LatestLSNValue": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"CallingPipeline": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "ETL/Generic"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

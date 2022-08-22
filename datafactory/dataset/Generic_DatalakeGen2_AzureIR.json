@@ -1,0 +1,48 @@
+{
+	"name": "Generic_DatalakeGen2_AzureIR",
+	"properties": {
+		"description": "This is the generic Data Lake Gen 2 data set using the Azure integration runtime",
+		"linkedServiceName": {
+			"referenceName": "DataLakeGen2_AzureIR",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"dataLakeServiceEndPoint": {
+					"value": "@dataset().dataLakeServiceEndPoint",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"dataLakeServiceEndPoint": {
+				"type": "string"
+			},
+			"dataLakeFilePath": {
+				"type": "string"
+			},
+			"dataLakeFileName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Blob"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().dataLakeFileName",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().dataLakeFilePath",
+					"type": "Expression"
+				}
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

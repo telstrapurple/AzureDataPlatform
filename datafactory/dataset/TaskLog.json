@@ -1,0 +1,71 @@
+{
+	"name": "TaskLog",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureSQL",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"secretName": {
+					"value": "@dataset().SecretName",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"SecretName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "SQL Server"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "TaskTypeID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "TaskTypeName",
+				"type": "nvarchar"
+			},
+			{
+				"name": "TaskTypeDescription",
+				"type": "nvarchar"
+			},
+			{
+				"name": "EnabledIndicator",
+				"type": "bit"
+			},
+			{
+				"name": "DeletedIndicator",
+				"type": "bit"
+			},
+			{
+				"name": "DateCreated",
+				"type": "datetimeoffset",
+				"scale": 7
+			},
+			{
+				"name": "CreatedBy",
+				"type": "nvarchar"
+			},
+			{
+				"name": "DateModified",
+				"type": "datetimeoffset",
+				"scale": 7
+			},
+			{
+				"name": "ModifiedBy",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "DI",
+			"table": "TaskType"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

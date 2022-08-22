@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-policy.schema.json",
+  "title": "Azure Data Platform Config - Policy",
+  "description": "Policy Configuration for the Azure Data Platform",
+  "type": "object",
+  "properties": {
+    //deploySubscriptionResources - handled by config.schema.json
+    //create.
+    //       asc
+    //       policyBasic
+    //       policyISMAustralia
+    //azureSecurityCentre - depends on create.asc
+    "azureSecurityCentre": {
+      "$ref": "#/definitions/azureSecurityCentreDefinition"
+    },
+    "create": {
+      "$ref": "#/definitions/create"
+    }
+  },
+  //todo - how to make azureSecurityCentre conditional on create.asc?
+  "required": ["azureSecurityCentre", "create"],
+
+  "definitions": {
+    "create": {
+      "type": "object",
+      "properties": {
+        "asc": {
+          "type": "boolean",
+          "description": "Whether or not to create Azure Security Centre."
+        },
+        "policyBasic": {
+          "type": "boolean",
+          "description": "Whether or not to create the Azure policy definitions basic set."
+        },
+        "policyISMAustralia": {
+          "type": "boolean",
+          "description": "Whether or not to create the Azure policy definitions Australian Government ISM."
+        }
+      },
+      "required": ["asc", "policyBasic", "policyISMAustralia"]
+    },
+    "azureSecurityCentreDefinition": {
+      "type": "object",
+      "description": "Azure Security Centre configuration values",
+      "properties": {
+        //See ARM template securityCentre.json
+        "ascOwnerEmail": {
+          "type": "string",
+          "description": "Email of the administrator who should be notified about Azure Security Center alert"
+        },
+        "ascOwnerContact": {
+          "type": "string",
+          "description": "Phone number of the administrator should be notified about Azure Security Center alert"
+        },
+        "autoProvisionSetting": {
+          "type": "string",
+          "description": "Specify whether Auto Provisoning is turned on or off",
+          "enum": ["On", "Off"],
+          "default": "On"
+        },
+        "highSeverityAlertNotification": {
+          "type": "string",
+          "description": "Specify whether you want to notify high severity alert to ASC administrator",
+          "enum": ["On", "Off"],
+          "default": "On"
+        },
+        "subscriptionOwnerNotification": {
+          "type": "string",
+          "description": "Specify whether you want to notify high severity alert to subscription owner",
+          "enum": ["On", "Off"],
+          "default": "On"
+        },
+        "virtualMachineTier": {
+          "$ref": "./config.common.schema.json#/definitions/AzureSecurityCentreTier",
+          "description": "Specify whether you want to enable Standard tier for Virtual Machine resource type",
+          "default": "Standard"
+        },
+        "appServiceTier": {
+          "$ref": "./config.common.schema.json#/definitions/AzureSecurityCentreTier",
+          "description": "Specify whether you want to enable Standard tier for Azure App Service resource type",
+          "default": "Standard"
+        },
+        "paasSQLServiceTier": {
+          "$ref": "./config.common.schema.json#/definitions/AzureSecurityCentreTier",
+          "description": "Specify whether you want to enable Standard tier for PaaS SQL Service resource type",
+          "default": "Standard"
+        },
+        "sqlServerOnVmTier": {
+          "$ref": "./config.common.schema.json#/definitions/AzureSecurityCentreTier",
+          "description": "Specify whether you want to enable Standard tier for SQL Server on VM resource type",
+          "default": "Standard"
+        },
+        "storageAccountTier": {
+          "$ref": "./config.common.schema.json#/definitions/AzureSecurityCentreTier",
+          "description": "Specify whether you want to enable Standard tier for Storage Account resource type",
+          "default": "Standard"
+        },
+        "kubernetesServiceTier": {
+          "$ref": "./config.common.schema.json#/definitions/AzureSecurityCentreTier",
+          "description": "Specify whether you want to enable Standard tier for Kubernetes service resource type",
+          "default": "Standard"
+        },
+        "containerRegistryTier": {
+          "$ref": "./config.common.schema.json#/definitions/AzureSecurityCentreTier",
+          "description": "Specify whether you want to enable Standard tier for Container Registry resource type",
+          "default": "Standard"
+        },
+        "keyvaultTier": {
+          "$ref": "./config.common.schema.json#/definitions/AzureSecurityCentreTier",
+          "description": "Specify whether you want to enable Standard tier for Key Vault resource type",
+          "default": "Standard"
+        },
+        "integrationEnabled": {
+          "type": "boolean",
+          "description": "Specify whether you want to enable or not."
+        }
+      },
+      "required": [
+        "ascOwnerEmail",
+        "ascOwnerContact",
+        "autoProvisionSetting",
+        "highSeverityAlertNotification",
+        "subscriptionOwnerNotification",
+        "virtualMachineTier",
+        "appServiceTier",
+        "paasSQLServiceTier",
+        "sqlServerOnVmTier",
+        "storageAccountTier",
+        "kubernetesServiceTier",
+        "containerRegistryTier",
+        "keyvaultTier",
+        "integrationEnabled"
+      ]
+    }
+  }
+}

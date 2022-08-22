@@ -1,0 +1,77 @@
+﻿<script type="text/javascript"  asp-add-nonce="true">
+    const taskTypeTaskPropertyTypeMapping = @Html.Raw(ViewBag.TaskTypeTaskPropertyTypeMapping);
+    const taskType = @Html.Raw(ViewBag.TaskType); 
+    const connectionType = @Html.Raw(ViewBag.ConnectionType);
+
+    // task properties
+    function alterTaskProperties() {
+        var taskTypeId = $('#Task_TaskTypeId').val();
+        var boolHide = true;
+        for (var i = 0; i < taskTypeTaskPropertyTypeMapping.length; i++)
+        {
+            if (taskTypeTaskPropertyTypeMapping[i].taskTypeId == taskTypeId && taskTypeTaskPropertyTypeMapping[i].taskPropertyTypeId == this.value)
+            {
+                $(this).parent().show("slow"); // 
+                boolHide = false;
+            }
+        }
+        if (boolHide)
+        {
+            $(this).parent().hide("slow")
+        }
+    }
+
+    // file column mapping
+    function alterFileColumnMapping() {
+        var taskTypeId = $('#Task_TaskTypeId').val();
+        var boolHide = true;
+        for (var i = 0; i < taskType.length; i++)
+        {
+            if (taskType[i].taskTypeId == taskTypeId && taskType[i].fileLoadIndicator == 1)
+            {
+                boolHide = false;
+                $('#fileColumnMapping').show("slow");
+            }
+        }
+        if (boolHide)
+        {
+            $('#fileColumnMapping').hide();
+        }
+    }
+
+    // task property passthrough mapping
+    function alterTaskPropertyPassthroughMapping() {
+        var taskTypeId = $('#Task_TaskTypeId').val();
+        var boolHide = true;
+        for (var i = 0; i < taskType.length; i++)
+        {
+            if (taskType[i].taskTypeId == taskTypeId && taskType[i].scriptIndicator == 1)
+            {
+                $('#taskPropertyPassthroughMapping').show("slow"); 
+                boolHide = false;
+            }
+        }
+        if (boolHide)
+        {
+            $('#taskPropertyPassthroughMapping').hide();
+        }
+    }
+
+    // task type on change function
+    $('#Task_TaskTypeId').on('change', function () {
+        $('input[id*="TaskPropertyTypeId"]').each(alterTaskProperties);
+        alterFileColumnMapping();
+        alterTaskPropertyPassthroughMapping(); 
+    });
+
+    // source connection type on change function 
+   //  $('#Task_SourceConnectionId').on('change', alterFileColumnMapping);
+
+    // document ready function
+    $(document).ready(function () {
+        $('input[id*="TaskPropertyTypeId"]').each(alterTaskProperties);
+        alterFileColumnMapping(); 
+        alterTaskPropertyPassthroughMapping(); 
+    });
+
+</script>

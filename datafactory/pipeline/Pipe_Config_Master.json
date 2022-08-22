@@ -1,0 +1,127 @@
+{
+	"name": "Pipe_Config_Master",
+	"properties": {
+		"description": "This pipeline will run all the other config pipelines",
+		"activities": [
+			{
+				"name": "EP - Oracle Config",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Pipe_Get_Oracle_Config",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "EP - Azure SQL Config",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Pipe_Get_Azure_SQL_Config",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "EP - On Prem SQL Config",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Pipe_Get_OnPrem_SQL_Config",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "EP - Check Oracle Config Errors",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "EP - Oracle Config",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Pipe_Generic_Email_Errors",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"System": "N/A",
+						"TaskType": "N/A",
+						"ConfigPipelineName": "Pipe_Get_Oracle_Config"
+					}
+				}
+			},
+			{
+				"name": "EP - Check Azure SQL Config Errors",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "EP - Azure SQL Config",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Pipe_Generic_Email_Errors",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"System": "N/A",
+						"TaskType": "N/A",
+						"ConfigPipelineName": "Pipe_Get_Azure_SQL_Config"
+					}
+				}
+			},
+			{
+				"name": "EP - Check On Prem SQL Config Errors",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "EP - On Prem SQL Config",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Pipe_Generic_Email_Errors",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"System": "N/A",
+						"TaskType": "N/A",
+						"ConfigPipelineName": "Pipe_Get_OnPrem_SQL_Config"
+					}
+				}
+			}
+		],
+		"folder": {
+			"name": "Master Pipelines"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

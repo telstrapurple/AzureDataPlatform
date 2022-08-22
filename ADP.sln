@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29806.167
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Migrator", "databases\Migrator\Migrator.csproj", "{9C53A063-428F-4D50-9D8D-889C21440A51}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "webapp", "webapp", "{6CDB050B-87A4-4B1E-812D-654919C2C201}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ADPConfigurator", "ADPConfigurator", "{BD56632C-0A22-423C-A72D-CE92C608B850}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoFast.Web", "webapp\ADPConfigurator\Web\ADPConfigurator.Web.csproj", "{101ADA1F-ECAE-4667-857D-2251F5E55A81}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoFast.Domain", "webapp\ADPConfigurator\Domain\ADPConfigurator.Domain.csproj", "{0A738DAE-C4AA-4C4B-B09C-7FC6AB327E83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoFast.Common", "webapp\ADPConfigurator\Common\ADPConfigurator.Common.csproj", "{C0E3C4AF-864A-43FD-B4B2-471A74CD7DDB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "function", "function", "{3E19F276-C100-420A-93B5-A46663B7FF8B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerShell", "function\PowerShell\PowerShell.csproj", "{1EDC70A5-3320-40EE-A6D9-284DBDF32C83}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9C53A063-428F-4D50-9D8D-889C21440A51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C53A063-428F-4D50-9D8D-889C21440A51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C53A063-428F-4D50-9D8D-889C21440A51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C53A063-428F-4D50-9D8D-889C21440A51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{101ADA1F-ECAE-4667-857D-2251F5E55A81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{101ADA1F-ECAE-4667-857D-2251F5E55A81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{101ADA1F-ECAE-4667-857D-2251F5E55A81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{101ADA1F-ECAE-4667-857D-2251F5E55A81}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A738DAE-C4AA-4C4B-B09C-7FC6AB327E83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A738DAE-C4AA-4C4B-B09C-7FC6AB327E83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A738DAE-C4AA-4C4B-B09C-7FC6AB327E83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A738DAE-C4AA-4C4B-B09C-7FC6AB327E83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0E3C4AF-864A-43FD-B4B2-471A74CD7DDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0E3C4AF-864A-43FD-B4B2-471A74CD7DDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0E3C4AF-864A-43FD-B4B2-471A74CD7DDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0E3C4AF-864A-43FD-B4B2-471A74CD7DDB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1EDC70A5-3320-40EE-A6D9-284DBDF32C83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1EDC70A5-3320-40EE-A6D9-284DBDF32C83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1EDC70A5-3320-40EE-A6D9-284DBDF32C83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1EDC70A5-3320-40EE-A6D9-284DBDF32C83}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {82836C7A-F266-489B-B53B-7A0DB0285431}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BD56632C-0A22-423C-A72D-CE92C608B850} = {6CDB050B-87A4-4B1E-812D-654919C2C201}
+		{101ADA1F-ECAE-4667-857D-2251F5E55A81} = {BD56632C-0A22-423C-A72D-CE92C608B850}
+		{0A738DAE-C4AA-4C4B-B09C-7FC6AB327E83} = {BD56632C-0A22-423C-A72D-CE92C608B850}
+		{C0E3C4AF-864A-43FD-B4B2-471A74CD7DDB} = {BD56632C-0A22-423C-A72D-CE92C608B850}
+		{1EDC70A5-3320-40EE-A6D9-284DBDF32C83} = {3E19F276-C100-420A-93B5-A46663B7FF8B}
+	EndGlobalSection
+EndGlobal

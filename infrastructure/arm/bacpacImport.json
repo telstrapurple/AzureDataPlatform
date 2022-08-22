@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "sqlServerName": {
+      "type": "string"
+    },
+    "databaseName": {
+      "type": "string"
+    },
+    "storageUri": {
+      "type": "string"
+    },
+    "storageKey": {
+      "type": "string"
+    },
+    "administratorLogin": {
+      "type": "string"
+    },
+    "administratorLoginPassword": {
+      "type": "securestring"
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('sqlServerName'), '/', parameters('databaseName'), '/Import')]",
+      "type": "Microsoft.Sql/servers/databases/extensions",
+      "apiVersion": "2014-04-01",
+      "location": "[variables('azureLocation')]",
+      "properties": {
+        "storageKeyType": "SharedAccessKey",
+        "storageKey": "[parameters('storageKey')]",
+        "storageUri": "[parameters('storageUri')]",
+        "administratorLogin": "[parameters('administratorLogin')]",
+        "administratorLoginPassword": "[parameters('administratorLoginPassword')]",
+        "operationMode": "Import"
+      }
+    }
+  ]
+}

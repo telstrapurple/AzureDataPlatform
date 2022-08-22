@@ -1,0 +1,158 @@
+﻿/* Please see documentation at https://docs.microsoft.com/aspnet/core/client-side/bundling-and-minification
+for details on configuring this project to bundle and minify static web assets. */
+
+a.navbar-brand {
+  white-space: normal;
+  text-align: center;
+  word-break: break-all;
+}
+
+a.pull-button {
+    margin-left: 1rem;
+}
+
+div.code-container {
+    background-color: #dbdbdb;
+    border-radius: 0.25rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    max-height: 20rem;
+    overflow-y: scroll;
+    margin-bottom: 1rem;
+}
+
+/* Provide sufficient contrast against white background */
+a {
+  color: #0366d6;
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: #1b6ec2;
+  border-color: #1861ac;
+}
+
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background-color: #1b6ec2;
+  border-color: #1861ac;
+}
+
+h1 {
+  font-size: 40px;
+  font-weight: 300;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+
+h1 > i.fas {
+  color: #666;
+}
+
+h2 {
+  font-size: 30px;
+  font-weight: 300;
+  padding-bottom: 0.5rem;
+}
+
+h3 {
+  font-size: 20px;
+  font-weight: 300;
+}
+
+th {
+  font-weight: normal;
+}
+
+a.nav-link > i.fas {
+  width: 20px;
+}
+
+table.table thead th {
+  border-top: none;
+}
+
+td.details-panel {
+  border-top: none; 
+  padding-top: 0;
+  font-size: smaller;
+}
+
+td.details-panel strong {
+  color: #666;
+}
+
+footer.footer img {
+  max-height: 52px;
+  padding: 4px;
+}
+
+/* See also: Shared/_FormatJsonPartial.cshtml */
+.json-data {
+  max-height: 50vh;
+  overflow-y: scroll;
+  border: 1px solid #aaa;
+  padding: 8px;
+  word-wrap: break-word;
+  font-family: monospace;
+}
+
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+  font-size: 14px;
+}
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.border-top {
+  border-top: 1px solid #e5e5e5;
+}
+.border-bottom {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.box-shadow {
+  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+}
+
+button.accept-policy {
+  font-size: 1rem;
+  line-height: inherit;
+}
+
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  /* Margin bottom by footer height */
+  margin-bottom: 60px;
+}
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  white-space: nowrap;
+  line-height: 60px; /* Vertically center the text there */
+}
+
+.target-path {
+    display: flex;
+}
+
+.target-path span {
+    line-height: 2.2rem;
+    padding-right: 0.2rem;
+}
+
+.target-path .form-control {
+    flex: 1;
+}

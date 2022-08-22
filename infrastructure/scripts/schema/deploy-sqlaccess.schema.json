@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "http://purple.telstra.com/ADP/deploy-{name}.schema.json",
+  "title": "Azure Data Platform Config - {Name}",
+  "description": "{Name} Configuration for the Azure Data Platform",
+  "type": "object",
+  "properties": {
+    //sqlUsernames.databricks
+    //sqlAccess.azureADDirectoryReadersRoleADGroup
+    "sqlUsernames": {
+      "$ref": "#/definitions/sqlUsernames"
+    },
+    "sqlAccess": {
+      "$ref": "#/definitions/sqlAccess"
+    }
+  },
+  "required": ["sqlUsernames", "sqlAccess"],
+  "definitions": {
+    "sqlUsernames": {
+      "type": "object",
+      "description": "Usernames for SQL deployments",
+      "properties": {
+        "databricks": {
+          "type": "string",
+          "description": "Name of the SQL databricks username"
+        }
+      },
+      "required": ["databricks"]
+    },
+    "sqlAccess": {
+      "type": "object",
+      "properties": {
+        "azureADDirectoryReadersRoleADGroup": {
+          "type": "string",
+          "description": "The name of the AD group the grants directory reader permission. If deployAzureADResources is true, then must be the name of a group to create or fetch. If deployAzureADResources is false, then may alternatively be the GUID of an existing group."
+        }
+      },
+      "required": ["azureADDirectoryReadersRoleADGroup"]
+    }
+  }
+}

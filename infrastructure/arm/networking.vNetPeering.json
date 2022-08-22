@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    // Generic params
+    "tagObject": {
+      "type": "object"
+    },
+    "vNetDBRName": {
+      "type": "string"
+    },
+    "vNetGeneralName": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "vNet1tovNet2PeeringName": "[concat(parameters('vNetGeneralName'), '-to-', parameters('vNetDBRName'))]",
+    "vNet2tovNet1PeeringName": "[concat(parameters('vNetDBRName'), '-to-', parameters('vNetGeneralName'))]",
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2019-11-01",
+      "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+      "name": "[concat(parameters('vNetGeneralName'),'/', variables('vNet1tovNet2PeeringName'))]",
+      "location": "[variables('azureLocation')]",
+      "properties": {
+        "allowVirtualNetworkAccess": true,
+        "allowForwardedTraffic": false,
+        "allowGatewayTransit": false,
+        "useRemoteGateways": false,
+        "remoteVirtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks',parameters('vNetDBRName'))]"
+        }
+      }
+    },
+    {
+      "apiVersion": "2019-11-01",
+      "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+      "name": "[concat(parameters('vNetDBRName'),'/', variables('vNet2tovNet1PeeringName'))]",
+      "location": "[variables('azureLocation')]",
+      "properties": {
+        "allowVirtualNetworkAccess": true,
+        "allowForwardedTraffic": false,
+        "allowGatewayTransit": false,
+        "useRemoteGateways": false,
+        "remoteVirtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks',parameters('vNetGeneralName'))]"
+        }
+      }
+    }
+  ]
+}

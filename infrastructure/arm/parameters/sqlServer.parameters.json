@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "tagObject": {
+      "value": {
+        "CompanyName": "Telstra Purple",
+        "Location": "SYD",
+        "Application": "Telstra Purple Azure Data Platform",
+        "Environment": "DEV"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.operationalinsights/workspaces/tp-syd-dev-adp-law-001"
+    },
+    "diagnosticsStorageAccountId": {
+      "value": "/subscriptions/00000000-00000-00000-00000-000000000/resourcegroups/TP-SYD-DEV-ARG-Administration/providers/microsoft.storage/storageAccount/tpsyddevadpsta001"
+    },
+    "diagnosticsRetentionInDays": {
+      "value": 30
+    },
+    "sqlServerName": {
+      "value": "TP-SYD-DEV-ADP-SQL-001"
+    },
+    "sqlAdministratorLoginUsername": {
+      "value": "TP_sqlAdmin"
+    },
+    "sqlAdministratorLoginPassword": {
+      "value": ""
+    },
+    "azureADAdminDisplayName": {
+      "value": "TP-AAD-SQL-Administrators"
+    },
+    "azureADAdminSid": {
+      "value": "00000000-00000-00000-00000-000000000"
+    },
+    "azureTenantId": {
+      "value": "00000000-00000-00000-00000-000000000"
+    },
+    "ipsToAllow": {
+      "value": [
+        {
+          "name": "Server1",
+          "start": "1.2.3.4",
+          "end": "1.2.3.4"
+        }
+      ]
+    },
+    "subnetIdArray": {
+      "value": []
+    }
+  }
+}

@@ -1,0 +1,12 @@
+﻿@using ADPConfigurator.Web.Services
+@inject SignedInUserProvider SignedInUserProvider
+
+<div class="navbar-right text-center">
+    <div>
+        <i class="fas fa-user-alt"></i>
+        @SignedInUserProvider.User.UserName
+    </div>
+    <div class="small">
+        @SignedInUserProvider.User.EmailAddress
+    </div>
+</div>

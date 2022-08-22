@@ -1,0 +1,131 @@
+{
+  "name": "Pipe_Master_Generic_Schedule_Load",
+  "properties": {
+    "activities": [
+      {
+        "name": "EP - Generic Schedule Load Parallel",
+        "type": "ExecutePipeline",
+        "dependsOn": [
+          {
+            "activity": "EP - Get all the config",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "Pipe_Master_Generic_Schedule_Load_Parallel",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true,
+          "parameters": {
+            "Schedule": {
+              "value": "@variables('Schedule')",
+              "type": "Expression"
+            }
+          }
+        }
+      },
+      {
+        "name": "EP - Generic Schedule Load Sequential",
+        "type": "ExecutePipeline",
+        "dependsOn": [
+          {
+            "activity": "EP - Generic Schedule Load Parallel",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "Pipe_Master_Generic_Schedule_Load_Sequential",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true,
+          "parameters": {
+            "Schedule": {
+              "value": "@variables('Schedule')",
+              "type": "Expression"
+            }
+          }
+        }
+      },
+      {
+        "name": "IF - Schedule equals defaultValue",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "userProperties": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(pipeline().parameters.Schedule, 'defaultValue')",
+            "type": "Expression"
+          },
+          "ifFalseActivities": [
+            {
+              "name": "SV - Schedule to ParamSchedule",
+              "type": "SetVariable",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "variableName": "Schedule",
+                "value": {
+                  "value": "@pipeline().parameters.Schedule",
+                  "type": "Expression"
+                }
+              }
+            }
+          ],
+          "ifTrueActivities": [
+            {
+              "name": "SV - Schedule to TriggerSchedule",
+              "type": "SetVariable",
+              "dependsOn": [],
+              "userProperties": [],
+              "typeProperties": {
+                "variableName": "Schedule",
+                "value": {
+                  "value": "@pipeline().TriggerName",
+                  "type": "Expression"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "EP - Get all the config",
+        "type": "ExecutePipeline",
+        "dependsOn": [
+          {
+            "activity": "IF - Schedule equals defaultValue",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "userProperties": [],
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "Pipe_Config_Master",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true
+        }
+      }
+    ],
+    "parameters": {
+      "Schedule": {
+        "type": "string",
+        "defaultValue": "defaultValue"
+      }
+    },
+    "variables": {
+      "Schedule": {
+        "type": "String"
+      }
+    },
+    "folder": {
+      "name": "Master Pipelines"
+    },
+    "annotations": []
+  },
+  "type": "Microsoft.DataFactory/factories/pipelines"
+}

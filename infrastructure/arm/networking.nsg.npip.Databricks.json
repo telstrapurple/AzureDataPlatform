@@ -1,0 +1,188 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "nsgName": {
+      "type": "string"
+    },
+    "tagObject": {
+      "type": "object"
+    },
+    // Diagnostics params
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the central Log Analytics workspace that stores security event and data used by Azure Security Center"
+      }
+    },
+    "diagnosticsStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the storage account that stores all the security and audit events"
+      }
+    },
+    "diagnosticsRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 0,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Number of days to retain data in the diagnostics Storage Account"
+      }
+    }
+  },
+  "variables": {
+    "azureLocation": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2018-02-01",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "location": "[variables('azureLocation')]",
+      "name": "[parameters('nsgName')]",
+      "tags": "[parameters('tagObject')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "IBD-Any-Any",
+            "properties": {
+              "access": "Deny",
+              "description": "Deny all inbound network access.",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "*",
+              "direction": "Inbound",
+              "priority": 4096,
+              "protocol": "*",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-worker-to-worker",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for worker nodes communication within a cluster.",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "destinationPortRange": "*",
+              "direction": "Inbound",
+              "priority": 100,
+              "protocol": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-worker-to-databricks",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for workers communication with Azure Databricks service.",
+              "destinationAddressPrefix": "AzureDatabricks",
+              "destinationPortRange": "443",
+              "direction": "Outbound",
+              "priority": 100,
+              "protocol": "tcp",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-worker-to-sql",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for workers communication with Azure SQL services.",
+              "destinationAddressPrefix": "Sql",
+              "destinationPortRange": "3306",
+              "direction": "Outbound",
+              "priority": 110,
+              "protocol": "tcp",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-worker-to-storage",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for workers communication with Azure Storage services.",
+              "destinationAddressPrefix": "Storage",
+              "destinationPortRange": "443",
+              "direction": "Outbound",
+              "priority": 120,
+              "protocol": "tcp",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-worker-to-vnet",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for workers communication within the vNet.",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "destinationPortRange": "*",
+              "direction": "Outbound",
+              "priority": 130,
+              "protocol": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*"
+            }
+          },
+          {
+            "name": "databricks-worker-to-eventhub",
+            "properties": {
+              "access": "Allow",
+              "description": "Required for workers communication with Azure Event Hub.",
+              "destinationAddressPrefix": "EventHub",
+              "destinationPortRange": "9093",
+              "direction": "Outbound",
+              "priority": 140,
+              "protocol": "tcp",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*"
+            }
+          }
+        ]
+      },
+      "resources": [
+        {
+          "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+          "type": "Microsoft.Network/networkSecurityGroups/providers/diagnosticSettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "[concat(parameters('nsgName'), '/', 'Microsoft.Insights/', 'diagnostics')]",
+          "dependsOn": ["[parameters('nsgName')]"],
+          "properties": {
+            "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+            "storageAccountId": "[parameters('diagnosticsStorageAccountId')]",
+            "metrics": [],
+            "logs": [
+              {
+                "category": "NetworkSecurityGroupEvent",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              },
+              {
+                "category": "NetworkSecurityGroupRuleCounter",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": true,
+                  "days": "[parameters('diagnosticsRetentionInDays')]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "nsgResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsgName'))]"
+    }
+  }
+}

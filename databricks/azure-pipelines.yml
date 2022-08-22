@@ -1,0 +1,83 @@
+trigger:
+  branches:
+    include:
+      - Main
+  paths:
+    include:
+      - databricks/*
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: build
+    displayName: Build
+    jobs:
+      - job: build
+        displayName: Build
+        steps:
+          - task: CopyFiles@2
+            displayName: Copy Databricks files to the artifacts directory
+            inputs:
+              TargetFolder: $(Build.ArtifactStagingDirectory)/databricks
+              SourceFolder: databricks
+              Contents: |
+                **/*
+                !.gitignore
+                !azure-pipelines.yml
+                !deployment-steps.yml
+
+          - task: CopyFiles@2
+            displayName: Copy common infrastructure files to the artifacts directory
+            inputs:
+              TargetFolder: $(Build.ArtifactStagingDirectory)/infrastructure
+              SourceFolder: infrastructure/scripts
+              Contents: "**/*"
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Databricks artifacts
+            inputs:
+              artifact: databricks
+              targetPath: $(Build.ArtifactStagingDirectory)/databricks
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish infrastructure artifacts
+            inputs:
+              artifact: infrastructure
+              targetPath: $(Build.ArtifactStagingDirectory)/infrastructure
+
+  - stage: deployToDev
+    displayName: Deploy to Dev
+    condition: and(succeeded(), ne(variables['build.reason'], 'PullRequest'))
+    jobs:
+      - deployment: deployToDev
+        displayName: Deploy to Dev
+        environment: ads-dev
+        pool:
+          vmImage: windows-latest
+        variables:
+          #
+          # Has the following variables:
+          #  - configFile
+          #  - environmentCode
+          #  - environmentName
+          #  - location
+          #  - locationCode
+          #  - subscriptionId
+          #  - tenantId
+          #
+          - group: ads-platform-dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: deployment-steps.yml
+                  parameters:
+                    adosServiceConnectionName: Purple - Development - Azure Data Platform
+                    environmentName: $(environmentName)
+                    environmentCode: $(environmentCode)
+                    location: $(location)
+                    locationCode: $(locationCode)
+                    tenantId: $(tenantId)
+                    subscriptionId: $(subscriptionId)
+                    configFileName: $(configFile)
